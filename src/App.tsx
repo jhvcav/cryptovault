@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { ChakraProvider } from '@chakra-ui/react'; // Ajoutez cette importation
+import { ChakraProvider } from '@chakra-ui/react';
 import { WalletProvider } from './contexts/WalletContext';
 import { InvestmentProvider } from './contexts/InvestmentContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -9,7 +9,7 @@ import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import InvestPage from './pages/InvestPage';
-// Components
+import RoadmapPage from './pages/RoadmapPage';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ProtectedRoute from './components/utils/ProtectedRoute';
@@ -17,7 +17,7 @@ import AdminRoute from './components/utils/AdminRoute';
 
 function App() {
   return (
-    <ChakraProvider> {/* Ajoutez ChakraProvider ici */}
+    <ChakraProvider>
       <ThemeProvider>
         <WalletProvider>
           <InvestmentProvider>
@@ -28,6 +28,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/invest" element={<InvestPage />} />
+                    <Route path="/roadmap" element={<RoadmapPage />} /> {/* Ajoutez cette ligne */}
                     <Route
                       path="/dashboard"
                       element={
