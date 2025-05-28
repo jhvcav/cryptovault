@@ -394,32 +394,99 @@ useEffect(() => {
   };
 
   const invest = async (planId: number, amount: number, token: 'USDT' | 'USDC'): Promise<boolean> => {
-    if (!stakingContract) throw new Error('Contract not initialized');
+  if (!stakingContract) throw new Error('Contract not initialized');
+  
+  try {
+    const signer = await (new ethers.BrowserProvider(window.ethereum as any)).getSigner();
     
+    // Adresses des tokens (à définir au niveau du contexte)
+    const TOKEN_ADDRESSES = {
+      USDT: "0x55d398326f99059fF775485246999027B3197955", 
+      USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" 
+    };
+    
+    // Trouver l'adresse du token
+    const tokenAddress = token === 'USDT' 
+      ? TOKEN_ADDRESSES.USDT 
+      : TOKEN_ADDRESSES.USDC;
+    
+    // Convertir le montant en BigInt avec 18 décimales
+    const amountInWei = ethers.parseUnits(amount.toString(), 18);
+    
+    // 1. Vérifier et demander l'approbation si nécessaire
+    // Créer une instance du contrat de token
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      [
+        "function approve(address spender, uint256 amount) external returns (bool)",
+        "function allowance(address owner, address spender) external view returns (uint256)"
+      ],
+      signer
+    );
+    
+    // Vérifier l'allowance actuelle
+    const userAddress = await signer.getAddress();
+    const currentAllowance = await tokenContract.allowance(userAddress, CONTRACTS.STAKING.address);
+    
+    console.log("Vérification de l'allowance pour le token:", token);
+    console.log("Adresse du token:", tokenAddress);
+    console.log("Adresse du contrat de staking:", CONTRACTS.STAKING.address);
+    console.log("Allowance actuelle:", ethers.formatUnits(currentAllowance, 18));
+    console.log("Montant requis:", amount.toString());
+    
+    // Si l'allowance est insuffisante, demander une approbation
+    if (currentAllowance < amountInWei) {
+      console.log("Allowance insuffisante. Demande d'approbation...");
+      
+      // Informer l'utilisateur qu'une approbation est nécessaire
+      alert("Vous devez d'abord approuver le contrat à utiliser vos tokens. Une fenêtre de confirmation va s'ouvrir après avoir cliqué sur OK.");
+      
+      try {
+        // Approuver un montant important pour éviter de futures approbations
+        // Utilisation d'un grand nombre mais pas infini pour plus de sécurité
+        const approvalAmount = ethers.parseUnits("1000000", 18); // 1 million de tokens
+        
+        console.log("Envoi de la transaction d'approbation...");
+        const approveTx = await tokenContract.approve(CONTRACTS.STAKING.address, approvalAmount);
+        
+        console.log("Transaction d'approbation envoyée:", approveTx.hash);
+        console.log("En attente de confirmation...");
+        
+        // Attendre que la transaction soit confirmée
+        const approveReceipt = await approveTx.wait();
+        console.log("Approbation confirmée! Transaction hash:", approveReceipt.hash);
+      } catch (approvalError) {
+        console.error("Erreur lors de l'approbation:", approvalError);
+        throw new Error("L'approbation a échoué: " + (approvalError.message || approvalError));
+      }
+    } else {
+      console.log("Allowance suffisante, poursuite de l'investissement");
+    }
+    
+    // 2. Procéder à l'investissement
+    console.log("Connexion au contrat de staking avec le signer");
+    const contractWithSigner = stakingContract.connect(signer);
+    
+    console.log("Préparation de la transaction stake...");
+    console.log("Paramètres:", planId, amountInWei.toString(), tokenAddress);
+    
+    // Utiliser stake au lieu de invest (selon votre ABI)
+    console.log("Envoi de la transaction stake...");
+    const tx = await contractWithSigner.stake(planId, amountInWei, tokenAddress);
+    
+    console.log("Transaction stake envoyée:", tx.hash);
+    console.log("En attente de confirmation...");
+    
+    // Attendre la confirmation de la transaction
+    await tx.wait();
+    console.log("Transaction stake confirmée!");
+    
+    // 3. Rafraîchir les investissements après l'investissement
     try {
-      const signer = await (new ethers.BrowserProvider(window.ethereum as any)).getSigner();
-      const contractWithSigner = stakingContract.connect(signer);
+      console.log("Récupération des investissements mis à jour...");
+      const updatedStakes = await stakingContract.getUserStakes(userAddress);
       
-      // Convertir le montant en BigInt avec 18 décimales
-      const amountInWei = ethers.parseUnits(amount.toString(), 18);
-      
-      // Adresses des tokens (à définir au niveau du contexte)
-      const TOKEN_ADDRESSES = {
-        USDT: "0x55d398326f99059fF775485246999027B3197955", 
-        USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" 
-      };
-      
-      // Trouver l'adresse du token
-      const tokenAddress = token === 'USDT' 
-        ? TOKEN_ADDRESSES.USDT 
-        : TOKEN_ADDRESSES.USDC;
-      
-      // Utiliser stake au lieu de invest (selon votre ABI)
-      const tx = await (contractWithSigner as any).stake(planId, amountInWei, tokenAddress);
-      await tx.wait()
-      
-      // Rafraîchir les investissements après l'investissement
-      const updatedStakes = await stakingContract.getUserStakes(address);
+      // Convertir et mettre à jour les investissements selon votre implémentation actuelle
       const updatedInvestments: Investment[] = updatedStakes
         .filter((stake: ContractStake) => stake.active)
         .map((stake: ContractStake, index: number) => {
@@ -439,20 +506,25 @@ useEffect(() => {
             startDate: new Date(startTime),
             endDate: new Date(endTime),
             lastRewardTime: new Date(Number(stake.lastRewardTime) * 1000),
-            token: stake.token,
+            token: TOKEN_SYMBOLS[stake.token] || stake.token,
             active: stake.active,
             dailyReturn: dailyReturn
           };
         });
       
       setActiveInvestments(updatedInvestments);
-      
-      return true;
-    } catch (error) {
-      console.error('Erreur lors de l\'investissement:', error);
-      return false;
+      console.log("Investissements mis à jour!");
+    } catch (refreshError) {
+      console.error("Erreur lors de la mise à jour des investissements:", refreshError);
+      // On continue quand même car l'investissement a réussi
     }
-  };
+    
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de l\'investissement:', error);
+    throw error; // Relancer l'erreur pour que handleInvest puisse la gérer
+  }
+};
 
   const getTotalReturns = async (): Promise<number> => {
     try {

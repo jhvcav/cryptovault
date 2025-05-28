@@ -16,8 +16,10 @@ import {
   useToast,
   HStack,
   Divider,
-  Box,   // Ajout de Box
-  Flex   // Ajout de Flex
+  Box,
+  Flex,
+  Alert,
+  AlertIcon
 } from '@chakra-ui/react';
 import { useWallet } from '../../contexts/WalletContext';
 import { useInvestment, InvestmentPlan } from '../../contexts/InvestmentContext';
@@ -42,6 +44,8 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
 
   const [amount, setAmount] = useState<string>('');
   const [selectedToken, setSelectedToken] = useState<string>('USDT');
+  const [isInvesting, setIsInvesting] = useState(false);
+  const [investmentError, setInvestmentError] = useState<string | null>(null);
 
   // Calculs des détails de l'investissement
   const amountNum = parseFloat(amount) || 0;
@@ -63,93 +67,84 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
     }
   };
 
-
   const handleTokenChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedToken(e.target.value);
   };
 
   const handleInvest = async () => {
-    if (!plan) return;
-  
-    console.log('Début de handleInvest');
-    console.log('Plan:', plan);
-    console.log('Amount:', amount);
-    console.log('Selected Token:', selectedToken);
-  
+    setIsInvesting(true);
+    setInvestmentError(null);
+    
+    if (!plan) {
+      setInvestmentError("Aucun plan sélectionné");
+      setIsInvesting(false);
+      return;
+    }
+    
     const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      console.log('Montant invalide');
-      toast({
-        title: 'Montant invalide',
-        description: 'Veuillez entrer un montant valide',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-  
-    console.log('Vérification du montant minimum');
-    if (amountNum < plan.minAmount) {
-      console.log(`Montant inférieur au minimum de ${plan.minAmount}`);
-      toast({
-        title: 'Montant insuffisant',
-        description: `Le montant minimum pour ce plan est de ${plan.minAmount} ${selectedToken}`,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-  
-    const tokenBalance = selectedToken === 'USDT' ? balance.usdt : balance.usdc;
-    console.log('Token balance:', tokenBalance);
-    if (amountNum > tokenBalance) {
-      console.log('Solde insuffisant');
-      toast({
-        title: 'Solde insuffisant',
-        description: `Votre solde en ${selectedToken} est insuffisant`,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-  
+    
     try {
-      console.log('Tentative d\'investissement');
-      const success = await onInvest(plan.id, amountNum, selectedToken as 'USDT' | 'USDC');
-      console.log('Résultat de l\'investissement:', success);
-  
-      if (success) {
+      console.log("Début de handleInvest");
+      console.log("Plan:", plan);
+      console.log("Amount:", amountNum);
+      console.log("Selected Token:", selectedToken);
+      
+      // Vérification du montant minimum
+      console.log("Vérification du montant minimum");
+      if (amountNum < plan.minAmount) {
+        setInvestmentError(`Le montant minimum pour ce plan est de ${plan.minAmount} ${selectedToken}`);
+        setIsInvesting(false);
+        return;
+      }
+      
+      // Vérification du solde suffisant
+      console.log("Token balance:", selectedToken === 'USDT' ? balance.usdt : balance.usdc);
+      if (amountNum > (selectedToken === 'USDT' ? balance.usdt : balance.usdc)) {
+        setInvestmentError(`Solde insuffisant en ${selectedToken}`);
+        setIsInvesting(false);
+        return;
+      }
+      
+      console.log("Tentative d'investissement");
+      console.log("handleInvest appelé avec:", { planId: plan.id, amount: amountNum, token: selectedToken });
+      
+      const result = await onInvest(plan.id, amountNum, selectedToken as 'USDT' | 'USDC');
+      console.log("Résultat de l'investissement:", result);
+      
+      if (result) {
+        console.log("Investissement réussi");
+        onClose(); // Fermer le modal
         toast({
-          title: 'Investissement réussi',
-          description: `Vous avez investi ${amountNum} ${selectedToken} dans le plan ${plan.name}`,
-          status: 'success',
+          title: "Investissement réussi",
+          description: `Vous avez investi ${amount} ${selectedToken} dans le plan ${plan.name}.`,
+          status: "success",
           duration: 5000,
           isClosable: true,
         });
-        onClose();
-        setAmount('');
       } else {
-        console.log('Échec de l\'investissement');
-        toast({
-          title: 'Échec de l\'investissement',
-          description: 'Impossible de compléter l\'investissement',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+        console.log("Échec de l'investissement");
+        setInvestmentError("L'investissement a échoué. Veuillez réessayer.");
       }
     } catch (error) {
-      console.error('Erreur durant l\'investissement:', error);
-      toast({
-        title: 'Erreur',
-        description: error instanceof Error ? error.message : 'Une erreur est survenue',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      console.error("Erreur lors de l'investissement:", error);
+      
+      // Messages d'erreur personnalisés en fonction du type d'erreur
+      let errorMessage = "Une erreur s'est produite lors de l'investissement.";
+      
+      if (error.message?.includes("transfer amount exceeds allowance")) {
+        errorMessage = "Autorisation insuffisante pour le transfert de tokens. Veuillez approuver le contrat et réessayer.";
+      } else if (error.message?.includes("insufficient funds")) {
+        errorMessage = "Fonds insuffisants pour effectuer cet investissement.";
+      } else if (error.message?.includes("user rejected")) {
+        errorMessage = "Transaction annulée par l'utilisateur.";
+      } else if (error.reason) {
+        // Si l'erreur contient une raison spécifique du contrat
+        errorMessage = `Erreur: ${error.reason}`;
+      }
+      
+      setInvestmentError(errorMessage);
+    } finally {
+      setIsInvesting(false);
     }
   };
 
@@ -258,10 +253,19 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
                 {selectedToken === 'USDT' ? balance.usdt : balance.usdc} {selectedToken}
               </Text>
             </HStack>
+
+            {/* Affichage des erreurs d'investissement */}
+            {investmentError && (
+              <Alert status="error" variant="solid" borderRadius="md">
+                <AlertIcon />
+                {investmentError}
+              </Alert>
+            )}
+
             <Button
               colorScheme="blue"
               onClick={handleInvest}
-              isLoading={loading}
+              isLoading={isInvesting || loading}
               isDisabled={!amount || parseFloat(amount) <= 0}
             >
               Investir
