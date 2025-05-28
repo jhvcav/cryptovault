@@ -1,136 +1,135 @@
-// useContracts.ts
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { TOKENS } from '../config/tokens';
 import { CONTRACTS } from '../config/contracts';
+
+// Nous supprimons la déclaration qui était ici car elle est maintenant dans ethereum.d.ts
 
 export const useContracts = () => {
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [stakingContract, setStakingContract] = useState<ethers.Contract | null>(null);
-  const [farmingContract, setFarmingContract] = useState<ethers.Contract | null>(null);
+  const [account, setAccount] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  // Ajout d'un flag pour éviter les reconnexions multiples
+  const [hasConnected, setHasConnected] = useState<boolean>(false);
 
-  const initProvider = useCallback(async () => {
+  const connect = useCallback(async () => {
+    // Éviter de se connecter si on est déjà en cours de connexion
+    if (connectionStatus === 'connecting') return false;
+    
     try {
-      // Réinitialiser l'état pour éviter des problèmes de stale data
-      setIsInitialized(false);
+      setConnectionStatus('connecting');
       
       if (!window.ethereum) {
-        throw new Error('MetaMask non détecté');
-      }
-  
-      const browserProvider = new ethers.BrowserProvider(window.ethereum);
-      setProvider(browserProvider);
-  
-      // Vérifier la connexion du wallet
-      const accounts = await browserProvider.listAccounts();
-      if (accounts.length === 0) {
-        console.log('Aucun compte connecté dans MetaMask');
-        return; // Ne pas initialiser les contrats si aucun compte n'est connecté
+        throw new Error("Aucun portefeuille Ethereum détecté. Veuillez installer MetaMask.");
       }
       
-      const walletSigner = await browserProvider.getSigner();
-      setSigner(walletSigner);
+      await (window.ethereum as any).request({ method: 'eth_requestAccounts' });
       
-      // Vérifier les adresses de contrat avant l'initialisation
-      if (!CONTRACTS.STAKING.address || CONTRACTS.STAKING.address === '') {
-        console.error('Adresse du contrat de staking non définie');
-        setError('Configuration des contrats incomplète');
-        return;
-      }
-  
-      // Initialisation du contrat avec le signer connecté
-      const staking = new ethers.Contract(
-        CONTRACTS.STAKING.address, 
-        CONTRACTS.STAKING.abi, 
-        walletSigner
+      // Créer un provider spécifique au navigateur
+      const web3Provider = new ethers.BrowserProvider(window.ethereum as any);
+      setProvider(web3Provider);
+      
+      // Utiliser la bonne méthode pour obtenir un signataire avec ethers.js v6
+      const web3Signer = await web3Provider.getSigner();
+      setSigner(web3Signer);
+      
+      const address = await web3Signer.getAddress();
+      setAccount(address);
+      
+      const contract = new ethers.Contract(
+        CONTRACTS.STAKING.address,
+        CONTRACTS.STAKING.abi,
+        web3Signer
       );
+      setStakingContract(contract);
       
-      // Vérifier que le contrat a bien été initialisé
-      if (!staking || !staking.interface) {
-        throw new Error('Échec de l\'initialisation du contrat de staking');
-      }
-      
-      console.log('Méthodes du contrat de staking:', Object.keys(staking.interface.fragments));
-      
-      setStakingContract(staking);
-      setIsInitialized(true);
-      
-      // Réinitialiser les erreurs précédentes
+      setConnectionStatus('connected');
       setError(null);
+      setHasConnected(true);
+      localStorage.setItem('walletConnected', 'true');
+      
+      return true;
     } catch (err) {
-      console.error('Erreur d\'initialisation du provider:', err);
-      setError(err instanceof Error ? err.message : 'Échec de l\'initialisation');
+      console.error("Erreur lors de la connexion:", err);
+      setError(err instanceof Error ? err.message : "Erreur de connexion");
+      setConnectionStatus('disconnected');
+      return false;
     }
-  }, []);
+  }, [connectionStatus]);
 
+  // Effet pour la connexion initiale - séparé de l'effet de gestion des événements
   useEffect(() => {
-    // Initialiser le provider au chargement du composant
-    initProvider();
-
-    if (window.ethereum) {
-      // Écouter les changements de compte et de réseau
-      const handleAccountsChanged = () => {
-        console.log('Comptes changés, réinitialisation des contrats');
-        initProvider();
-      };
-      
-      const handleChainChanged = () => {
-        console.log('Réseau changé, réinitialisation des contrats');
-        initProvider();
-      };
-      
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      window.ethereum.on('chainChanged', handleChainChanged);
-
-      return () => {
-        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-        window.ethereum.removeListener('chainChanged', handleChainChanged);
-      };
+    // Ne se connecter qu'une seule fois au démarrage
+    const wasConnected = localStorage.getItem('walletConnected') === 'true';
+    if (wasConnected && !hasConnected && window.ethereum) {
+      connect();
     }
-  }, [initProvider]);
+  }, [connect, hasConnected]);
 
-  const getTokenBalance = useCallback(async (tokenSymbol: 'USDT' | 'USDC', userAddress: string): Promise<string> => {
-    try {
-      if (!window.ethereum) throw new Error('MetaMask non détecté');
-      if (!provider) throw new Error('Provider non initialisé');
-      
-      const token = TOKENS[tokenSymbol];
-      
-      // Vérifier que l'adresse du token est valide
-      if (!token || !token.address) {
-        throw new Error(`Adresse du token ${tokenSymbol} non définie`);
+  // Effet pour gérer les événements de changement de compte et de chaîne
+  useEffect(() => {
+    if (!window.ethereum) return;
+    
+    const handleAccountsChanged = async (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setConnectionStatus('disconnected');
+        setAccount(null);
+        setSigner(null);
+        setStakingContract(null);
+        localStorage.removeItem('walletConnected');
+      } else if (accounts[0] !== account) {
+        // Ne mettre à jour le signer que si le provider existe déjà
+        if (provider) {
+          try {
+            // Utiliser la bonne méthode pour obtenir un signataire dans ethers.js v6
+            const web3Provider = provider as ethers.BrowserProvider;
+            const newSigner = await web3Provider.getSigner();
+            setSigner(newSigner);
+            setAccount(accounts[0]);
+            
+            const contract = new ethers.Contract(
+              CONTRACTS.STAKING.address,
+              CONTRACTS.STAKING.abi,
+              newSigner
+            );
+            setStakingContract(contract);
+            setConnectionStatus('connected');
+            localStorage.setItem('walletConnected', 'true');
+          } catch (error) {
+            console.error("Erreur lors du changement de compte:", error);
+          }
+        }
       }
-      
-      const tokenContract = new ethers.Contract(
-        token.address,
-        token.abi,
-        provider
-      );
-      
-      const balance = await tokenContract.balanceOf(userAddress);
-      return ethers.formatUnits(balance, token.decimals);
-    } catch (err) {
-      console.error(`Erreur lors de la récupération du solde ${tokenSymbol}:`, err);
-      // Retourner "0" au lieu de propager l'erreur pour éviter de bloquer l'interface
-      return "0";
-    }
-  }, [provider]);
-
-  const isContractReady = useCallback((contract: ethers.Contract | null): boolean => {
-    return contract !== null && provider !== null && signer !== null && isInitialized;
-  }, [provider, signer, isInitialized]);
+    };
+    
+    const handleChainChanged = () => {
+      window.location.reload();
+    };
+    
+    (window.ethereum as any).on('accountsChanged', handleAccountsChanged);
+    (window.ethereum as any).on('chainChanged', handleChainChanged);
+    
+    // Ne pas appeler connect() ici - c'était la source de la boucle
+    
+    return () => {
+      if (window.ethereum) {
+        (window.ethereum as any).removeListener('accountsChanged', handleAccountsChanged);
+        (window.ethereum as any).removeListener('chainChanged', handleChainChanged);
+      }
+    };
+  }, [provider, account]); // On doit garder account ici pour la comparaison
 
   return {
     provider,
     signer,
     stakingContract,
-    farmingContract,
+    account,
+    connectionStatus,
     error,
-    getTokenBalance,
-    isContractReady,
-    isInitialized
+    connect
   };
 };
+
+export default useContracts;

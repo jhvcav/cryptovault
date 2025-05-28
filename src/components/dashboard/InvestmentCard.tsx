@@ -51,7 +51,7 @@ const InvestmentCard = ({
 
   const daysRemaining = calculateDaysRemaining();
   const progressPercentage = calculateProgress();
-  const canWithdraw = calculatedReturns >= 0;
+  const canWithdraw = calculatedReturns >= 1;
 
   return (
     <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 shadow-lg">
@@ -143,7 +143,7 @@ const InvestmentCard = ({
             ? 'Traitement en cours...'
             : canWithdraw
               ? `Retirer ${calculatedReturns.toFixed(2)} ${investment.token}`
-              : `Retrait (min. 0 ${investment.token})`
+              : `Retrait (min. 1 ${investment.token})`
           }
         </button>
       </div>

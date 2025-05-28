@@ -1,9 +1,9 @@
-import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { ChakraProvider } from '@chakra-ui/react';
+import { ChakraProvider } from '@chakra-ui/react'; // Ajoutez cette importation
 import { WalletProvider } from './contexts/WalletContext';
 import { InvestmentProvider } from './contexts/InvestmentContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+
 // Pages
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
@@ -30,8 +30,8 @@ function App() {
                   <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/invest" element={<InvestPage />} />
-                    <Route path="/roadmap" element={<RoadmapPage />} /> {/* ligne ajoutée */}
-                    <Route path="/strategy-management" element={<StrategyManagement />} /> {/* ligne ajoutée */}
+                    <Route path="/roadmap" element={<RoadmapPage />} />
+                    <Route path="/strategy-management" element={<StrategyManagement />} />
                     <Route
                       path="/dashboard"
                       element={
