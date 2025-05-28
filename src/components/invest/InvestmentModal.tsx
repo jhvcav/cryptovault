@@ -172,7 +172,7 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
               APR: {plan.apr}% | Durée: {plan.duration} jours
             </Text>
             <Text>
-              Montant minimum: {plan.minAmount} tokens
+              Montant minimum: {plan.minAmount} $
             </Text>
             <Divider />
   

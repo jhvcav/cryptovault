@@ -64,7 +64,7 @@ const InvestPage = () => {
     <div className="py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-white mb-4">Plans d'Investissement</h1>
+          <h1 className="text-3xl font-bold text-white mb-4">Plans d'Investissement Lp Farming</h1>
           <p className="text-slate-400 max-w-2xl mx-auto">
             Choisissez le plan d'investissement qui correspond le mieux à votre stratégie. Chaque plan offre différents taux APR et périodes de blocage.
           </p>

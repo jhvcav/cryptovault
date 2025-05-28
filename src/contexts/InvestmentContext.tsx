@@ -100,7 +100,7 @@ useEffect(() => {
           description: "Plan d'entrée idéal pour les nouveaux investisseurs. Offre un équilibre entre rendement et durée de blocage courte.",
           apr: 12,
           duration: 30,
-          minAmount: 100,
+          minAmount: 150,
           active: true
         },
         {
@@ -109,7 +109,7 @@ useEffect(() => {
           description: "Plan intermédiaire avec un meilleur taux APR. Recommandé pour les investisseurs qui souhaitent un rendement stable sur une période moyenne.",
           apr: 18,
           duration: 60,
-          minAmount: 500,
+          minAmount: 150,
           active: true
         },
         {
@@ -118,7 +118,7 @@ useEffect(() => {
           description: "Plan avancé offrant un APR élevé sur une période plus longue. Idéal pour maximiser les rendements à moyen terme.",
           apr: 24,
           duration: 90,
-          minAmount: 1000,
+          minAmount: 150,
           active: true
         }
       ];
@@ -285,7 +285,7 @@ useEffect(() => {
           description: "Plan d'entrée idéal pour les nouveaux investisseurs. Offre un équilibre entre rendement et durée de blocage courte.",
           apr: 12,
           duration: 30,
-          minAmount: 100,
+          minAmount: 150,
           active: true
         },
         {
@@ -294,7 +294,7 @@ useEffect(() => {
           description: "Plan intermédiaire avec un meilleur taux APR. Recommandé pour les investisseurs qui souhaitent un rendement stable sur une période moyenne.",
           apr: 18,
           duration: 60,
-          minAmount: 500,
+          minAmount: 150,
           active: true
         },
         {
@@ -303,7 +303,7 @@ useEffect(() => {
           description: "Plan avancé offrant un APR élevé sur une période plus longue. Idéal pour maximiser les rendements à moyen terme.",
           apr: 24,
           duration: 90,
-          minAmount: 1000,
+          minAmount: 150,
           active: true
         }
       ];
