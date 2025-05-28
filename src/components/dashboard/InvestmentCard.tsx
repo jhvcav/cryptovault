@@ -7,7 +7,9 @@ interface InvestmentCardProps {
   plan: InvestmentPlan;
   calculatedReturns: number;
   onWithdraw: (investmentId: string) => void;
+  onWithdrawCapital: (investmentId: string) => void; // Nouvelle prop
   isWithdrawing: boolean;
+  isWithdrawingCapital: boolean; // Nouvelle prop
 }
 
 const InvestmentCard = ({ 
@@ -15,7 +17,9 @@ const InvestmentCard = ({
   plan, 
   calculatedReturns, 
   onWithdraw, 
-  isWithdrawing 
+  onWithdrawCapital, // Nouvelle prop
+  isWithdrawing,
+  isWithdrawingCapital // Nouvelle prop
 }: InvestmentCardProps) => {
   // Formater les dates
   const formatDate = (date: Date) => {
@@ -49,9 +53,17 @@ const InvestmentCard = ({
     return Math.floor((current / total) * 100);
   };
 
+  // Vérifier si la période de blocage est terminée
+  const isLockPeriodOver = () => {
+    const now = new Date();
+    const endDate = new Date(investment.endDate);
+    return now >= endDate;
+  };
+
   const daysRemaining = calculateDaysRemaining();
   const progressPercentage = calculateProgress();
   const canWithdraw = calculatedReturns >= 0;
+  const lockPeriodOver = isLockPeriodOver();
 
   return (
     <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 shadow-lg">
@@ -129,23 +141,48 @@ const InvestmentCard = ({
           </div>
         </div>
         
-        {/* Bouton de retrait */}
-        <button
-          onClick={() => onWithdraw(investment.id)}
-          disabled={!canWithdraw || isWithdrawing}
-          className={`w-full py-2 rounded-lg font-medium transition-all duration-200 ${
-            canWithdraw
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
-              : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-          }`}
-        >
-          {isWithdrawing
-            ? 'Traitement en cours...'
-            : canWithdraw
-              ? `Retirer ${calculatedReturns.toFixed(2)} ${investment.token}`
-              : `Retrait (min. 0 ${investment.token})`
-          }
-        </button>
+        {/* Boutons de retrait */}
+        <div className="space-y-2">
+          {/* Bouton de retrait des rendements */}
+          <button
+            onClick={() => onWithdraw(investment.id)}
+            disabled={!canWithdraw || isWithdrawing}
+            className={`w-full py-2 rounded-lg font-medium transition-all duration-200 ${
+              canWithdraw
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
+                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {isWithdrawing
+              ? 'Traitement en cours...'
+              : canWithdraw
+                ? `Retirer les intérêts (${calculatedReturns.toFixed(2)} ${investment.token})`
+                : `Retrait d'intérêts non disponible`
+            }
+          </button>
+          
+          {/* Bouton de retrait du capital - affiché uniquement si la période de blocage est terminée */}
+          {lockPeriodOver ? (
+            <button
+              onClick={() => onWithdrawCapital(investment.id)}
+              disabled={isWithdrawingCapital}
+              className={`w-full py-2 rounded-lg font-medium transition-all duration-200 
+                ${isWithdrawingCapital
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white'
+                }`}
+            >
+              {isWithdrawingCapital
+                ? 'Traitement en cours...'
+                : `Retirer le capital (${investment.amount.toFixed(2)} ${investment.token})`
+              }
+            </button>
+          ) : (
+            <div className="text-xs text-slate-400 text-center mt-1">
+              Le retrait du capital sera disponible le {formatDate(investment.endDate)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

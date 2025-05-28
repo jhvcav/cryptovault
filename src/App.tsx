@@ -11,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import InvestPage from './pages/InvestPage';
 import RoadmapPage from './pages/RoadmapPage';
 import StrategyManagement from './pages/StrategyManagement';
+import InvestmentCalculator from './pages/InvestmentCalculator';
 // Components
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -32,6 +33,7 @@ function App() {
                     <Route path="/invest" element={<InvestPage />} />
                     <Route path="/roadmap" element={<RoadmapPage />} />
                     <Route path="/strategy-management" element={<StrategyManagement />} />
+                    <Route path="calculator" element={<InvestmentCalculator />} />
                     <Route
                       path="/dashboard"
                       element={

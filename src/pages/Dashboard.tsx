@@ -20,11 +20,13 @@ const Dashboard = () => {
     plans, 
     calculateReturns, 
     withdrawReturns, 
+    withdrawCapital,
     getTotalInvested, 
     getTotalReturns 
   } = useInvestment();
   
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [withdrawingCapitalId, setWithdrawingCapitalId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [totalReturnsValue, setTotalReturnsValue] = useState(0);
   const [calculatedInvestments, setCalculatedInvestments] = useState<Array<{
@@ -34,10 +36,83 @@ const Dashboard = () => {
   }>>([]);
   
   // Données du graphique pour démonstration
-  const [chartData] = useState({
-    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil'],
-    values: [0.5, 1, 1.5, 2, 2.5, 3, 3.5]
-  });
+  const [chartData, setChartData] = useState({
+  labels: [],
+  values: []
+});
+
+// Format pour afficher les dates de semaine
+const formatWeekLabel = (date) => {
+  // Format: "DD MMM" (ex: "15 Jan")
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+};
+
+// Fonction utilitaire pour ajouter des jours à une date
+const addDays = (date, days) => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+// Ajoutez cette fonction pour générer des données de graphique hebdomadaires
+useEffect(() => {
+  if (calculatedInvestments.length === 0) {
+    // Pas d'investissements, définir des données vides ou un message
+    setChartData({
+      labels: ['Aucune donnée'],
+      values: [0]
+    });
+    return;
+  }
+
+  // Trier les investissements par date de début
+  const sortedInvestments = [...calculatedInvestments].sort((a, b) => 
+    new Date(a.investment.startDate).getTime() - new Date(b.investment.startDate).getTime()
+  );
+
+  // Trouver la date du premier investissement
+  const firstInvestmentDate = new Date(sortedInvestments[0].investment.startDate);
+  const currentDate = new Date();
+  
+  const labels = [];
+  const values = [];
+  
+  // Créer un tableau de dates hebdomadaires entre le premier investissement et aujourd'hui
+  let currentWeek = new Date(firstInvestmentDate);
+  
+  while (currentWeek <= currentDate) {
+    // Format de la semaine
+    const weekLabel = formatWeekLabel(currentWeek);
+    labels.push(weekLabel);
+    
+    // Calculer la valeur totale des investissements à cette date
+    const totalValue = sortedInvestments.reduce((sum, item) => {
+      const investmentDate = new Date(item.investment.startDate);
+      
+      // Inclure uniquement les investissements qui ont commencé avant ou pendant cette semaine
+      if (investmentDate <= currentWeek) {
+        // Calculer les intérêts accumulés jusqu'à cette date
+        const timeDiff = Math.min(
+          currentWeek.getTime() - investmentDate.getTime(),
+          currentDate.getTime() - investmentDate.getTime()
+        );
+        const daysActive = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const dailyReturn = item.investment.dailyReturn;
+        
+        // Ajouter le montant initial + les rendements estimés
+        return sum + item.investment.amount + (dailyReturn * daysActive);
+      }
+      return sum;
+    }, 0);
+    
+    values.push(parseFloat(totalValue.toFixed(2)));
+    
+    // Passer à la semaine suivante (ajouter 7 jours)
+    currentWeek = addDays(currentWeek, 7);
+  }
+  
+  setChartData({ labels, values });
+}, [calculatedInvestments]);
   
   // Calculer les rendements totaux
   useEffect(() => {
@@ -90,6 +165,21 @@ const Dashboard = () => {
       console.error('Erreur de retrait:', error);
     } finally {
       setWithdrawingId(null);
+    }
+  };
+  
+  // Gérer le retrait du capital
+  const handleWithdrawCapital = async (investmentId: string) => {
+    setWithdrawingCapitalId(investmentId);
+    try {
+      await withdrawCapital(investmentId);
+      
+      // Rafraîchir les calculs après le retrait
+      await handleRefresh();
+    } catch (error) {
+      console.error('Erreur de retrait du capital:', error);
+    } finally {
+      setWithdrawingCapitalId(null);
     }
   };
   
@@ -215,7 +305,9 @@ const Dashboard = () => {
                       plan={plan}
                       calculatedReturns={returns}
                       onWithdraw={handleWithdraw}
+                      onWithdrawCapital={handleWithdrawCapital}
                       isWithdrawing={withdrawingId === investment.id}
+                      isWithdrawingCapital={withdrawingCapitalId === investment.id}
                     />
                   ))}
                 </div>
@@ -237,8 +329,11 @@ const Dashboard = () => {
                     <span className="text-white">{totalInvested.toFixed(2)} USDT/USDC</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }}></div>
-                  </div>
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full" 
+                    style={{ width: totalInvested > 0 ? '100%' : '0%' }}
+                  ></div>
+                </div>
                 </div>
                 
                 <div>

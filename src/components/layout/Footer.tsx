@@ -42,7 +42,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/invest" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/calculator" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Calculateur d'Investissement
                 </Link>
               </li>

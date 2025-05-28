@@ -55,6 +55,7 @@ interface InvestmentContextType {
   plans: InvestmentPlan[];
   calculateReturns: (stakeId: number) => Promise<number>;
   withdrawReturns: (investmentId: string) => Promise<void>;
+  withdrawCapital: (investmentId: string) => Promise<void>; // Ajoutez cette ligne
   getTotalInvested: () => number;
   getTotalReturns: () => Promise<number>;
   invest: (planId: number, amount: number, token: 'USDT' | 'USDC') => Promise<boolean>;
@@ -465,6 +466,43 @@ useEffect(() => {
     }
   };
 
+  const withdrawCapital = async (investmentId: string): Promise<void> => {
+  if (!stakingContract) throw new Error('Contract not initialized');
+  
+  const stakeId = parseInt(investmentId);
+  if (isNaN(stakeId)) throw new Error('ID d\'investissement invalide');
+  
+  try {
+    // Vérifier si la période de blocage est terminée
+    const investment = activeInvestments.find(inv => inv.id === investmentId);
+    if (!investment) {
+      throw new Error('Investissement non trouvé');
+    }
+    
+    const now = new Date();
+    const endDate = new Date(investment.endDate);
+    
+    if (now < endDate) {
+      throw new Error('La période de blocage n\'est pas encore terminée');
+    }
+    
+    const signer = await (new ethers.BrowserProvider(window.ethereum as any)).getSigner();
+    const contractWithSigner = stakingContract.connect(signer);
+    
+    // Appeler la fonction endStake du contrat
+    const tx = await contractWithSigner.endStake(stakeId);
+    await tx.wait();
+    
+    // Mettre à jour la liste des investissements après le retrait
+    setActiveInvestments(prevInvestments => 
+      prevInvestments.filter(inv => inv.id !== investmentId)
+    );
+  } catch (error) {
+    console.error('Erreur lors du retrait du capital:', error);
+    throw error;
+  }
+};
+
   const value = {
     activeInvestments,
     plans,
@@ -473,6 +511,7 @@ useEffect(() => {
     getTotalInvested,
     getTotalReturns,
     invest,
+    withdrawCapital,
     stakingContract
   };
 
