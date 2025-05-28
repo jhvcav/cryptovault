@@ -17,92 +17,95 @@ const RoadmapVisual = () => {
   const phases: Phase[] = [
     {
       id: 1,
-      period: "MOIS 1-3",
+      period: "MOIS 1-5",
       title: "FONDATIONS",
       color: "#4F46E5", // Indigo
       icon: "🏗️",
       keyPoints: [
-        "Diversification des stratégies DeFi",
+        "Développement et test de la plateforme",
+        "Développement et test de la 1ère stratégie DeFi",
+        "Conception Whitepaper",
         "Conception du programme de fidélité",
-        "Développement du plan d'affiliation"
       ],
       milestones: [
-        "Intégration de 5 protocoles DeFi",
+        "Plateforme conçu et opérationnelle",
+        "Intégration de 2 stratégies DeFi",
         "Structure de fidélité finalisée",
-        "Système d'affiliation conçu"
+        "Whitepaper finalisé",
       ]
     },
     {
       id: 2,
-      period: "MOIS 3-4",
-      title: "LANCEMENT PROGRAMMES",
+      period: "MOIS 5-6",
+      title: "LANCEMENT INVESTISSEMENTS",
       color: "#10B981", // Emerald
       icon: "🚀",
       keyPoints: [
-        "Lancement du programme de fidélité",
-        "Déploiement du programme d'affiliation"
+        "Déploiement des 1er plans de stratégie à la communauté",
+        "Diversification des stratégies DeFi",
+        "Développement du plan d'affiliation"
       ],
       milestones: [
         "Programme fidélité 100% opérationnel",
-        "Premiers affiliés VIP recrutés",
-        "Dashboard d'affiliation déployé"
+        "Premiers affiliés VIP investisseurs",
+        "Premier retour sur investissements",
       ]
     },
     {
       id: 3,
-      period: "MOIS 4-7",
-      title: "DÉVELOPPEMENT TOKEN",
+      period: "MOIS 6-7",
+      title: "DÉVELOPPEMENT AFFILIATION",
       color: "#F59E0B", // Amber
       icon: "💎",
       keyPoints: [
-        "Conception et développement du token",
-        "Optimisation du programme d'affiliation"
+        "Optimisation du programme d'affiliation",
+        "Lancement du programme de fidélité"
       ],
       milestones: [
-        "Whitepaper finalisé",
-        "Smart contract audité",
+        "Système d'affiliation conçu",
+        "Dashboard d'affiliation déployé",
         "Affiliés préparés pour intégration token"
       ]
     },
     {
       id: 4,
       period: "MOIS 7-9",
-      title: "TOKEN & PARTENARIATS",
+      title: "TOKEN & COMMUNAUTÉ",
       color: "#EC4899", // Pink
       icon: "🤝",
       keyPoints: [
-        "Lancement du token",
-        "Premiers partenariats stratégiques",
-        "Intégration du token dans l'affiliation"
+        "Conception et développement du token",
+        "Intégration du token dans la communauté",
+        "Retour de la communauté sur les rendements"
       ],
       milestones: [
-        "Token listé sur 2+ exchanges",
-        "5 partenariats actifs",
-        "Récompenses en token pour affiliés"
+        "Validation satisfaction de la communauté",
+        "Récompenses en token pour la communauté",
       ]
     },
     {
       id: 5,
       period: "MOIS 9-12",
-      title: "EXPANSION & OPTIMISATION",
+      title: "OPTIMISATION & AUDIT",
       color: "#8B5CF6", // Violet
       icon: "📈",
       keyPoints: [
-        "Expansion des partenariats",
+        "Crétaion et lancement du token du projet",
         "Optimisation de toutes les stratégies",
-        "Affiliation multi-niveaux avancée"
+        "Affiliation multi-niveaux avancée",
+        "Audit Smart contrat"
       ],
       milestones: [
-        "Écosystème de 15+ partenaires",
         "Audit complet et optimisations",
-        "Programme d'affiliation multi-niveaux"
+        "Programme d'affiliation multi-niveaux",
+        "Smart contract audité",
       ]
     }
   ];
 
   return (
     <div className="flex flex-col items-center w-full bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl shadow-md">
-      <h1 className="text-3xl font-bold text-white mb-6">Roadmap - Plateforme d'Investissement</h1>
+      <h1 className="text-3xl font-bold text-white mb-6">Roadmap - Projet RMR-M 2025</h1>
       
       {/* Timeline Visual */}
       <div className="relative w-full flex justify-between items-center mb-8">
