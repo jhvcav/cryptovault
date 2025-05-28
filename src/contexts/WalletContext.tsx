@@ -1,6 +1,19 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useContracts } from '../hooks/useContracts';
+
+// Adresses des tokens (ajustez-les selon vos besoins)
+const TOKEN_ADDRESSES = {
+  USDT: "0x55d398326f99059fF775485246999027B3197955",
+  USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+};
+
+// ABI simplifié pour les tokens ERC20
+const erc20ABI = [
+  "function balanceOf(address account) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)"
+];
 
 interface WalletContextType {
   address: string | null;
@@ -29,25 +42,64 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState<number | null>(null);
   
-  const { getTokenBalance } = useContracts();
+  // Utilisation du provider de useContracts
+  const { provider } = useContracts();
 
-  const updateBalances = async (userAddress: string) => {
+  // Fonction pour récupérer le solde d'un token
+  const getTokenBalance = async (tokenSymbol: string, userAddress: string) => {
+    if (!provider || !userAddress) return "0";
+    
     try {
-      if (!userAddress) return;
+      const tokenAddress = tokenSymbol === 'USDT' 
+        ? TOKEN_ADDRESSES.USDT 
+        : TOKEN_ADDRESSES.USDC;
+      
+      // Créer un contrat pour le token
+      const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, provider);
+      
+      // Récupérer la balance et les décimales
+      const [balance, decimals] = await Promise.all([
+        tokenContract.balanceOf(userAddress),
+        tokenContract.decimals()
+      ]);
+      
+      // Formater la balance
+      return ethers.formatUnits(balance, decimals);
+    } catch (error) {
+      console.error(`Erreur lors de la récupération du solde ${tokenSymbol}:`, error);
+      return "0";
+    }
+  };
+
+  // Utiliser useCallback pour updateBalances pour éviter les recréations de fonction
+  const updateBalances = useCallback(async (userAddress: string) => {
+    try {
+      if (!userAddress || !provider) return;
+      
+      console.log("Mise à jour des soldes pour l'adresse:", userAddress);
       
       const [usdtBalance, usdcBalance] = await Promise.all([
         getTokenBalance('USDT', userAddress),
         getTokenBalance('USDC', userAddress)
       ]);
 
-      setBalance({
-        usdt: parseFloat(usdtBalance),
-        usdc: parseFloat(usdcBalance)
-      });
+      // Convertir les soldes en nombres
+      const newUsdt = parseFloat(usdtBalance);
+      const newUsdc = parseFloat(usdcBalance);
+      
+      console.log("Soldes récupérés - USDT:", usdtBalance, "USDC:", usdcBalance);
+      
+      // Vérifier si les soldes ont changé avant de mettre à jour l'état
+      if (newUsdt !== balance.usdt || newUsdc !== balance.usdc) {
+        setBalance({
+          usdt: newUsdt,
+          usdc: newUsdc
+        });
+      }
     } catch (error) {
       console.error('Erreur lors de la mise à jour des soldes:', error);
     }
-  };
+  }, [provider, balance.usdt, balance.usdc, getTokenBalance]);
 
   const connectWallet = async () => {
     if (!window.ethereum) {
@@ -57,7 +109,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
 
     setIsConnecting(true);
     try {
-      const accounts = await window.ethereum.request({
+      const accounts = await (window.ethereum as any).request({
         method: 'eth_requestAccounts'
       });
 
@@ -87,14 +139,14 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     if (!window.ethereum) return;
 
     try {
-      await window.ethereum.request({
+      await (window.ethereum as any).request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: `0x${targetChainId.toString(16)}` }],
       });
     } catch (error: any) {
       if (error.code === 4902) {
         try {
-          await window.ethereum.request({
+          await (window.ethereum as any).request({
             method: 'wallet_addEthereumChain',
             params: [
               {
@@ -118,10 +170,11 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     }
   };
 
+  // Effet pour la connexion initiale
   useEffect(() => {
     const wasConnected = localStorage.getItem('walletConnected') === 'true';
     if (wasConnected && window.ethereum) {
-      window.ethereum.request({ method: 'eth_accounts' })
+      (window.ethereum as any).request({ method: 'eth_accounts' })
         .then((accounts: string[]) => {
           if (accounts.length > 0) {
             const userAddress = accounts[0];
@@ -132,9 +185,12 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
         })
         .catch(console.error);
     }
-  }, []);
+  }, [updateBalances]);
 
+  // Définir le type pour ethereum provider  
+  // Effet pour gérer les changements de compte et de chaîne
   useEffect(() => {
+    // Vérifier si window.ethereum existe
     if (!window.ethereum) return;
 
     const handleAccountsChanged = async (accounts: string[]) => {
@@ -152,30 +208,45 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
       setChainId(parseInt(chainId, 16));
     };
 
-    window.ethereum.request({ method: 'eth_chainId' })
+    // Utiliser une assertion de type plus agressive
+    (window.ethereum as any).request({ method: 'eth_chainId' })
       .then((chainId: string) => setChainId(parseInt(chainId, 16)))
       .catch(console.error);
 
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
+    // Utiliser une assertion de type plus agressive
+    (window.ethereum as any).on('accountsChanged', handleAccountsChanged);
+    (window.ethereum as any).on('chainChanged', handleChainChanged);
 
     return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum.removeListener('chainChanged', handleChainChanged);
+      // Utiliser une assertion de type plus agressive
+      (window.ethereum as any).removeListener('accountsChanged', handleAccountsChanged);
+      (window.ethereum as any).removeListener('chainChanged', handleChainChanged);
     };
-  }, []);
+  }, [updateBalances]);
 
+  // Un seul useEffect pour la mise à jour des soldes
   useEffect(() => {
-    if (isConnected && address) {
-      updateBalances(address);
-      
-      const interval = setInterval(() => {
+    let isMounted = true;
+    
+    // N'exécuter que si connecté avec une adresse
+    if (!isConnected || !address) return;
+    
+    // Mise à jour initiale
+    updateBalances(address);
+    
+    // Puis créer un intervalle pour les mises à jour périodiques
+    const interval = setInterval(() => {
+      if (isMounted) {
         updateBalances(address);
-      }, 10000); // Mettre à jour les soldes toutes les 10 secondes
-
-      return () => clearInterval(interval);
-    }
-  }, [isConnected, address]);
+      }
+    }, 30000); // Toutes les 30 secondes
+    
+    // Nettoyer l'intervalle lors du démontage
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isConnected, address, updateBalances]);
 
   const value = {
     address,

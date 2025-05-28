@@ -1,3 +1,4 @@
+// useContracts.ts
 import { useEffect, useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { TOKENS } from '../config/tokens';
@@ -9,29 +10,56 @@ export const useContracts = () => {
   const [stakingContract, setStakingContract] = useState<ethers.Contract | null>(null);
   const [farmingContract, setFarmingContract] = useState<ethers.Contract | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const initProvider = useCallback(async () => {
     try {
+      // Réinitialiser l'état pour éviter des problèmes de stale data
+      setIsInitialized(false);
+      
       if (!window.ethereum) {
         throw new Error('MetaMask non détecté');
       }
   
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      setProvider(provider);
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      setProvider(browserProvider);
   
-      const signer = await provider.getSigner();
-      setSigner(signer);
+      // Vérifier la connexion du wallet
+      const accounts = await browserProvider.listAccounts();
+      if (accounts.length === 0) {
+        console.log('Aucun compte connecté dans MetaMask');
+        return; // Ne pas initialiser les contrats si aucun compte n'est connecté
+      }
+      
+      const walletSigner = await browserProvider.getSigner();
+      setSigner(walletSigner);
+      
+      // Vérifier les adresses de contrat avant l'initialisation
+      if (!CONTRACTS.STAKING.address || CONTRACTS.STAKING.address === '') {
+        console.error('Adresse du contrat de staking non définie');
+        setError('Configuration des contrats incomplète');
+        return;
+      }
   
-      // Initialisation du contrat
+      // Initialisation du contrat avec le signer connecté
       const staking = new ethers.Contract(
         CONTRACTS.STAKING.address, 
         CONTRACTS.STAKING.abi, 
-        signer
+        walletSigner
       );
-  
-      console.log('Méthodes du contrat de staking:', Object.keys(staking));
+      
+      // Vérifier que le contrat a bien été initialisé
+      if (!staking || !staking.interface) {
+        throw new Error('Échec de l\'initialisation du contrat de staking');
+      }
+      
+      console.log('Méthodes du contrat de staking:', Object.keys(staking.interface.fragments));
       
       setStakingContract(staking);
+      setIsInitialized(true);
+      
+      // Réinitialiser les erreurs précédentes
+      setError(null);
     } catch (err) {
       console.error('Erreur d\'initialisation du provider:', err);
       setError(err instanceof Error ? err.message : 'Échec de l\'initialisation');
@@ -39,15 +67,27 @@ export const useContracts = () => {
   }, []);
 
   useEffect(() => {
+    // Initialiser le provider au chargement du composant
     initProvider();
 
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', initProvider);
-      window.ethereum.on('chainChanged', initProvider);
+      // Écouter les changements de compte et de réseau
+      const handleAccountsChanged = () => {
+        console.log('Comptes changés, réinitialisation des contrats');
+        initProvider();
+      };
+      
+      const handleChainChanged = () => {
+        console.log('Réseau changé, réinitialisation des contrats');
+        initProvider();
+      };
+      
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on('chainChanged', handleChainChanged);
 
       return () => {
-        window.ethereum.removeListener('accountsChanged', initProvider);
-        window.ethereum.removeListener('chainChanged', initProvider);
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
       };
     }
   }, [initProvider]);
@@ -58,6 +98,12 @@ export const useContracts = () => {
       if (!provider) throw new Error('Provider non initialisé');
       
       const token = TOKENS[tokenSymbol];
+      
+      // Vérifier que l'adresse du token est valide
+      if (!token || !token.address) {
+        throw new Error(`Adresse du token ${tokenSymbol} non définie`);
+      }
+      
       const tokenContract = new ethers.Contract(
         token.address,
         token.abi,
@@ -67,14 +113,15 @@ export const useContracts = () => {
       const balance = await tokenContract.balanceOf(userAddress);
       return ethers.formatUnits(balance, token.decimals);
     } catch (err) {
-      console.error('Erreur lors de la récupération du solde:', err);
-      throw err;
+      console.error(`Erreur lors de la récupération du solde ${tokenSymbol}:`, err);
+      // Retourner "0" au lieu de propager l'erreur pour éviter de bloquer l'interface
+      return "0";
     }
   }, [provider]);
 
   const isContractReady = useCallback((contract: ethers.Contract | null): boolean => {
-    return contract !== null && provider !== null && signer !== null;
-  }, [provider, signer]);
+    return contract !== null && provider !== null && signer !== null && isInitialized;
+  }, [provider, signer, isInitialized]);
 
   return {
     provider,
@@ -83,6 +130,7 @@ export const useContracts = () => {
     farmingContract,
     error,
     getTokenBalance,
-    isContractReady
+    isContractReady,
+    isInitialized
   };
 };

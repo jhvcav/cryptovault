@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import InvestPage from './pages/InvestPage';
 import RoadmapPage from './pages/RoadmapPage';
+import StrategyManagement from './pages/StrategyManagement';
+// Components
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ProtectedRoute from './components/utils/ProtectedRoute';
@@ -28,7 +30,8 @@ function App() {
                   <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/invest" element={<InvestPage />} />
-                    <Route path="/roadmap" element={<RoadmapPage />} /> {/* Ajoutez cette ligne */}
+                    <Route path="/roadmap" element={<RoadmapPage />} /> {/* ligne ajoutée */}
+                    <Route path="/strategy-management" element={<StrategyManagement />} /> {/* ligne ajoutée */}
                     <Route
                       path="/dashboard"
                       element={

@@ -26,6 +26,7 @@ const Dashboard = () => {
   
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [totalReturnsValue, setTotalReturnsValue] = useState(0);
   const [calculatedInvestments, setCalculatedInvestments] = useState<Array<{
     investment: typeof activeInvestments[0];
     plan: typeof plans[0];
@@ -35,17 +36,46 @@ const Dashboard = () => {
   // Données du graphique pour démonstration
   const [chartData] = useState({
     labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil'],
-    values: [12.5, 18.2, 21.5, 25.8, 28.3, 35.1, 42.6]
+    values: [0.5, 1, 1.5, 2, 2.5, 3, 3.5]
   });
+  
+  // Calculer les rendements totaux
+  useEffect(() => {
+    const fetchTotalReturns = async () => {
+      const total = await getTotalReturns();
+      setTotalReturnsValue(total);
+    };
+    fetchTotalReturns();
+  }, [getTotalReturns]);
   
   // Traiter les investissements et calculer les rendements actuels
   useEffect(() => {
-    const processed = activeInvestments.map(investment => {
-      const plan = plans.find(p => p.id === investment.planId) || plans[0];
-      const returns = calculateReturns(investment);
-      return { investment, plan, returns };
-    });
-    setCalculatedInvestments(processed);
+    const calculateAllReturns = async () => {
+      if (!activeInvestments.length || !plans.length) return;
+      
+      try {
+        const processed = await Promise.all(activeInvestments.map(async (investment) => {
+          const plan = plans.find(p => p.id === investment.planId);
+          if (!plan) {
+            console.error(`Plan non trouvé pour l'investissement ${investment.id}`);
+            return null;
+          }
+          
+          // Utiliser investment.id comme identifiant, qui est une chaîne
+          const stakeId = parseInt(investment.id);
+          const returns = await calculateReturns(stakeId);
+          
+          return { investment, plan, returns };
+        }));
+        
+        // Filtrer les valeurs nulles
+        setCalculatedInvestments(processed.filter(Boolean));
+      } catch (error) {
+        console.error('Erreur dans le calcul des rendements:', error);
+      }
+    };
+    
+    calculateAllReturns();
   }, [activeInvestments, plans, calculateReturns]);
   
   // Gérer le retrait des rendements
@@ -53,17 +83,9 @@ const Dashboard = () => {
     setWithdrawingId(investmentId);
     try {
       await withdrawReturns(investmentId);
+      
       // Rafraîchir les calculs après le retrait
-      const updatedCalculations = calculatedInvestments.map(item => {
-        if (item.investment.id === investmentId) {
-          return {
-            ...item,
-            returns: 0
-          };
-        }
-        return item;
-      });
-      setCalculatedInvestments(updatedCalculations);
+      await handleRefresh();
     } catch (error) {
       console.error('Erreur de retrait:', error);
     } finally {
@@ -72,12 +94,29 @@ const Dashboard = () => {
   };
   
   // Gérer le rafraîchissement des données
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    // Simuler un délai de rafraîchissement
-    setTimeout(() => {
+    try {
+      const total = await getTotalReturns();
+      setTotalReturnsValue(total);
+      
+      // Recalculer tous les rendements
+      const processed = await Promise.all(activeInvestments.map(async (investment) => {
+        const plan = plans.find(p => p.id === investment.planId);
+        if (!plan) return null;
+        
+        const stakeId = parseInt(investment.id);
+        const returns = await calculateReturns(stakeId);
+        
+        return { investment, plan, returns };
+      }));
+      
+      setCalculatedInvestments(processed.filter(Boolean));
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement:', error);
+    } finally {
       setRefreshing(false);
-    }, 1000);
+    }
   };
   
   // Vérifier s'il y a des investissements actifs
@@ -85,7 +124,6 @@ const Dashboard = () => {
   
   // Calculer les totaux
   const totalInvested = getTotalInvested();
-  const totalReturns = getTotalReturns();
   
   return (
     <div className="py-8 px-4">
@@ -134,7 +172,7 @@ const Dashboard = () => {
           />
           <StatsCard 
             title="Rendements Totaux" 
-            value={`${totalReturns.toFixed(2)} USDT/USDC`}
+            value={`${totalReturnsValue.toFixed(2)} USDT/USDC`}
             icon={<ArrowUpRight size={22} />}
             change={{ value: '8.2%', positive: true }}
           />
@@ -206,13 +244,13 @@ const Dashboard = () => {
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-slate-400">Rendements Actuels</span>
-                    <span className="text-white">{totalReturns.toFixed(2)} USDT/USDC</span>
+                    <span className="text-white">{totalReturnsValue.toFixed(2)} USDT/USDC</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
                       className="bg-green-500 h-2 rounded-full" 
                       style={{ 
-                        width: `${totalInvested > 0 ? Math.min((totalReturns / totalInvested) * 100, 100) : 0}%` 
+                        width: `${totalInvested > 0 ? Math.min((totalReturnsValue / totalInvested) * 100, 100) : 0}%` 
                       }}
                     ></div>
                   </div>
@@ -222,14 +260,14 @@ const Dashboard = () => {
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-slate-400">ROI</span>
                     <span className="text-white">
-                      {totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(2) : '0.00'}%
+                      {totalInvested > 0 ? ((totalReturnsValue / totalInvested) * 100).toFixed(2) : '0.00'}%
                     </span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
                       className="bg-indigo-500 h-2 rounded-full" 
                       style={{ 
-                        width: `${totalInvested > 0 ? Math.min((totalReturns / totalInvested) * 100, 100) : 0}%` 
+                        width: `${totalInvested > 0 ? Math.min((totalReturnsValue / totalInvested) * 100, 100) : 0}%` 
                       }}
                     ></div>
                   </div>
@@ -269,9 +307,9 @@ const Dashboard = () => {
                         <div className="w-full bg-slate-700 rounded-full h-2">
                           <div 
                             className={`h-2 rounded-full ${
-                              plan.id === 1 
+                              plan.id === 0
                                 ? 'bg-blue-500' 
-                                : plan.id === 2 
+                                : plan.id === 1
                                   ? 'bg-indigo-500' 
                                   : 'bg-violet-500'
                             }`}
@@ -296,7 +334,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {calculatedInvestments.slice(0, 3).map(({ investment }) => (
+                  {activeInvestments.slice(0, 3).map((investment) => (
                     <div key={investment.id} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
                       <div className="flex items-center">
                         <div className="bg-blue-600/20 rounded-full p-2 mr-3">
@@ -304,10 +342,10 @@ const Dashboard = () => {
                         </div>
                         <div>
                           <div className="text-white text-sm font-medium">
-                            Investissement dans le Plan {plans.find(p => p.id === investment.planId)?.name}
+                            Investissement dans le Plan {plans.find(p => p.id === investment.planId)?.name || 'Inconnu'}
                           </div>
                           <div className="text-slate-400 text-xs">
-                            {new Date(investment.startDate).toLocaleDateString('fr-FR')}
+                            {investment.startDate.toLocaleDateString('fr-FR')}
                           </div>
                         </div>
                       </div>
