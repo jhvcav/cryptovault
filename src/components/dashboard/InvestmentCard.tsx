@@ -62,7 +62,7 @@ const InvestmentCard = ({
 
   const daysRemaining = calculateDaysRemaining();
   const progressPercentage = calculateProgress();
-  const canWithdraw = calculatedReturns >= 0;
+  const canWithdraw = calculatedReturns >= 0.4; // Condition pour autoriser le retrait
   const lockPeriodOver = isLockPeriodOver();
 
   return (
