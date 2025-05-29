@@ -17,6 +17,7 @@ import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ProtectedRoute from './components/utils/ProtectedRoute';
 import AdminRoute from './components/utils/AdminRoute';
+import FAQ from './pages/FAQ';
 
 function App() {
   return (
@@ -34,6 +35,8 @@ function App() {
                     <Route path="/roadmap" element={<RoadmapPage />} />
                     <Route path="/strategy-management" element={<StrategyManagement />} />
                     <Route path="calculator" element={<InvestmentCalculator />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    {/* Protected Routes */}
                     <Route
                       path="/dashboard"
                       element={
