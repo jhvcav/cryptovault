@@ -157,7 +157,7 @@ const InvestmentCard = ({
               ? 'Traitement en cours...'
               : canWithdraw
                 ? `Retirer les intérêts (${calculatedReturns.toFixed(2)} ${investment.token})`
-                : `Retrait d'intérêts non disponible`
+                : `Retrait d'intérêts (> 0.4 ${investment.token})`
             }
           </button>
           
