@@ -46,11 +46,11 @@ const Footer = () => {
                   Calculateur d'Investissement
                 </Link>
               </li>
-              <li>
+              {/*<li>
                 <Link to="/affiliate" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Plan Affiliation
                 </Link>
-              </li>
+              </li>*/}
             </ul>
           </div>
           

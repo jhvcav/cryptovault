@@ -317,58 +317,82 @@ useEffect(() => {
   // Charger les investissements
   useEffect(() => {
     const loadInvestments = async () => {
-      if (!stakingContract || !address) return;
+    if (!stakingContract || !address) return;
 
-      try {
-        const contractStakes: ContractStake[] = await stakingContract.getUserStakes(address);
-        
-        // Convertir les stakes du contrat au format attendu par l'interface
-        const investments: Investment[] = contractStakes
-          .filter(stake => stake.active)
-          .map((stake, index) => {
-            const startTime = Number(stake.startTime) * 1000;
-            const endTime = Number(stake.endTime) * 1000;
-            const amount = Number(ethers.formatUnits(stake.amount, 18));
-            
-            // Calcul du rendement quotidien basé sur le plan
-            const plan = plans.find(p => p.id === Number(stake.planId));
-            const dailyReturn = plan 
-              ? (amount * (plan.apr / 100)) / 365
-              : 0;
-            
-            return {
-              id: index.toString(), // Utiliser l'index comme ID
-              planId: Number(stake.planId),
-              amount: amount,
-              startDate: new Date(startTime),
-              endDate: new Date(endTime),
-              lastRewardTime: new Date(Number(stake.lastRewardTime) * 1000),
-              token: TOKEN_SYMBOLS[stake.token] || stake.token, // Convertir l'adresse en symbole
-              active: stake.active,
-              dailyReturn: dailyReturn
-            };
-          });
-        
-        setActiveInvestments(investments);
-      } catch (error) {
-        console.error('Erreur lors du chargement des investissements:', error);
-      }
-    };
-
-    loadInvestments();
-  }, [stakingContract, address, plans]);
-
-  const calculateReturns = async (stakeId: number): Promise<number> => {
-    if (!stakingContract || !address) return 0;
-    
     try {
-      const rewards = await stakingContract.calculateRewards(address, stakeId);
-      return Number(ethers.formatUnits(rewards, 18));
+      const contractStakes: ContractStake[] = await stakingContract.getUserStakes(address);
+      
+      console.log("🔍 Stakes récupérés du contrat:", contractStakes.length);
+      
+      // Convertir TOUS les stakes avec leur index original
+      const allInvestments: Investment[] = contractStakes.map((stake, originalIndex) => {
+        const startTime = Number(stake.startTime) * 1000;
+        const endTime = Number(stake.endTime) * 1000;
+        const amount = Number(ethers.formatUnits(stake.amount, 18));
+        
+        // Calcul du rendement quotidien basé sur le plan
+        const plan = plans.find(p => p.id === Number(stake.planId));
+        const dailyReturn = plan 
+          ? (amount * (plan.apr / 100)) / 365
+          : 0;
+        
+        console.log(`📋 Stake ${originalIndex}:`, {
+          amount: amount,
+          planId: Number(stake.planId),
+          active: stake.active,
+          startDate: new Date(startTime).toLocaleString(),
+          endDate: new Date(endTime).toLocaleString()
+        });
+        
+        return {
+          id: originalIndex.toString(), // ← INDEX ORIGINAL = ID
+          planId: Number(stake.planId),
+          amount: amount,
+          startDate: new Date(startTime),
+          endDate: new Date(endTime),
+          lastRewardTime: new Date(Number(stake.lastRewardTime) * 1000),
+          token: TOKEN_SYMBOLS[stake.token] || stake.token,
+          active: stake.active,
+          dailyReturn: dailyReturn
+        };
+      });
+      
+      // Filtrer pour ne garder QUE les stakes actifs pour l'affichage
+      const activeInvestments = allInvestments.filter(investment => investment.active);
+      
+      console.log("✅ Stakes actifs à afficher:", activeInvestments.map(inv => ({
+        id: inv.id,
+        amount: inv.amount,
+        active: inv.active
+      })));
+      
+      setActiveInvestments(activeInvestments);
     } catch (error) {
-      console.error('Erreur lors du calcul des récompenses:', error);
-      return 0;
+      console.error('Erreur lors du chargement des investissements:', error);
     }
   };
+
+  loadInvestments();
+}, [stakingContract, address, plans]);
+
+// La fonction calculateReturns reste la même
+const calculateReturns = async (stakeId: number): Promise<number> => {
+  if (!stakingContract || !address) return 0;
+  
+  try {
+    console.log(`🔍 calculateRewards - StakeId: ${stakeId}`);
+    
+    const rewards = await stakingContract.calculateRewards(address, stakeId);
+    const formattedRewards = Number(ethers.formatUnits(rewards, 18));
+    
+    console.log(`💰 Rewards pour stake ${stakeId}: ${formattedRewards.toFixed(8)}`);
+    
+    return formattedRewards;
+  } catch (error) {
+    console.error(`❌ Erreur calculateRewards (stakeId: ${stakeId}):`, error);
+    return 0;
+  }
+};
 
   const withdrawReturns = async (investmentId: string): Promise<void> => {
     if (!stakingContract) throw new Error('Contract not initialized');
