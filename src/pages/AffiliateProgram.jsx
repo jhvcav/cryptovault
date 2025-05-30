@@ -386,8 +386,8 @@ const AffiliateProgram = () => {
         <text x="0" y="5" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#ffffff">VOUS</text>
         
         {/* Conditions*/}
-        <text x="0" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#1e1b4b">Affilié Qualifié</text>
-        <text x="0" y="75" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fill="#1e1b4b">3 affiliés directs + 500$</text>
+        <text x="0" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#ffffff">Affilié Qualifié</text>
+        <text x="0" y="75" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fill="#000000">3 affiliés directs + 500$</text>
       </g>
       
       {/* Niveau 1 */}
@@ -403,8 +403,8 @@ const AffiliateProgram = () => {
           <line x1="0" y1="-20" x2="0" y2="0" stroke="#3b82f6" strokeWidth="2" />
           <circle cx="0" cy="25" r="25" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" />
           <text x="0" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">A</text>
-          <text x="0" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#1e1b4b">Affilié Qualifié</text>
-          <text x="0" y="85" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#1e1b4b">Commission: 15%</text>
+          <text x="0" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">Affilié Qualifié</text>
+          <text x="0" y="85" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#000000">Commission: 15%</text>
         </g>
         
         {/* Niveau 1 - Membre 2 */}
@@ -412,8 +412,8 @@ const AffiliateProgram = () => {
           <line x1="0" y1="-20" x2="0" y2="0" stroke="#3b82f6" strokeWidth="2" />
           <circle cx="0" cy="25" r="25" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" />
           <text x="0" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">B</text>
-          <text x="0" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#1e1b4b">Affilié Simple</text>
-          <text x="0" y="85" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#1e1b4b">Commission: 5%</text>
+          <text x="0" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">Affilié Simple</text>
+          <text x="0" y="85" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#000000">Commission: 5%</text>
         </g>
         
         {/* Niveau 1 - Membre 3 */}
@@ -421,8 +421,8 @@ const AffiliateProgram = () => {
           <line x1="0" y1="-20" x2="0" y2="0" stroke="#3b82f6" strokeWidth="2" />
           <circle cx="0" cy="25" r="25" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" />
           <text x="0" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">C</text>
-          <text x="0" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#1e1b4b">Affilié Qualifié</text>
-          <text x="0" y="85" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#1e1b4b">Commission: 15%</text>
+          <text x="0" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">Affilié Qualifié</text>
+          <text x="0" y="85" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fill="#000000">Commission: 15%</text>
         </g>
       </g>
       
@@ -438,15 +438,15 @@ const AffiliateProgram = () => {
         {/* Affiliés de A */}
         <circle cx="70" cy="15" r="25" fill="#22c55e" stroke="#16a34a" strokeWidth="2" />
         <text x="70" y="20" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">A1</text>
-        <text x="70" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">10%</text>
+        <text x="70" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">10%</text>
         
         <circle cx="130" cy="15" r="25" fill="#22c55e" stroke="#16a34a" strokeWidth="2" />
         <text x="130" y="20" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">A2</text>
-        <text x="130" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">10%</text>
+        <text x="130" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">10%</text>
         
         <circle cx="190" cy="15" r="25" fill="#22c55e" stroke="#16a34a" strokeWidth="2" />
         <text x="190" y="20" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">A3</text>
-        <text x="190" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">10%</text>
+        <text x="190" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">10%</text>
         
         {/* Lignes de connexion pour C */}
         <line x1="610" y1="-40" x2="610" y2="-30" stroke="#22c55e" strokeWidth="2" />
@@ -458,15 +458,15 @@ const AffiliateProgram = () => {
         {/* Affiliés de C */}
         <circle cx="550" cy="15" r="25" fill="#22c55e" stroke="#16a34a" strokeWidth="2" />
         <text x="550" y="20" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">C1</text>
-        <text x="550" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">10%</text>
+        <text x="550" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">10%</text>
         
         <circle cx="610" cy="15" r="25" fill="#22c55e" stroke="#16a34a" strokeWidth="2" />
         <text x="610" y="20" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">C2</text>
-        <text x="610" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">10%</text>
+        <text x="610" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">10%</text>
         
         <circle cx="670" cy="15" r="25" fill="#22c55e" stroke="#16a34a" strokeWidth="2" />
         <text x="670" y="20" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">C3</text>
-        <text x="670" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">10%</text>
+        <text x="670" y="55" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">10%</text>
       </g>
       
       {/* Niveau 3 (exemple pour A1) */}
@@ -481,15 +481,15 @@ const AffiliateProgram = () => {
         {/* Affiliés de niveau 3 */}
         <circle cx="40" cy="25" r="25" fill="#ef4444" stroke="#dc2626" strokeWidth="2" />
         <text x="40" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">A11</text>
-        <text x="40" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">5%</text>
+        <text x="40" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">5%</text>
         
         <circle cx="70" cy="25" r="25" fill="#ef4444" stroke="#dc2626" strokeWidth="2" />
         <text x="70" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">A12</text>
-        <text x="70" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">5%</text>
+        <text x="70" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">5%</text>
         
         <circle cx="100" cy="25" r="25" fill="#ef4444" stroke="#dc2626" strokeWidth="2" />
         <text x="100" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="bold" fill="#ffffff">A13</text>
-        <text x="100" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#1e1b4b">5%</text>
+        <text x="100" y="65" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="#000000">5%</text>
         
         {/* Ligne pointillée indiquant la continuation */}
         <text x="150" y="25" textAnchor="start" fontFamily="Arial, sans-serif" fontSize="16" fill="#1e1b4b">...</text>
@@ -547,7 +547,7 @@ const AffiliateProgram = () => {
     <g transform="translate(0, 730)">
       {/* Premier rectangle pour les commissions par niveau */}
       <rect x="100" y="0" width="800" height="70" rx="5" ry="5" fill="rgba(255, 255, 255, 0.85)" stroke="#64748b" strokeWidth="1" />
-      <text x="500" y="25" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#1e1b4b">Commissions par Niveau</text>
+      <text x="500" y="25" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#000000">Commissions par Niveau</text>
       
       <g transform="translate(150, 50)">
         <circle cx="0" cy="0" r="10" fill="#3b82f6" />
