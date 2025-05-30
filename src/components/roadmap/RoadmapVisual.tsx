@@ -90,7 +90,7 @@ const RoadmapVisual = () => {
       color: "#8B5CF6", // Violet
       icon: "📈",
       keyPoints: [
-        "Crétaion et lancement du token du projet",
+        "Création et lancement du token du projet",
         "Optimisation de toutes les stratégies",
         "Affiliation multi-niveaux avancée",
         "Audit Smart contrat"

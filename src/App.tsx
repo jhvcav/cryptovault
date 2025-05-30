@@ -12,6 +12,7 @@ import InvestPage from './pages/InvestPage';
 import RoadmapPage from './pages/RoadmapPage';
 import StrategyManagement from './pages/StrategyManagement';
 import InvestmentCalculator from './pages/InvestmentCalculator';
+import AffiliateProgram from './pages/AffiliateProgram';
 // Components
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -36,7 +37,8 @@ function App() {
                     <Route path="/strategy-management" element={<StrategyManagement />} />
                     <Route path="calculator" element={<InvestmentCalculator />} />
                     <Route path="/faq" element={<FAQ />} />
-                    {/* Protected Routes */}
+                    <Route path="/affiliate" element={<AffiliateProgram />} />
+                    {/* Public Routes */}
                     <Route
                       path="/dashboard"
                       element={
