@@ -33,23 +33,28 @@ class AirtableAuthService {
   private readonly apiKey: string;
 
   constructor() {
-    // Configuration depuis les variables d'environnement (Vite utilise import.meta.env)
-    console.log('🔍 Debug - Toutes les variables Vite:', import.meta.env);
-    console.log('🔍 Debug - BASE_ID brut:', import.meta.env.VITE_AIRTABLE_BASE_ID);
-    console.log('🔍 Debug - API_KEY brut:', import.meta.env.VITE_AIRTABLE_API_KEY);
-    console.log('🔍 Variables env disponibles:', import.meta.env);
-    console.log('🔍 Base ID:', import.meta.env.VITE_AIRTABLE_BASE_ID);
-    console.log('🔍 API Key présente:', !!import.meta.env.VITE_AIRTABLE_API_KEY);
+    // Debug complet pour GitHub Pages
+    console.log('🔍 MODE:', import.meta.env.MODE);
+    console.log('🔍 PROD:', import.meta.env.PROD);
+    console.log('🔍 Toutes les variables:', Object.keys(import.meta.env));
+    console.log('🔍 BASE_ID raw:', import.meta.env.VITE_AIRTABLE_BASE_ID);
+    console.log('🔍 API_KEY présente:', !!import.meta.env.VITE_AIRTABLE_API_KEY);
     
-    this.baseId = import.meta.env.VITE_AIRTABLE_BASE_ID || '';
-    this.apiKey = import.meta.env.VITE_AIRTABLE_API_KEY || '';
+    // Fallback temporaire pour GitHub Pages
+    this.baseId = import.meta.env.VITE_AIRTABLE_BASE_ID || 'appUW7pmMUy104aJA';
+    this.apiKey = import.meta.env.VITE_AIRTABLE_API_KEY || 'pat4ZJ3sgVkBqsp1d.a6c5ad8d7044a9f40fc8b39a6e8ca1884564728f965cadd0e29706499a81f30e';
+    
+    console.log('🔍 this.baseId final:', this.baseId);
+    console.log('🔍 this.apiKey final:', this.apiKey ? 'PRESENT' : 'MISSING');
+    
+    if (this.apiKey === 'REMPLACEZ_PAR_VOTRE_TOKEN_COMPLET') {
+      console.error('❌ ATTENTION: Token API hardcodé temporaire utilisé !');
+    }
     
     if (!this.baseId || !this.apiKey) {
-      console.warn('Variables d\'environnement Airtable manquantes. Vérifiez votre fichier .env');
-      console.warn('Base ID:', this.baseId ? 'Défini' : 'Manquant');
-      console.warn('API Key:', this.apiKey ? 'Défini' : 'Manquant');
+      console.error('❌ Variables d\'environnement manquantes !');
     } else {
-      console.log('✅ Variables d\'environnement chargées avec succès');
+      console.log('✅ Configuration Airtable chargée');
     }
   }
 
