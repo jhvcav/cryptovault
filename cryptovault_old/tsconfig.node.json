@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "composite": true,
+    "types": ["node", "hardhat"]
+  },
+  "include": [
+    "vite.config.ts",
+    "scripts/**/*",
+    "hardhat.config.ts",
+  ]
+}
