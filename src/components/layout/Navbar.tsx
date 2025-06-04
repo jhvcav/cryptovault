@@ -1,15 +1,17 @@
 // src/components/layout/Navbar.tsx
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Wallet, Moon, Sun } from 'lucide-react';
+import { Menu, X, Wallet, Moon, Sun, LogOut } from 'lucide-react';
 import { useWallet } from '../../contexts/WalletContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar = () => {
   const { pathname } = useLocation();
   const { address, connectWallet, disconnectWallet, isConnected, isConnecting } = useWallet();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -17,6 +19,12 @@ const Navbar = () => {
 
   const shortenAddress = (address: string) => {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
+  const handleLogout = () => {
+    logout();
+    disconnectWallet(); // Déconnecter aussi le wallet
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -30,58 +38,62 @@ const Navbar = () => {
                 CryptoVault
               </span>
             </Link>
-            <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
-              <Link 
-                to="/" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  pathname === '/' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                }`}
-              >
-                Accueil
-              </Link>
-              <Link 
-                to="/invest" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  pathname === '/invest' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                }`}
-              >
-                Investir
-              </Link>
-              <Link 
-                to="/roadmap" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  pathname === '/roadmap' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                }`}
-              >
-                Roadmap
-              </Link>
-              <Link 
-                to="/dashboard" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  pathname === '/dashboard' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                }`}
-              >
-                Tableau de Bord
-              </Link>
-              <Link 
-                to="/admin" 
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  pathname === '/admin' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                }`}
-              >
-                Admin
-              </Link>
-            </div>
+            
+            {/* Menu desktop - Seulement si authentifié */}
+            {isAuthenticated && (
+              <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+                <Link 
+                  to="/" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    pathname === '/' 
+                      ? 'bg-slate-900 text-white' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
+                  }`}
+                >
+                  Accueil
+                </Link>
+                <Link 
+                  to="/invest" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    pathname === '/invest' 
+                      ? 'bg-slate-900 text-white' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
+                  }`}
+                >
+                  Investir
+                </Link>
+                <Link 
+                  to="/roadmap" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    pathname === '/roadmap' 
+                      ? 'bg-slate-900 text-white' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
+                  }`}
+                >
+                  Roadmap
+                </Link>
+                <Link 
+                  to="/dashboard" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    pathname === '/dashboard' 
+                      ? 'bg-slate-900 text-white' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
+                  }`}
+                >
+                  Tableau de Bord
+                </Link>
+                <Link 
+                  to="/admin" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    pathname === '/admin' 
+                      ? 'bg-slate-900 text-white' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
+                  }`}
+                >
+                  Admin
+                </Link>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center space-x-4">
@@ -91,38 +103,66 @@ const Navbar = () => {
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            
-            {isConnected ? (
-              <button
-                onClick={disconnectWallet}
-                className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                {shortenAddress(address || '')}
-              </button>
+
+            {/* Affichage conditionnel selon l'authentification */}
+            {isAuthenticated ? (
+              <>
+                {/* Informations utilisateur et bouton de déconnexion */}
+                <div className="hidden md:flex items-center space-x-3">
+                  <span className="text-slate-300 text-sm">
+                    Bonjour, {user?.firstName}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    <LogOut size={16} />
+                    <span>Déconnexion</span>
+                  </button>
+                </div>
+
+                {/* Wallet connection (si authentifié) */}
+                {isConnected ? (
+                  <button
+                    onClick={disconnectWallet}
+                    className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    {shortenAddress(address || '')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={connectWallet}
+                    disabled={isConnecting}
+                    className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70"
+                  >
+                    {isConnecting ? 'Connexion...' : 'Connecter le Portefeuille'}
+                  </button>
+                )}
+              </>
             ) : (
-              <button
-                onClick={connectWallet}
-                disabled={isConnecting}
-                className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70"
-              >
-                {isConnecting ? 'Connexion...' : 'Connecter le Portefeuille'}
-              </button>
+              /* Si non authentifié, afficher seulement le statut */
+              <div className="text-slate-400 text-sm hidden md:block">
+                Non connecté
+              </div>
             )}
             
-            <div className="md:hidden flex items-center">
-              <button
-                onClick={toggleMobileMenu}
-                className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none"
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
+            {/* Menu mobile toggle */}
+            {isAuthenticated && (
+              <div className="md:hidden flex items-center">
+                <button
+                  onClick={toggleMobileMenu}
+                  className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none"
+                >
+                  {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
       
-      {/* Menu mobile */}
-      {mobileMenuOpen && (
+      {/* Menu mobile - Seulement si authentifié */}
+      {mobileMenuOpen && isAuthenticated && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-slate-800">
             <Link 
@@ -180,6 +220,20 @@ const Navbar = () => {
             >
               Admin
             </Link>
+            
+            {/* Section utilisateur mobile */}
+            <div className="border-t border-slate-700 pt-3 mt-3">
+              <div className="px-3 py-2 text-slate-300 text-sm">
+                Connecté en tant que {user?.firstName} {user?.lastName}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-slate-700"
+              >
+                <LogOut size={16} />
+                <span>Déconnexion</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
