@@ -37,6 +37,9 @@ class AirtableAuthService {
     console.log('🔍 Debug - Toutes les variables Vite:', import.meta.env);
     console.log('🔍 Debug - BASE_ID brut:', import.meta.env.VITE_AIRTABLE_BASE_ID);
     console.log('🔍 Debug - API_KEY brut:', import.meta.env.VITE_AIRTABLE_API_KEY);
+    console.log('🔍 Variables env disponibles:', import.meta.env);
+    console.log('🔍 Base ID:', import.meta.env.VITE_AIRTABLE_BASE_ID);
+    console.log('🔍 API Key présente:', !!import.meta.env.VITE_AIRTABLE_API_KEY);
     
     this.baseId = import.meta.env.VITE_AIRTABLE_BASE_ID || '';
     this.apiKey = import.meta.env.VITE_AIRTABLE_API_KEY || '';
