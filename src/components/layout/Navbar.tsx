@@ -5,6 +5,7 @@ import { Menu, X, Wallet, Moon, Sun, LogOut } from 'lucide-react';
 import { useWallet } from '../../contexts/WalletContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useOwner } from '../../hooks/useOwner';
 
 const Navbar = () => {
   const { pathname } = useLocation();
@@ -12,6 +13,7 @@ const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
+  const { isOwner } = useOwner();
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -82,16 +84,24 @@ const Navbar = () => {
                 >
                   Tableau de Bord
                 </Link>
-                <Link 
-                  to="/admin" 
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === '/admin' 
-                      ? 'bg-slate-900 text-white' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                  }`}
-                >
-                  Admin
-                </Link>
+                
+                {/* Menu Admin - Visible seulement pour l'owner */}
+                {isOwner && (
+                  <Link 
+                    to="/admin" 
+                    className={`px-3 py-2 rounded-md text-sm font-medium relative ${
+                      pathname.startsWith('/admin') 
+                        ? 'bg-slate-900 text-white' 
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
+                    }`}
+                  >
+                    Admin
+                    {/* Badge owner */}
+                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                      👑
+                    </span>
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -109,9 +119,17 @@ const Navbar = () => {
               <>
                 {/* Informations utilisateur et bouton de déconnexion */}
                 <div className="hidden md:flex items-center space-x-3">
-                  <span className="text-slate-300 text-sm">
-                    Bonjour, {user?.firstName}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-slate-300 text-sm">
+                      Bonjour, {user?.firstName}
+                    </span>
+                    {/* Badge owner à côté du nom */}
+                    {isOwner && (
+                      <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+                        👑 OWNER
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -209,22 +227,34 @@ const Navbar = () => {
             >
               Tableau de Bord
             </Link>
-            <Link 
-              to="/admin" 
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                pathname === '/admin' 
-                  ? 'bg-slate-900 text-white' 
-                  : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Admin
-            </Link>
+            
+            {/* Menu Admin mobile - Visible seulement pour l'owner */}
+            {isOwner && (
+              <Link 
+                to="/admin" 
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium ${
+                  pathname.startsWith('/admin') 
+                    ? 'bg-slate-900 text-white' 
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>Admin</span>
+                <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+                  👑
+                </span>
+              </Link>
+            )}
             
             {/* Section utilisateur mobile */}
             <div className="border-t border-slate-700 pt-3 mt-3">
-              <div className="px-3 py-2 text-slate-300 text-sm">
-                Connecté en tant que {user?.firstName} {user?.lastName}
+              <div className="px-3 py-2 text-slate-300 text-sm flex items-center space-x-2">
+                <span>Connecté en tant que {user?.firstName} {user?.lastName}</span>
+                {isOwner && (
+                  <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+                    👑 OWNER
+                  </span>
+                )}
               </div>
               <button
                 onClick={handleLogout}

@@ -3,7 +3,8 @@ import { ChakraProvider } from '@chakra-ui/react';
 import { WalletProvider } from './contexts/WalletContext';
 import { InvestmentProvider } from './contexts/InvestmentContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext'; // Nouveau
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useOwner } from './hooks/useOwner';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -15,6 +16,7 @@ import StrategyManagement from './pages/StrategyManagement';
 import InvestmentCalculator from './pages/InvestmentCalculator';
 import LoginPage from './pages/LoginPage'; // Nouveau
 import FAQ from './pages/FAQ';
+import AdminPage from './pages/AdminPage';
 
 // Components
 import Navbar from './components/layout/Navbar';
@@ -71,11 +73,11 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
-            path="/admin"
+            path="/admin/*"
             element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
+              <ProtectedRoute>
+                <AdminPage />
+              </ProtectedRoute>
             }
           />
           
