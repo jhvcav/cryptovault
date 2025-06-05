@@ -1,0 +1,17 @@
+# netlify.toml
+[build]
+  # Dossier à déployer (Vite génère dans 'dist')
+  publish = "dist"
+  
+  # Commande de build
+  command = "npm run build"
+
+# Redirection pour SPA (Single Page Application)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Variables d'environnement pour Netlify
+[build.environment]
+  NODE_VERSION = "18"
