@@ -41,8 +41,8 @@ class AirtableAuthService {
     console.log('🔍 API_KEY présente:', !!import.meta.env.VITE_AIRTABLE_API_KEY);
     
     // Fallback temporaire pour GitHub Pages
-    this.baseId = import.meta.env.VITE_AIRTABLE_BASE_ID || 'appUW7pmMUy104aJA';
-    this.apiKey = import.meta.env.VITE_AIRTABLE_API_KEY || 'pat4ZJ3sgVkBqsp1d.a6c5ad8d7044a9f40fc8b39a6e8ca1884564728f965cadd0e29706499a81f30e';
+    this.baseId = import.meta.env.VITE_AIRTABLE_BASE_ID;
+    this.apiKey = import.meta.env.VITE_AIRTABLE_API_KEY;
     
     console.log('🔍 this.baseId final:', this.baseId);
     console.log('🔍 this.apiKey final:', this.apiKey ? 'PRESENT' : 'MISSING');
