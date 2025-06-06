@@ -46,6 +46,9 @@ interface StakeInfo {
   token: string;
   active: boolean;
   userAddress?: string;
+  withdrawnAmount?: string;
+  totalWithdrawn?: string;
+  availableRewards?: string;
 }
 
 const AdminDashboard = () => {
@@ -103,6 +106,141 @@ const getUSDCBalance = async () => {
     }
   } catch (error) {
     console.error('Erreur récupération solde USDC:', error);
+  }
+};
+
+// Ajouter cette fonction dans AdminDashboard
+const getWithdrawalDataFromEvents = async (userAddress: string, stakeIndex: number) => {
+  try {
+    if (!stakingContract) return { withdrawnAmount: '0', totalWithdrawn: '0' };
+
+    const API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY;
+    if (!API_KEY) {
+      console.error('Clé API BSCScan non configurée');
+      return { withdrawnAmount: '0', totalWithdrawn: '0' };
+    }
+
+    const contractAddress = stakingContract.target || stakingContract.address;
+    console.log('🔍 Debug retraits pour:', userAddress, 'stakeIndex:', stakeIndex);
+    console.log('🔍 Adresse contrat:', contractAddress);
+    
+    // Générer les topics correctement
+    const rewardsEventTopic = ethers.id('RewardsClaimed(address,uint256,uint256,address)');
+    const stakeEndEventTopic = ethers.id('StakeEnded(address,uint256,uint256,address)');
+    const userTopic = ethers.zeroPadValue(userAddress, 32);
+    
+    console.log('🔍 Topics générés:');
+    console.log('  - RewardsClaimed:', rewardsEventTopic);
+    console.log('  - StakeEnded:', stakeEndEventTopic);
+    console.log('  - User topic:', userTopic);
+    
+    // URLs avec debug
+    const rewardsUrl = `https://api.bscscan.com/api?module=logs&action=getLogs&address=${contractAddress}&topic0=${rewardsEventTopic}&topic1=${userTopic}&fromBlock=0&toBlock=latest&apikey=${API_KEY}`;
+    const endsUrl = `https://api.bscscan.com/api?module=logs&action=getLogs&address=${contractAddress}&topic0=${stakeEndEventTopic}&topic1=${userTopic}&fromBlock=0&toBlock=latest&apikey=${API_KEY}`;
+
+    console.log('🔍 URLs API:');
+    console.log('  - Rewards:', rewardsUrl);
+    console.log('  - Ends:', endsUrl);
+
+    const [rewardsResponse, endsResponse] = await Promise.all([
+      fetch(rewardsUrl),
+      fetch(endsUrl)
+    ]);
+
+    const rewardsData = await rewardsResponse.json();
+    const endsData = await endsResponse.json();
+
+    console.log('🔍 Réponses API:');
+    console.log('  - Rewards status:', rewardsData.status, 'count:', rewardsData.result?.length || 0);
+    console.log('  - Ends status:', endsData.status, 'count:', endsData.result?.length || 0);
+
+    if (rewardsData.status !== '1') {
+      console.log('❌ Erreur rewards API:', rewardsData.message);
+    }
+    if (endsData.status !== '1') {
+      console.log('❌ Erreur ends API:', endsData.message);
+    }
+
+    let totalWithdrawn = 0;
+    let lastWithdrawn = 0;
+
+    // Traiter les rewards claims
+    if (rewardsData.status === '1' && rewardsData.result && rewardsData.result.length > 0) {
+      console.log('🔍 Traitement de', rewardsData.result.length, 'rewards events');
+      
+      rewardsData.result.forEach((log, index) => {
+        try {
+          console.log(`🔍 Event reward ${index}:`, log);
+          
+          // Décoder les données du log
+          const decodedData = ethers.AbiCoder.defaultAbiCoder().decode(
+            ['uint256', 'uint256', 'address'], 
+            log.data
+          );
+          
+          const stakeId = parseInt(decodedData[0].toString());
+          const amount = parseFloat(ethers.formatUnits(decodedData[1], 18));
+          
+          console.log(`  - StakeId: ${stakeId}, Amount: ${amount}, Cherché: ${stakeIndex}`);
+          
+          if (stakeId === stakeIndex) {
+            totalWithdrawn += amount;
+            lastWithdrawn = amount;
+            console.log(`  ✅ Match! Total: ${totalWithdrawn}, Last: ${lastWithdrawn}`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur décodage reward:', error);
+        }
+      });
+    } else {
+      console.log('ℹ️ Aucun event rewards trouvé');
+    }
+
+    // Traiter les stake ends
+    if (endsData.status === '1' && endsData.result && endsData.result.length > 0) {
+      console.log('🔍 Traitement de', endsData.result.length, 'end events');
+      
+      endsData.result.forEach((log, index) => {
+        try {
+          console.log(`🔍 Event end ${index}:`, log);
+          
+          const decodedData = ethers.AbiCoder.defaultAbiCoder().decode(
+            ['uint256', 'uint256', 'address'], 
+            log.data
+          );
+          
+          const stakeId = parseInt(decodedData[0].toString());
+          const amount = parseFloat(ethers.formatUnits(decodedData[1], 18));
+          
+          console.log(`  - StakeId: ${stakeId}, Amount: ${amount}, Cherché: ${stakeIndex}`);
+          
+          if (stakeId === stakeIndex) {
+            totalWithdrawn += amount;
+            lastWithdrawn = amount;
+            console.log(`  ✅ Match! Total: ${totalWithdrawn}, Last: ${lastWithdrawn}`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur décodage end:', error);
+        }
+      });
+    } else {
+      console.log('ℹ️ Aucun event ends trouvé');
+    }
+
+    const result = {
+      withdrawnAmount: lastWithdrawn.toFixed(4),
+      totalWithdrawn: totalWithdrawn.toFixed(4)
+    };
+
+    console.log('🎯 Résultat final:', result);
+    return result;
+
+  } catch (error) {
+    console.error('❌ Erreur récupération retraits via events:', error);
+    return {
+      withdrawnAmount: '0',
+      totalWithdrawn: '0'
+    };
   }
 };
 
@@ -365,14 +503,31 @@ const getUSDCBalance = async () => {
                 const userAddress = stake.userAddress || (isOwner ? undefined : address);
                 
                 // Formater le montant correctement
-                let formattedAmount;
-                try {
-                  formattedAmount = ethers.formatUnits(amount, 18);
-                  console.log(`Montant formaté: ${formattedAmount}`);
-                } catch (amountError) {
-                  console.error('Erreur de formatage du montant:', amountError);
-                  formattedAmount = '0';
-                }
+                let withdrawalData = { withdrawnAmount: '0', totalWithdrawn: '0' };
+let availableRewards = '0';
+
+if (userAddress) {
+  // Récupérer l'historique des retraits
+  withdrawalData = await getWithdrawalDataFromEvents(userAddress, i);
+  
+  // Calculer les récompenses disponibles
+  try {
+    const rewards = await stakingContract.calculateRewards(userAddress, i);
+    availableRewards = ethers.formatUnits(rewards, 18);
+  } catch (error) {
+    console.error('Erreur calcul récompenses:', error);
+  }
+}
+
+// Formater le montant correctement
+let formattedAmount;
+try {
+  formattedAmount = ethers.formatUnits(amount, 18);
+  console.log(`Montant formaté: ${formattedAmount}`);
+} catch (amountError) {
+  console.error('Erreur de formatage du montant:', amountError);
+  formattedAmount = '0';
+}
                 
                 // Convertir l'adresse du token en symbole
                 const tokenSymbol = token === "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" ? "USDC" : 
@@ -388,7 +543,10 @@ const getUSDCBalance = async () => {
                   lastRewardTime: new Date(lastRewardTime * 1000),
                   token: tokenSymbol,
                   active,
-                  userAddress
+                  userAddress,
+                  withdrawnAmount: withdrawalData.withdrawnAmount,        // ← NOUVEAU
+                  totalWithdrawn: withdrawalData.totalWithdrawn,          // ← NOUVEAU
+                  availableRewards: parseFloat(availableRewards).toFixed(4) // ← NOUVEAU
                 };
                 
                 formattedStakes.push(formattedStake);
@@ -565,38 +723,59 @@ const getUSDCBalance = async () => {
           ) : stakes.length > 0 ? (
             <Table variant="simple">
               <Thead>
-                <Tr>
-                  {isOwnerView && <Th>Utilisateur</Th>}
-                  <Th>Plan</Th>
-                  <Th>Montant</Th>
-                  <Th>Date de début</Th>
-                  <Th>Date de fin</Th>
-                  <Th>Token</Th>
-                  <Th>Statut</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {stakes.map((stake, index) => {
-                  const plan = plans ? plans.find(p => p.id === stake.planId) : null;
-                  return (
-                    <Tr key={index}>
-                      {isOwnerView && (
-                        <Td>
-                          {stake.userAddress ? 
-                            `${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}` : 
-                            'N/A'}
-                        </Td>
-                      )}
-                      <Td>Plan {plan ? plan.name : stake.planId}</Td>
-                      <Td>{stake.amount} {stake.token}</Td>
-                      <Td>{stake.startTime.toLocaleDateString()}</Td>
-                      <Td>{stake.endTime.toLocaleDateString()}</Td>
-                      <Td>{stake.token}</Td>
-                      <Td>{stake.active ? "Actif" : "Terminé"}</Td>
-                    </Tr>
-                  );
-                })}
-              </Tbody>
+  <Tr>
+    {isOwnerView && <Th>Utilisateur</Th>}
+    <Th>Plan</Th>
+    <Th>Montant</Th>
+    <Th>Date de début</Th>
+    <Th>Date de fin</Th>
+    <Th>Token</Th>
+    <Th>Récompenses Dispo.</Th>  {/* ← AJOUTER */}
+    <Th>Dernier Retrait</Th>     {/* ← AJOUTER */}
+    <Th>Total Retiré</Th>        {/* ← AJOUTER */}
+    <Th>Statut</Th>
+  </Tr>
+</Thead>
+<Tbody>
+  {stakes.map((stake, index) => {
+    const plan = plans ? plans.find(p => p.id === stake.planId) : null;
+    return (
+      <Tr key={index}>
+        {isOwnerView && (
+          <Td>
+            {stake.userAddress ? 
+              `${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}` : 
+              'N/A'}
+          </Td>
+        )}
+        <Td>Plan {plan ? plan.name : stake.planId}</Td>
+        <Td>{stake.amount} {stake.token}</Td>
+        <Td>{stake.startTime.toLocaleDateString()}</Td>
+        <Td>{stake.endTime.toLocaleDateString()}</Td>
+        <Td>{stake.token}</Td>
+        
+        {/* NOUVELLES COLONNES */}
+        <Td>
+          <Text color="orange.500" fontWeight="medium">
+            {stake.availableRewards || '0'} {stake.token}
+          </Text>
+        </Td>
+        <Td>
+          <Text color="blue.500" fontWeight="medium">
+            {stake.withdrawnAmount || '0'} {stake.token}
+          </Text>
+        </Td>
+        <Td>
+          <Text color="green.500" fontWeight="bold">
+            {stake.totalWithdrawn || '0'} {stake.token}
+          </Text>
+        </Td>
+        
+        <Td>{stake.active ? "Actif" : "Terminé"}</Td>
+      </Tr>
+    );
+  })}
+</Tbody>
             </Table>
           ) : (
             <Text>Aucun investissement actif trouvé</Text>

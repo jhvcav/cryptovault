@@ -1,4 +1,4 @@
-// src/pages/WalletMonitoring.tsx - VERSION COMPLÈTE
+// src/pages/WalletMonitoring.tsx - VERSION COMPLÈTE AVEC SÉLECTEUR DE PÉRIODE
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -143,6 +143,10 @@ const WalletMonitoring: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [walletAddress, setWalletAddress] = useState('0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF');
   const [showReport, setShowReport] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState('current-month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [contractUSDCBalance, setContractUSDCBalance] = useState('0');
 
   const API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY;
   const BNB_PRICE_USD = 670;
@@ -169,6 +173,31 @@ const WalletMonitoring: React.FC = () => {
       return;
     }
     fetchBSCScanData();
+    getContractUSDCBalance();
+  };
+
+  // Fonction pour récupérer le solde USDC du contrat
+  const getContractUSDCBalance = async () => {
+    try {
+      if (!API_KEY) return;
+      
+      const contractAddress = "0x719fd9F511DDc561D03801161742D84ECb9445e9"; // Votre contrat
+      const usdcAddress = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC BSC
+      
+      // Récupérer le solde USDC du contrat via BSCScan
+      const response = await fetch(
+        `https://api.bscscan.com/api?module=account&action=tokenbalance&contractaddress=${usdcAddress}&address=${contractAddress}&tag=latest&apikey=${API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (data.status === '1') {
+        const balance = parseFloat(data.result) / Math.pow(10, 18); // ou 6 selon USDC
+        setContractUSDCBalance(balance.toFixed(2));
+        console.log('Solde USDC du contrat:', balance.toFixed(2));
+      }
+    } catch (error) {
+      console.error('Erreur récupération solde contrat USDC:', error);
+    }
   };
 
   // Fonction pour récupérer les données BSCScan
@@ -220,6 +249,7 @@ const WalletMonitoring: React.FC = () => {
   useEffect(() => {
     if (isValidAddress(walletAddress)) {
       fetchBSCScanData();
+      getContractUSDCBalance();
     }
   }, []);
 
@@ -320,17 +350,50 @@ const WalletMonitoring: React.FC = () => {
   // Fonction pour analyser les transactions et générer le rapport
   const generateTransparencyReport = () => {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    let startDate: Date, endDate: Date, periodLabel: string;
     
-    const monthlyTransactions = transactions.filter(tx => {
+    // Définir les dates selon la période sélectionnée
+    switch (reportPeriod) {
+      case 'current-month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        periodLabel = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        break;
+        
+      case 'previous-month':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        periodLabel = startDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        break;
+        
+      case 'current-quarter':
+        const quarterStart = Math.floor(now.getMonth() / 3) * 3;
+        startDate = new Date(now.getFullYear(), quarterStart, 1);
+        endDate = new Date(now.getFullYear(), quarterStart + 3, 0);
+        periodLabel = `T${Math.floor(quarterStart / 3) + 1} ${now.getFullYear()}`;
+        break;
+        
+      case 'custom':
+        startDate = new Date(customStartDate);
+        endDate = new Date(customEndDate);
+        periodLabel = `${customStartDate} au ${customEndDate}`;
+        break;
+        
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        periodLabel = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    }
+    
+    // Filtrer les transactions selon la période
+    const filteredTransactions = transactions.filter(tx => {
       const txDate = new Date(parseInt(tx.timeStamp) * 1000);
-      return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+      return txDate >= startDate && txDate <= endDate;
     });
     
-    const monthlyTokens = tokenTransfers.filter(tx => {
+    const filteredTokens = tokenTransfers.filter(tx => {
       const txDate = new Date(parseInt(tx.timeStamp) * 1000);
-      return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+      return txDate >= startDate && txDate <= endDate;
     });
     
     let userDeposits = 0;
@@ -339,7 +402,7 @@ const WalletMonitoring: React.FC = () => {
     let userWithdrawals = 0;
     let gasFees = 0;
     
-    monthlyTransactions.forEach(tx => {
+    filteredTransactions.forEach(tx => {
       const value = parseFloat(tx.value) / Math.pow(10, 18);
       const fee = (parseFloat(tx.gasUsed) * parseFloat(tx.gasPrice)) / Math.pow(10, 18);
       gasFees += fee;
@@ -351,7 +414,7 @@ const WalletMonitoring: React.FC = () => {
       }
     });
     
-    monthlyTokens.forEach(tx => {
+    filteredTokens.forEach(tx => {
       const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
       
       if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
@@ -365,14 +428,14 @@ const WalletMonitoring: React.FC = () => {
       }
     });
     
-    const daysInMonth = now.getDate();
-    const estimatedBeginnerReturns = (userDeposits * 0.10 * daysInMonth) / 365;
-    const estimatedGrowthReturns = (userDeposits * 0.15 * daysInMonth) / 365;
-    const estimatedPremiumReturns = (userDeposits * 0.20 * daysInMonth) / 365;
+    const daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+    const estimatedBeginnerReturns = (userDeposits * 0.10 * daysInPeriod) / 365;
+    const estimatedGrowthReturns = (userDeposits * 0.15 * daysInPeriod) / 365;
+    const estimatedPremiumReturns = (userDeposits * 0.20 * daysInPeriod) / 365;
     const totalEstimatedReturns = estimatedBeginnerReturns + estimatedGrowthReturns + estimatedPremiumReturns;
     
     return {
-      period: `${now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`,
+      period: periodLabel,
       userDeposits,
       platformInvestments,
       platformReturns,
@@ -382,8 +445,11 @@ const WalletMonitoring: React.FC = () => {
       estimatedReturns: totalEstimatedReturns,
       actualReturns: platformReturns,
       performance: platformReturns > 0 ? ((platformReturns / totalEstimatedReturns) * 100) : 0,
-      transactionCount: monthlyTransactions.length + monthlyTokens.length,
-      walletAddress
+      transactionCount: filteredTransactions.length + filteredTokens.length,
+      walletAddress,
+      contractBalance: contractUSDCBalance,
+      startDate: startDate.toLocaleDateString('fr-FR'),
+      endDate: endDate.toLocaleDateString('fr-FR'),
     };
   };
 
@@ -404,6 +470,58 @@ const WalletMonitoring: React.FC = () => {
         
         <ModalBody>
           <VStack spacing={6} align="stretch">
+            {/* Sélecteur de période */}
+            <Card>
+              <CardHeader>
+                <Heading size="md">📅 Période du Rapport</Heading>
+              </CardHeader>
+              <CardBody>
+                <VStack spacing={4} align="stretch">
+                  <HStack spacing={4}>
+                    <Select 
+                      value={reportPeriod} 
+                      onChange={(e) => setReportPeriod(e.target.value)}
+                      maxW="300px"
+                    >
+                      <option value="current-month">Mois en cours</option>
+                      <option value="previous-month">Mois précédent</option>
+                      <option value="current-quarter">Trimestre en cours</option>
+                      <option value="custom">Période personnalisée</option>
+                    </Select>
+                    
+                    <Button onClick={() => window.location.reload()} colorScheme="blue" size="sm">
+                      Actualiser
+                    </Button>
+                  </HStack>
+                  
+                  {reportPeriod === 'custom' && (
+                    <HStack spacing={4}>
+                      <Box>
+                        <Text fontSize="sm" mb={1}>Date de début :</Text>
+                        <Input 
+                          type="date" 
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                        />
+                      </Box>
+                      <Box>
+                        <Text fontSize="sm" mb={1}>Date de fin :</Text>
+                        <Input 
+                          type="date" 
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                        />
+                      </Box>
+                    </HStack>
+                  )}
+                  
+                  <Text fontSize="sm" color="gray.600">
+                    Période analysée : {report.startDate} au {report.endDate}
+                  </Text>
+                </VStack>
+              </CardBody>
+            </Card>
+
             {/* Résumé Exécutif */}
             <Card>
               <CardHeader>
@@ -436,7 +554,7 @@ const WalletMonitoring: React.FC = () => {
                       {formatValueWithUSD(Math.abs(report.netFlow))}
                     </StatNumber>
                     <StatHelpText>
-                      {report.netFlow >= 0 ? "Bénéfice" : "Perte"} du mois
+                      {report.netFlow >= 0 ? "Bénéfice" : "Perte"} de la période
                     </StatHelpText>
                   </Stat>
                 </SimpleGrid>
@@ -550,8 +668,13 @@ const WalletMonitoring: React.FC = () => {
                   </HStack>
                   
                   <HStack justify="space-between">
+                    <Text fontWeight="bold">Solde du contrat :</Text>
+                    <Text>{report.contractBalance} USDC</Text>
+                  </HStack>
+                  
+                  <HStack justify="space-between">
                     <Text fontWeight="bold">Transactions analysées:</Text>
-                    <Text>{report.transactionCount} transactions ce mois</Text>
+                    <Text>{report.transactionCount} transactions sur la période</Text>
                   </HStack>
                   
                   <HStack justify="space-between">
@@ -822,7 +945,7 @@ const WalletMonitoring: React.FC = () => {
         {/* Résumé */}
         <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Total Entré</StatLabel>
+            <StatLabel color="black">Total Entré</StatLabel>
             <StatNumber color="green.500">{formatValueWithUSD(summary.totalIn)}</StatNumber>
             <StatHelpText>
               <StatArrow type="increase" />
@@ -831,7 +954,7 @@ const WalletMonitoring: React.FC = () => {
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Total Sorti</StatLabel>
+            <StatLabel color="black">Total Sorti</StatLabel>
             <StatNumber color="red.500">{formatValueWithUSD(summary.totalOut)}</StatNumber>
             <StatHelpText>
               <StatArrow type="decrease" />
@@ -840,13 +963,13 @@ const WalletMonitoring: React.FC = () => {
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Frais Totaux</StatLabel>
+            <StatLabel color="black">Frais Totaux</StatLabel>
             <StatNumber color="orange.500">{formatValueWithUSD(summary.totalFees)}</StatNumber>
             <StatHelpText>Gas utilisé</StatHelpText>
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Flux Net</StatLabel>
+            <StatLabel color="black">Flux Net</StatLabel>
             <StatNumber color={summary.netFlow >= 0 ? "green.500" : "red.500"}>
               {formatValueWithUSD(summary.netFlow)}
             </StatNumber>
@@ -864,20 +987,20 @@ const WalletMonitoring: React.FC = () => {
           </CardHeader>
           <CardBody>
             <SimpleGrid columns={3} spacing={4}>
-              <Box textAlign="center" p={4} bg="blue.50" borderRadius="lg">
-                <Text fontSize="2xl" fontWeight="bold" color="blue.600">
+              <Box textAlign="center" p={4} bg="blue.100" borderRadius="lg">
+                <Text fontSize="2xl" fontWeight="bold" color="blue.900">
                   {summary.byType.normal}
                 </Text>
                 <Text fontSize="sm" color="gray.600">Transactions</Text>
               </Box>
-              <Box textAlign="center" p={4} bg="purple.50" borderRadius="lg">
-                <Text fontSize="2xl" fontWeight="bold" color="purple.600">
+              <Box textAlign="center" p={4} bg="purple.100" borderRadius="lg">
+                <Text fontSize="2xl" fontWeight="bold" color="purple.900">
                   {summary.byType.internal}
                 </Text>
                 <Text fontSize="sm" color="gray.600">Internes</Text>
               </Box>
-              <Box textAlign="center" p={4} bg="green.50" borderRadius="lg">
-                <Text fontSize="2xl" fontWeight="bold" color="green.600">
+              <Box textAlign="center" p={4} bg="green.100" borderRadius="lg">
+                <Text fontSize="2xl" fontWeight="bold" color="green.900">
                   {summary.byType.token}
                 </Text>
                 <Text fontSize="sm" color="gray.600">Tokens BEP-20</Text>
