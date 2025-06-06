@@ -14,7 +14,7 @@ import InvestmentCard from '../components/dashboard/InvestmentCard';
 import InvestmentChart from '../components/dashboard/InvestmentChart';
 
 const Dashboard = () => {
-  const { address, balance } = useWallet();
+  const { address, balance, chainId } = useWallet();
   const { 
     activeInvestments, 
     plans, 
@@ -25,94 +25,82 @@ const Dashboard = () => {
     getTotalReturns 
   } = useInvestment();
   
-  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
-  const [withdrawingCapitalId, setWithdrawingCapitalId] = useState<string | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState(null);
+  const [withdrawingCapitalId, setWithdrawingCapitalId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [totalReturnsValue, setTotalReturnsValue] = useState(0);
-  const [calculatedInvestments, setCalculatedInvestments] = useState<Array<{
-    investment: typeof activeInvestments[0];
-    plan: typeof plans[0];
-    returns: number;
-  }>>([]);
+  const [calculatedInvestments, setCalculatedInvestments] = useState([]);
   
   // Données du graphique pour démonstration
   const [chartData, setChartData] = useState({
-  labels: [],
-  values: []
-});
+    labels: [],
+    values: []
+  });
 
-// Format pour afficher les dates de semaine
-const formatWeekLabel = (date) => {
-  // Format: "DD MMM" (ex: "15 Jan")
-  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-};
+  // Format pour afficher les dates de semaine
+  const formatWeekLabel = (date) => {
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  };
 
-// Fonction utilitaire pour ajouter des jours à une date
-const addDays = (date, days) => {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-};
+  // Fonction utilitaire pour ajouter des jours à une date
+  const addDays = (date, days) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  };
 
-// Ajoutez cette fonction pour générer des données de graphique hebdomadaires
-useEffect(() => {
-  if (calculatedInvestments.length === 0) {
-    // Pas d'investissements, définir des données vides ou un message
-    setChartData({
-      labels: ['Aucune donnée'],
-      values: [0]
-    });
-    return;
-  }
+  // Générer des données de graphique hebdomadaires
+  useEffect(() => {
+    if (calculatedInvestments.length === 0) {
+      setChartData({
+        labels: ['Aucune donnée'],
+        values: [0]
+      });
+      return;
+    }
 
-  // Trier les investissements par date de début
-  const sortedInvestments = [...calculatedInvestments].sort((a, b) => 
-    new Date(a.investment.startDate).getTime() - new Date(b.investment.startDate).getTime()
-  );
+    // Trier les investissements par date de début
+    const sortedInvestments = [...calculatedInvestments].sort((a, b) => 
+      new Date(a.investment.startDate).getTime() - new Date(b.investment.startDate).getTime()
+    );
 
-  // Trouver la date du premier investissement
-  const firstInvestmentDate = new Date(sortedInvestments[0].investment.startDate);
-  const currentDate = new Date();
-  
-  const labels = [];
-  const values = [];
-  
-  // Créer un tableau de dates hebdomadaires entre le premier investissement et aujourd'hui
-  let currentWeek = new Date(firstInvestmentDate);
-  
-  while (currentWeek <= currentDate) {
-    // Format de la semaine
-    const weekLabel = formatWeekLabel(currentWeek);
-    labels.push(weekLabel);
+    // Trouver la date du premier investissement
+    const firstInvestmentDate = new Date(sortedInvestments[0].investment.startDate);
+    const currentDate = new Date();
     
-    // Calculer la valeur totale des investissements à cette date
-    const totalValue = sortedInvestments.reduce((sum, item) => {
-      const investmentDate = new Date(item.investment.startDate);
+    const labels = [];
+    const values = [];
+    
+    // Créer un tableau de dates hebdomadaires entre le premier investissement et aujourd'hui
+    let currentWeek = new Date(firstInvestmentDate);
+    
+    while (currentWeek <= currentDate) {
+      const weekLabel = formatWeekLabel(currentWeek);
+      labels.push(weekLabel);
       
-      // Inclure uniquement les investissements qui ont commencé avant ou pendant cette semaine
-      if (investmentDate <= currentWeek) {
-        // Calculer les intérêts accumulés jusqu'à cette date
-        const timeDiff = Math.min(
-          currentWeek.getTime() - investmentDate.getTime(),
-          currentDate.getTime() - investmentDate.getTime()
-        );
-        const daysActive = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        const dailyReturn = item.investment.dailyReturn;
+      // Calculer la valeur totale des investissements à cette date
+      const totalValue = sortedInvestments.reduce((sum, item) => {
+        const investmentDate = new Date(item.investment.startDate);
         
-        // Ajouter le montant initial + les rendements estimés
-        return sum + item.investment.amount + (dailyReturn * daysActive);
-      }
-      return sum;
-    }, 0);
+        if (investmentDate <= currentWeek) {
+          const timeDiff = Math.min(
+            currentWeek.getTime() - investmentDate.getTime(),
+            currentDate.getTime() - investmentDate.getTime()
+          );
+          const daysActive = Math.ceil(timeDiff / (1000 * 3600 * 24));
+          const dailyReturn = item.investment.dailyReturn;
+          
+          return sum + item.investment.amount + (dailyReturn * daysActive);
+        }
+        return sum;
+      }, 0);
+      
+      values.push(parseFloat(totalValue.toFixed(2)));
+      currentWeek = addDays(currentWeek, 7);
+    }
     
-    values.push(parseFloat(totalValue.toFixed(2)));
-    
-    // Passer à la semaine suivante (ajouter 7 jours)
-    currentWeek = addDays(currentWeek, 7);
-  }
-  
-  setChartData({ labels, values });
-}, [calculatedInvestments]);
+    setChartData({ labels, values });
+  }, [calculatedInvestments]);
   
   // Calculer les rendements totaux
   useEffect(() => {
@@ -136,14 +124,12 @@ useEffect(() => {
             return null;
           }
           
-          // Utiliser investment.id comme identifiant, qui est une chaîne
           const stakeId = parseInt(investment.id);
           const returns = await calculateReturns(stakeId);
           
           return { investment, plan, returns };
         }));
         
-        // Filtrer les valeurs nulles
         setCalculatedInvestments(processed.filter(Boolean));
       } catch (error) {
         console.error('Erreur dans le calcul des rendements:', error);
@@ -154,12 +140,10 @@ useEffect(() => {
   }, [activeInvestments, plans, calculateReturns]);
   
   // Gérer le retrait des rendements
-  const handleWithdraw = async (investmentId: string) => {
+  const handleWithdraw = async (investmentId) => {
     setWithdrawingId(investmentId);
     try {
       await withdrawReturns(investmentId);
-      
-      // Rafraîchir les calculs après le retrait
       await handleRefresh();
     } catch (error) {
       console.error('Erreur de retrait:', error);
@@ -169,12 +153,10 @@ useEffect(() => {
   };
   
   // Gérer le retrait du capital
-  const handleWithdrawCapital = async (investmentId: string) => {
+  const handleWithdrawCapital = async (investmentId) => {
     setWithdrawingCapitalId(investmentId);
     try {
       await withdrawCapital(investmentId);
-      
-      // Rafraîchir les calculs après le retrait
       await handleRefresh();
     } catch (error) {
       console.error('Erreur de retrait du capital:', error);
@@ -183,10 +165,11 @@ useEffect(() => {
     }
   };
   
-  // Gérer le rafraîchissement des données
+  // Gérer le rafraîchissement des données d'investissement uniquement
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      // Rafraîchir uniquement les données d'investissement
       const total = await getTotalReturns();
       setTotalReturnsValue(total);
       
@@ -235,7 +218,9 @@ useEffect(() => {
             </div>
             <button
               onClick={handleRefresh}
-              className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+              disabled={refreshing}
+              className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+              title="Rafraîchir les données d'investissement"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
@@ -248,11 +233,13 @@ useEffect(() => {
             title="Solde USDT" 
             value={`${balance.usdt.toFixed(2)} USDT`}
             icon={<DollarSign size={22} />}
+            className={balance.usdt === 0 ? 'border-yellow-500' : ''}
           />
           <StatsCard 
             title="Solde USDC" 
             value={`${balance.usdc.toFixed(2)} USDC`}
             icon={<DollarSign size={22} />}
+            className={balance.usdc === 0 ? 'border-yellow-500' : ''}
           />
           <StatsCard 
             title="Total Investi" 
@@ -267,6 +254,46 @@ useEffect(() => {
             change={{ value: '8.2%', positive: true }}
           />
         </div>
+
+        {/* Message d'information si soldes à 0 ou mauvais réseau */}
+        {address && (
+          <>
+            {chainId && chainId !== 56 && (
+              <div className="bg-red-600/10 border border-red-600/20 rounded-lg p-4 mb-6">
+                <div className="flex items-center">
+                  <div className="bg-red-600/20 rounded-full p-2 mr-3">
+                    <RefreshCw size={16} className="text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-red-400 font-medium">Réseau incorrect détecté</h3>
+                    <p className="text-red-300 text-sm mt-1">
+                      Vous êtes connecté au réseau {chainId}. Les tokens USDC/USDT sont configurés pour BSC Mainnet (56). 
+                      Veuillez changer de réseau dans MetaMask.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {chainId === 56 && balance.usdt === 0 && balance.usdc === 0 && (
+              <div className="bg-yellow-600/10 border border-yellow-600/20 rounded-lg p-4 mb-6">
+                <div className="flex items-center">
+                  <div className="bg-yellow-600/20 rounded-full p-2 mr-3">
+                    <RefreshCw size={16} className="text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-yellow-400 font-medium">Soldes USDC/USDT non détectés</h3>
+                    <p className="text-yellow-300 text-sm mt-1">
+                      Vous êtes sur BSC Mainnet mais aucun solde USDC/USDT n'est détecté. 
+                      Vérifiez que vous possédez ces tokens sur BSC. Les soldes se chargent automatiquement.
+                      Consultez la console pour plus de détails.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
         
         {/* Contenu principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -329,11 +356,11 @@ useEffect(() => {
                     <span className="text-white">{totalInvested.toFixed(2)} USDT/USDC</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full" 
-                    style={{ width: totalInvested > 0 ? '100%' : '0%' }}
-                  ></div>
-                </div>
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: totalInvested > 0 ? '100%' : '0%' }}
+                    ></div>
+                  </div>
                 </div>
                 
                 <div>

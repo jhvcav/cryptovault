@@ -1,19 +1,20 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { useContracts } from '../hooks/useContracts';
 
-// Adresses des tokens (ajustez-les selon vos besoins)
+// Adresses des tokens BSC
 const TOKEN_ADDRESSES = {
-  USDT: "0x55d398326f99059fF775485246999027B3197955",
-  USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+  USDT: "0x55d398326f99059fF775485246999027B3197955", // USDT BSC
+  USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"  // USDC BSC
 };
 
-// ABI simplifié pour les tokens ERC20
-const erc20ABI = [
+// ABI ERC20 minimal
+const ERC20_ABI = [
   "function balanceOf(address account) view returns (uint256)",
   "function decimals() view returns (uint8)",
   "function symbol() view returns (string)"
 ];
+
+const BSC_CHAIN_ID = 56;
 
 interface WalletContextType {
   address: string | null;
@@ -27,89 +28,70 @@ interface WalletContextType {
   isConnected: boolean;
   chainId: number | null;
   switchNetwork: (chainId: number) => Promise<void>;
-}
-
-interface WalletProviderProps {
-  children: ReactNode;
+  refreshBalances: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-export const WalletProvider = ({ children }: WalletProviderProps) => {
+export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [address, setAddress] = useState<string | null>(null);
   const [balance, setBalance] = useState({ usdt: 0, usdc: 0 });
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState<number | null>(null);
-  
-  // Utilisation du provider de useContracts
-  const { provider } = useContracts();
 
   // Fonction pour récupérer le solde d'un token
-  const getTokenBalance = async (tokenSymbol: string, userAddress: string) => {
-    if (!provider || !userAddress) return "0";
-    
+  const getTokenBalance = async (tokenAddress: string, userAddress: string): Promise<number> => {
     try {
-      const tokenAddress = tokenSymbol === 'USDT' 
-        ? TOKEN_ADDRESSES.USDT 
-        : TOKEN_ADDRESSES.USDC;
+      if (!window.ethereum || !userAddress) return 0;
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
       
-      // Créer un contrat pour le token
-      const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, provider);
-      
-      // Récupérer la balance et les décimales
       const [balance, decimals] = await Promise.all([
-        tokenContract.balanceOf(userAddress),
-        tokenContract.decimals()
+        contract.balanceOf(userAddress),
+        contract.decimals()
       ]);
       
-      // Formater la balance
-      return ethers.formatUnits(balance, decimals);
+      const formattedBalance = ethers.formatUnits(balance, decimals);
+      return parseFloat(formattedBalance);
     } catch (error) {
-      console.error(`Erreur lors de la récupération du solde ${tokenSymbol}:`, error);
-      return "0";
+      console.error('Erreur récupération solde token:', error);
+      return 0;
     }
   };
 
-  // Utiliser useCallback pour updateBalances pour éviter les recréations de fonction
+  // Fonction pour mettre à jour tous les soldes
   const updateBalances = useCallback(async (userAddress: string) => {
     try {
-      if (!userAddress || !provider) return;
-      
-      console.log("Mise à jour des soldes pour l'adresse:", userAddress);
+      console.log('Mise à jour des soldes pour:', userAddress);
       
       const [usdtBalance, usdcBalance] = await Promise.all([
-        getTokenBalance('USDT', userAddress),
-        getTokenBalance('USDC', userAddress)
+        getTokenBalance(TOKEN_ADDRESSES.USDT, userAddress),
+        getTokenBalance(TOKEN_ADDRESSES.USDC, userAddress)
       ]);
 
-      // Convertir les soldes en nombres
-      const newUsdt = parseFloat(usdtBalance);
-      const newUsdc = parseFloat(usdcBalance);
+      console.log('Soldes récupérés - USDT:', usdtBalance, 'USDC:', usdcBalance);
       
-      console.log("Soldes récupérés - USDT:", usdtBalance, "USDC:", usdcBalance);
-      
-      // Vérifier si les soldes ont changé avant de mettre à jour l'état
-      if (newUsdt !== balance.usdt || newUsdc !== balance.usdc) {
-        setBalance({
-          usdt: newUsdt,
-          usdc: newUsdc
-        });
-      }
+      setBalance({
+        usdt: usdtBalance,
+        usdc: usdcBalance
+      });
     } catch (error) {
-      console.error('Erreur lors de la mise à jour des soldes:', error);
+      console.error('Erreur mise à jour soldes:', error);
     }
-  }, [provider, balance.usdt, balance.usdc, getTokenBalance]);
+  }, []);
 
+  // Fonction de connexion
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert('Veuillez installer MetaMask pour utiliser cette application.');
+      alert('Veuillez installer MetaMask');
       return;
     }
 
     setIsConnecting(true);
     try {
-      const accounts = await (window.ethereum as any).request({
+      const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts'
       });
 
@@ -118,135 +100,139 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
         setAddress(userAddress);
         setIsConnected(true);
         localStorage.setItem('walletConnected', 'true');
+        
+        // Charger les soldes immédiatement
         await updateBalances(userAddress);
       }
     } catch (error) {
-      console.error('Erreur de connexion:', error);
-      alert('Échec de la connexion au portefeuille.');
+      console.error('Erreur connexion:', error);
+      alert('Erreur de connexion au wallet');
     } finally {
       setIsConnecting(false);
     }
   };
 
+  // Fonction de déconnexion
   const disconnectWallet = () => {
     setAddress(null);
     setBalance({ usdt: 0, usdc: 0 });
     setIsConnected(false);
+    setChainId(null);
     localStorage.removeItem('walletConnected');
   };
 
+  // Fonction pour rafraîchir les soldes
+  const refreshBalances = useCallback(async () => {
+    if (address) {
+      await updateBalances(address);
+    }
+  }, [address, updateBalances]);
+
+  // Fonction pour changer de réseau
   const switchNetwork = async (targetChainId: number) => {
     if (!window.ethereum) return;
 
     try {
-      await (window.ethereum as any).request({
+      await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: `0x${targetChainId.toString(16)}` }],
       });
     } catch (error: any) {
       if (error.code === 4902) {
         try {
-          await (window.ethereum as any).request({
+          await window.ethereum.request({
             method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: `0x${targetChainId.toString(16)}`,
-                chainName: 'BSC Mainnet',
-                nativeCurrency: {
-                  name: 'BNB',
-                  symbol: 'BNB',
-                  decimals: 18
-                },
-                rpcUrls: ['https://bsc-dataseed.binance.org/'],
-                blockExplorerUrls: ['https://bscscan.com/']
-              }
-            ]
+            params: [{
+              chainId: `0x${targetChainId.toString(16)}`,
+              chainName: 'BSC Mainnet',
+              nativeCurrency: {
+                name: 'BNB',
+                symbol: 'BNB',
+                decimals: 18
+              },
+              rpcUrls: ['https://bsc-dataseed.binance.org/'],
+              blockExplorerUrls: ['https://bscscan.com/']
+            }]
           });
         } catch (addError) {
-          console.error('Erreur lors de l\'ajout du réseau:', addError);
+          console.error('Erreur ajout réseau:', addError);
         }
       }
-      console.error('Erreur lors du changement de réseau:', error);
+      console.error('Erreur changement réseau:', error);
     }
   };
 
-  // Effet pour la connexion initiale
+  // Effet pour la reconnexion automatique
   useEffect(() => {
-    const wasConnected = localStorage.getItem('walletConnected') === 'true';
-    if (wasConnected && window.ethereum) {
-      (window.ethereum as any).request({ method: 'eth_accounts' })
-        .then((accounts: string[]) => {
+    const checkWalletConnection = async () => {
+      const wasConnected = localStorage.getItem('walletConnected') === 'true';
+      
+      if (wasConnected && window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts.length > 0) {
-            const userAddress = accounts[0];
-            setAddress(userAddress);
+            setAddress(accounts[0]);
             setIsConnected(true);
-            updateBalances(userAddress);
+            await updateBalances(accounts[0]);
           }
-        })
-        .catch(console.error);
-    }
+        } catch (error) {
+          console.error('Erreur reconnexion:', error);
+        }
+      }
+    };
+
+    checkWalletConnection();
   }, [updateBalances]);
 
-  // Définir le type pour ethereum provider  
-  // Effet pour gérer les changements de compte et de chaîne
+  // Effet pour récupérer le chainId initial
   useEffect(() => {
-    // Vérifier si window.ethereum existe
+    const getCurrentChainId = async () => {
+      if (window.ethereum) {
+        try {
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          setChainId(parseInt(chainId, 16));
+        } catch (error) {
+          console.error('Erreur récupération chainId:', error);
+        }
+      }
+    };
+
+    getCurrentChainId();
+  }, []);
+
+  // Effet pour les événements MetaMask
+  useEffect(() => {
     if (!window.ethereum) return;
 
     const handleAccountsChanged = async (accounts: string[]) => {
       if (accounts.length > 0) {
-        const userAddress = accounts[0];
-        setAddress(userAddress);
+        setAddress(accounts[0]);
         setIsConnected(true);
-        await updateBalances(userAddress);
+        await updateBalances(accounts[0]);
       } else {
         disconnectWallet();
       }
     };
 
-    const handleChainChanged = (chainId: string) => {
-      setChainId(parseInt(chainId, 16));
-    };
-
-    // Utiliser une assertion de type plus agressive
-    (window.ethereum as any).request({ method: 'eth_chainId' })
-      .then((chainId: string) => setChainId(parseInt(chainId, 16)))
-      .catch(console.error);
-
-    // Utiliser une assertion de type plus agressive
-    (window.ethereum as any).on('accountsChanged', handleAccountsChanged);
-    (window.ethereum as any).on('chainChanged', handleChainChanged);
-
-    return () => {
-      // Utiliser une assertion de type plus agressive
-      (window.ethereum as any).removeListener('accountsChanged', handleAccountsChanged);
-      (window.ethereum as any).removeListener('chainChanged', handleChainChanged);
-    };
-  }, [updateBalances]);
-
-  // Un seul useEffect pour la mise à jour des soldes
-  useEffect(() => {
-    let isMounted = true;
-    
-    // N'exécuter que si connecté avec une adresse
-    if (!isConnected || !address) return;
-    
-    // Mise à jour initiale
-    updateBalances(address);
-    
-    // Puis créer un intervalle pour les mises à jour périodiques
-    const interval = setInterval(() => {
-      if (isMounted) {
-        updateBalances(address);
+    const handleChainChanged = async (chainId: string) => {
+      const newChainId = parseInt(chainId, 16);
+      setChainId(newChainId);
+      
+      if (address) {
+        await updateBalances(address);
       }
-    }, 30000); // Toutes les 30 secondes
-    
-    // Nettoyer l'intervalle lors du démontage
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
     };
-  }, [isConnected, address, updateBalances]);
+
+    window.ethereum.on('accountsChanged', handleAccountsChanged);
+    window.ethereum.on('chainChanged', handleChainChanged);
+
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
+      }
+    };
+  }, [address, updateBalances]);
 
   const value = {
     address,
@@ -256,10 +242,15 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     isConnecting,
     isConnected,
     chainId,
-    switchNetwork
+    switchNetwork,
+    refreshBalances
   };
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider value={value}>
+      {children}
+    </WalletContext.Provider>
+  );
 };
 
 export const useWallet = () => {
