@@ -1,4 +1,4 @@
-// src/pages/WalletMonitoring.tsx
+// src/pages/WalletMonitoring.tsx - VERSION COMPLÈTE
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -39,6 +39,13 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
 } from '@chakra-ui/react';
 import { 
   ArrowUp, 
@@ -46,7 +53,8 @@ import {
   ExternalLink,
   Calendar,
   Info,
-  Search 
+  Search,
+  FileText,
 } from 'lucide-react';
 
 // Types pour les données BSCScan
@@ -134,29 +142,27 @@ const WalletMonitoring: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('7d');
   const [activeCategory, setActiveCategory] = useState(0);
   const [walletAddress, setWalletAddress] = useState('0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF');
+  const [showReport, setShowReport] = useState(false);
 
   const API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY;
-  const BNB_PRICE_USD = 670; // Prix approximatif du BNB en USD
+  const BNB_PRICE_USD = 670;
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
-  // Fonction pour valider l'adresse Ethereum/BSC
+  // Fonction pour valider l'adresse
   const isValidAddress = (address: string): boolean => {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
   };
 
-  // Fonction pour gérer le changement d'adresse
   const handleAddressChange = (newAddress: string) => {
     setWalletAddress(newAddress);
-    // Reset des données quand l'adresse change
     setTransactions([]);
     setInternalTxs([]);
     setTokenTransfers([]);
     setError(null);
   };
 
-  // Fonction pour rechercher les données du wallet
   const handleSearch = () => {
     if (!isValidAddress(walletAddress)) {
       setError('Adresse de wallet invalide. Veuillez saisir une adresse BSC valide (0x...)');
@@ -165,7 +171,7 @@ const WalletMonitoring: React.FC = () => {
     fetchBSCScanData();
   };
 
-  // Fonction pour récupérer les données depuis BSCScan
+  // Fonction pour récupérer les données BSCScan
   const fetchBSCScanData = async () => {
     if (!API_KEY) {
       setError('Clé API BSCScan non configurée');
@@ -178,19 +184,16 @@ const WalletMonitoring: React.FC = () => {
     try {
       const baseUrl = 'https://api.bscscan.com/api';
       
-      // Récupérer les transactions normales
       const normalTxsResponse = await fetch(
         `${baseUrl}?module=account&action=txlist&address=${walletAddress}&sort=desc&apikey=${API_KEY}`
       );
       const normalTxsData = await normalTxsResponse.json();
 
-      // Récupérer les transactions internes
       const internalTxsResponse = await fetch(
         `${baseUrl}?module=account&action=txlistinternal&address=${walletAddress}&sort=desc&apikey=${API_KEY}`
       );
       const internalTxsData = await internalTxsResponse.json();
 
-      // Récupérer les transferts de tokens BEP-20
       const tokenTxsResponse = await fetch(
         `${baseUrl}?module=account&action=tokentx&address=${walletAddress}&sort=desc&apikey=${API_KEY}`
       );
@@ -215,13 +218,11 @@ const WalletMonitoring: React.FC = () => {
   };
 
   useEffect(() => {
-    // Charger les données seulement si l'adresse est valide au démarrage
     if (isValidAddress(walletAddress)) {
       fetchBSCScanData();
     }
   }, []);
 
-  // Fonction pour filtrer les transactions par date
   const filterByDate = (timestamp: string): boolean => {
     const txDate = new Date(parseInt(timestamp) * 1000);
     const now = new Date();
@@ -237,7 +238,6 @@ const WalletMonitoring: React.FC = () => {
     }
   };
 
-  // Calculer le résumé du wallet
   const calculateSummary = (): WalletSummary => {
     const filteredNormal = transactions.filter(tx => filterByDate(tx.timeStamp));
     const filteredInternal = internalTxs.filter(tx => filterByDate(tx.timeStamp));
@@ -245,9 +245,8 @@ const WalletMonitoring: React.FC = () => {
 
     let totalIn = 0, totalOut = 0, totalFees = 0;
 
-    // Calculer pour les transactions normales
     filteredNormal.forEach(tx => {
-      const value = parseFloat(tx.value) / Math.pow(10, 18); // Convert from Wei to BNB
+      const value = parseFloat(tx.value) / Math.pow(10, 18);
       const fee = (parseFloat(tx.gasUsed) * parseFloat(tx.gasPrice)) / Math.pow(10, 18);
       
       if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
@@ -258,7 +257,6 @@ const WalletMonitoring: React.FC = () => {
       totalFees += fee;
     });
 
-    // Calculer pour les transactions internes
     filteredInternal.forEach(tx => {
       const value = parseFloat(tx.value) / Math.pow(10, 18);
       if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
@@ -284,24 +282,20 @@ const WalletMonitoring: React.FC = () => {
 
   const summary = calculateSummary();
 
-  // Fonction pour formater les dates
   const formatDate = (timestamp: string): string => {
     return new Date(parseInt(timestamp) * 1000).toLocaleString('fr-FR');
   };
 
-  // Fonction pour formater les valeurs
   const formatValue = (value: string, decimals = 18): string => {
     const val = parseFloat(value) / Math.pow(10, decimals);
     return val.toFixed(6);
   };
 
-  // Fonction pour formater les valeurs avec équivalent USD
   const formatValueWithUSD = (bnbAmount: number): string => {
     const usdValue = bnbAmount * BNB_PRICE_USD;
     return `${bnbAmount.toFixed(4)} BNB ($${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
   };
 
-  // Fonction pour déterminer la méthode de transaction
   const getTransactionMethod = (tx: Transaction): string => {
     if (tx.functionName) {
       return tx.functionName.split('(')[0];
@@ -312,20 +306,302 @@ const WalletMonitoring: React.FC = () => {
     return 'Contract Call';
   };
 
-  // Fonction pour déterminer la direction
   const getDirection = (from: string, to: string): 'in' | 'out' => {
     return to.toLowerCase() === walletAddress.toLowerCase() ? 'in' : 'out';
   };
 
-  // Composant pour les icônes de direction
   const DirectionIcon = ({ direction }: { direction: 'in' | 'out' }) => {
     const IconComponent = direction === 'in' ? ArrowDown : ArrowUp;
-    const color = direction === 'in' ? '#38A169' : '#E53E3E'; // green.500 : red.500
+    const color = direction === 'in' ? '#38A169' : '#E53E3E';
     
     return <IconComponent size={16} color={color} />;
   };
 
-  // Rendu des tableaux de transactions
+  // Fonction pour analyser les transactions et générer le rapport
+  const generateTransparencyReport = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const monthlyTransactions = transactions.filter(tx => {
+      const txDate = new Date(parseInt(tx.timeStamp) * 1000);
+      return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+    });
+    
+    const monthlyTokens = tokenTransfers.filter(tx => {
+      const txDate = new Date(parseInt(tx.timeStamp) * 1000);
+      return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+    });
+    
+    let userDeposits = 0;
+    let platformInvestments = 0;
+    let platformReturns = 0;
+    let userWithdrawals = 0;
+    let gasFees = 0;
+    
+    monthlyTransactions.forEach(tx => {
+      const value = parseFloat(tx.value) / Math.pow(10, 18);
+      const fee = (parseFloat(tx.gasUsed) * parseFloat(tx.gasPrice)) / Math.pow(10, 18);
+      gasFees += fee;
+      
+      if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
+        platformReturns += value;
+      } else {
+        platformInvestments += value;
+      }
+    });
+    
+    monthlyTokens.forEach(tx => {
+      const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+      
+      if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
+        if (tx.tokenSymbol === 'USDT' || tx.tokenSymbol === 'USDC') {
+          userDeposits += value;
+        }
+      } else {
+        if (tx.tokenSymbol === 'USDT' || tx.tokenSymbol === 'USDC') {
+          userWithdrawals += value;
+        }
+      }
+    });
+    
+    const daysInMonth = now.getDate();
+    const estimatedBeginnerReturns = (userDeposits * 0.10 * daysInMonth) / 365;
+    const estimatedGrowthReturns = (userDeposits * 0.15 * daysInMonth) / 365;
+    const estimatedPremiumReturns = (userDeposits * 0.20 * daysInMonth) / 365;
+    const totalEstimatedReturns = estimatedBeginnerReturns + estimatedGrowthReturns + estimatedPremiumReturns;
+    
+    return {
+      period: `${now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`,
+      userDeposits,
+      platformInvestments,
+      platformReturns,
+      userWithdrawals,
+      gasFees,
+      netFlow: platformReturns - platformInvestments,
+      estimatedReturns: totalEstimatedReturns,
+      actualReturns: platformReturns,
+      performance: platformReturns > 0 ? ((platformReturns / totalEstimatedReturns) * 100) : 0,
+      transactionCount: monthlyTransactions.length + monthlyTokens.length,
+      walletAddress
+    };
+  };
+
+  const report = generateTransparencyReport();
+
+  // Composant du rapport de transparence
+  const TransparencyReportModal = () => (
+    <Modal isOpen={showReport} onClose={() => setShowReport(false)} size="6xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>
+          <HStack>
+            <FileText size={24} />
+            <Text>Rapport de Transparence - {report.period}</Text>
+          </HStack>
+        </ModalHeader>
+        <ModalCloseButton />
+        
+        <ModalBody>
+          <VStack spacing={6} align="stretch">
+            {/* Résumé Exécutif */}
+            <Card>
+              <CardHeader>
+                <Heading size="md" color="blue.600">📊 Résumé Exécutif</Heading>
+              </CardHeader>
+              <CardBody>
+                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                  <Stat>
+                    <StatLabel>Dépôts Utilisateurs</StatLabel>
+                    <StatNumber color="green.500">
+                      {report.userDeposits.toFixed(2)} USDT
+                    </StatNumber>
+                    <StatHelpText>Fonds reçus des investisseurs</StatHelpText>
+                  </Stat>
+                  
+                  <Stat>
+                    <StatLabel>Rendements Générés</StatLabel>
+                    <StatNumber color="blue.500">
+                      {report.actualReturns.toFixed(4)} BNB
+                    </StatNumber>
+                    <StatHelpText>
+                      <StatArrow type={report.performance >= 100 ? "increase" : "decrease"} />
+                      Performance: {report.performance.toFixed(1)}%
+                    </StatHelpText>
+                  </Stat>
+                  
+                  <Stat>
+                    <StatLabel>Flux Net</StatLabel>
+                    <StatNumber color={report.netFlow >= 0 ? "green.500" : "red.500"}>
+                      {formatValueWithUSD(Math.abs(report.netFlow))}
+                    </StatNumber>
+                    <StatHelpText>
+                      {report.netFlow >= 0 ? "Bénéfice" : "Perte"} du mois
+                    </StatHelpText>
+                  </Stat>
+                </SimpleGrid>
+              </CardBody>
+            </Card>
+
+            {/* Analyse des Flux */}
+            <Card>
+              <CardHeader>
+                <Heading size="md" color="purple.600">💰 Analyse des Flux Financiers</Heading>
+              </CardHeader>
+              <CardBody>
+                <TableContainer>
+                  <Table variant="simple">
+                    <Thead>
+                      <Tr>
+                        <Th>Type de Flux</Th>
+                        <Th>Montant</Th>
+                        <Th>Équivalent USD</Th>
+                        <Th>Description</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      <Tr>
+                        <Td>
+                          <Badge colorScheme="green">Dépôts Utilisateurs</Badge>
+                        </Td>
+                        <Td>{report.userDeposits.toFixed(2)} USDT</Td>
+                        <Td>${report.userDeposits.toFixed(2)}</Td>
+                        <Td>Fonds des plans Débutant/Croissance/Premium</Td>
+                      </Tr>
+                      <Tr>
+                        <Td>
+                          <Badge colorScheme="orange">Investissements Plateformes</Badge>
+                        </Td>
+                        <Td>{report.platformInvestments.toFixed(4)} BNB</Td>
+                        <Td>${(report.platformInvestments * BNB_PRICE_USD).toFixed(2)}</Td>
+                        <Td>Vers PancakeSwap, Venus, Aave</Td>
+                      </Tr>
+                      <Tr>
+                        <Td>
+                          <Badge colorScheme="blue">Rendements Reçus</Badge>
+                        </Td>
+                        <Td>{report.platformReturns.toFixed(4)} BNB</Td>
+                        <Td>${(report.platformReturns * BNB_PRICE_USD).toFixed(2)}</Td>
+                        <Td>Profits du staking/farming</Td>
+                      </Tr>
+                      <Tr>
+                        <Td>
+                          <Badge colorScheme="red">Frais de Gas</Badge>
+                        </Td>
+                        <Td>{report.gasFees.toFixed(6)} BNB</Td>
+                        <Td>${(report.gasFees * BNB_PRICE_USD).toFixed(2)}</Td>
+                        <Td>Coûts opérationnels BSC</Td>
+                      </Tr>
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              </CardBody>
+            </Card>
+
+            {/* Performance des Plans */}
+            <Card>
+              <CardHeader>
+                <Heading size="md" color="green.600">📈 Performance des Plans d'Investissement</Heading>
+              </CardHeader>
+              <CardBody>
+                <SimpleGrid columns={3} spacing={4}>
+                  <Box p={4} bg="blue.50" borderRadius="lg" textAlign="center">
+                    <Text fontWeight="bold" color="blue.600">Plan Débutant</Text>
+                    <Text fontSize="2xl" fontWeight="bold">10% APR</Text>
+                    <Text fontSize="sm" color="gray.600">30 jours - Bloqué</Text>
+                    <Text fontSize="sm" mt={2}>
+                      Rendement estimé: {((report.userDeposits * 0.10) / 12).toFixed(2)} USDT/mois
+                    </Text>
+                  </Box>
+                  
+                  <Box p={4} bg="purple.50" borderRadius="lg" textAlign="center">
+                    <Text fontWeight="bold" color="purple.600">Plan Croissance</Text>
+                    <Text fontSize="2xl" fontWeight="bold">15% APR</Text>
+                    <Text fontSize="sm" color="gray.600">90 jours - Bloqué</Text>
+                    <Text fontSize="sm" mt={2}>
+                      Rendement estimé: {((report.userDeposits * 0.15) / 12).toFixed(2)} USDT/mois
+                    </Text>
+                  </Box>
+                  
+                  <Box p={4} bg="yellow.50" borderRadius="lg" textAlign="center">
+                    <Text fontWeight="bold" color="yellow.600">Plan Premium</Text>
+                    <Text fontSize="2xl" fontWeight="bold">20% APR</Text>
+                    <Text fontSize="sm" color="gray.600">180 jours - Bloqué</Text>
+                    <Text fontSize="sm" mt={2}>
+                      Rendement estimé: {((report.userDeposits * 0.20) / 12).toFixed(2)} USDT/mois
+                    </Text>
+                  </Box>
+                </SimpleGrid>
+              </CardBody>
+            </Card>
+
+            {/* Traçabilité On-Chain */}
+            <Card>
+              <CardHeader>
+                <Heading size="md" color="teal.600">🔗 Traçabilité On-Chain</Heading>
+              </CardHeader>
+              <CardBody>
+                <VStack spacing={3} align="stretch">
+                  <HStack justify="space-between">
+                    <Text fontWeight="bold">Wallet analysé:</Text>
+                    <Link href={`https://bscscan.com/address/${walletAddress}`} isExternal color="blue.500">
+                      {walletAddress.slice(0, 20)}... <ExternalLink size={12} style={{display: 'inline'}} />
+                    </Link>
+                  </HStack>
+                  
+                  <HStack justify="space-between">
+                    <Text fontWeight="bold">Transactions analysées:</Text>
+                    <Text>{report.transactionCount} transactions ce mois</Text>
+                  </HStack>
+                  
+                  <HStack justify="space-between">
+                    <Text fontWeight="bold">Période du rapport:</Text>
+                    <Text>{report.period}</Text>
+                  </HStack>
+                  
+                  <HStack justify="space-between">
+                    <Text fontWeight="bold">Génération du rapport:</Text>
+                    <Text>{new Date().toLocaleString('fr-FR')}</Text>
+                  </HStack>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            {/* Conclusions */}
+            <Alert status={report.performance >= 100 ? "success" : "warning"}>
+              <AlertIcon />
+              <Box>
+                <Text fontWeight="bold">
+                  {report.performance >= 100 ? "✅ Performance Positive" : "⚠️ Performance à Surveiller"}
+                </Text>
+                <Text fontSize="sm">
+                  {report.performance >= 100 
+                    ? `Les rendements générés (${report.performance.toFixed(1)}%) dépassent les attentes. La stratégie d'investissement est performante.`
+                    : `Les rendements générés (${report.performance.toFixed(1)}%) sont en dessous des attentes. Révision de la stratégie recommandée.`
+                  }
+                </Text>
+              </Box>
+            </Alert>
+          </VStack>
+        </ModalBody>
+
+        <ModalFooter>
+          <HStack spacing={3}>
+            <Button leftIcon={<Calendar size={16} />} colorScheme="green">
+              Exporter PDF
+            </Button>
+            <Button leftIcon={<FileText size={16} />} colorScheme="blue">
+              Exporter CSV
+            </Button>
+            <Button variant="ghost" onClick={() => setShowReport(false)}>
+              Fermer
+            </Button>
+          </HStack>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+
   const renderTransactionTable = (type: 'normal' | 'internal' | 'token') => {
     let data: any[] = [];
     let columns: string[] = [];
@@ -471,7 +747,6 @@ const WalletMonitoring: React.FC = () => {
             <VStack spacing={4} align="stretch">
               <Heading size="lg">💰 Monitoring Wallet</Heading>
               
-              {/* Champ de saisie pour l'adresse du wallet */}
               <Box>
                 <Text fontSize="sm" color="gray.600" mb={2}>
                   Adresse du wallet à analyser :
@@ -547,7 +822,7 @@ const WalletMonitoring: React.FC = () => {
         {/* Résumé */}
         <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="black">Total Entré</StatLabel>
+            <StatLabel color="white">Total Entré</StatLabel>
             <StatNumber color="green.500">{formatValueWithUSD(summary.totalIn)}</StatNumber>
             <StatHelpText>
               <StatArrow type="increase" />
@@ -556,7 +831,7 @@ const WalletMonitoring: React.FC = () => {
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="black">Total Sorti</StatLabel>
+            <StatLabel color="white">Total Sorti</StatLabel>
             <StatNumber color="red.500">{formatValueWithUSD(summary.totalOut)}</StatNumber>
             <StatHelpText>
               <StatArrow type="decrease" />
@@ -565,13 +840,13 @@ const WalletMonitoring: React.FC = () => {
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="black">Frais Totaux</StatLabel>
+            <StatLabel color="white">Frais Totaux</StatLabel>
             <StatNumber color="orange.500">{formatValueWithUSD(summary.totalFees)}</StatNumber>
             <StatHelpText>Gas utilisé</StatHelpText>
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="black">Flux Net</StatLabel>
+            <StatLabel color="white">Flux Net</StatLabel>
             <StatNumber color={summary.netFlow >= 0 ? "green.500" : "red.500"}>
               {formatValueWithUSD(summary.netFlow)}
             </StatNumber>
@@ -589,20 +864,20 @@ const WalletMonitoring: React.FC = () => {
           </CardHeader>
           <CardBody>
             <SimpleGrid columns={3} spacing={4}>
-              <Box textAlign="center" p={4} bg="blue.100" borderRadius="lg">
-                <Text fontSize="2xl" fontWeight="bold" color="blue.900">
+              <Box textAlign="center" p={4} bg="blue.50" borderRadius="lg">
+                <Text fontSize="2xl" fontWeight="bold" color="blue.600">
                   {summary.byType.normal}
                 </Text>
                 <Text fontSize="sm" color="gray.600">Transactions</Text>
               </Box>
-              <Box textAlign="center" p={4} bg="purple.100" borderRadius="lg">
-                <Text fontSize="2xl" fontWeight="bold" color="purple.900">
+              <Box textAlign="center" p={4} bg="purple.50" borderRadius="lg">
+                <Text fontSize="2xl" fontWeight="bold" color="purple.600">
                   {summary.byType.internal}
                 </Text>
                 <Text fontSize="sm" color="gray.600">Internes</Text>
               </Box>
-              <Box textAlign="center" p={4} bg="green.100" borderRadius="lg">
-                <Text fontSize="2xl" fontWeight="bold" color="green.900">
+              <Box textAlign="center" p={4} bg="green.50" borderRadius="lg">
+                <Text fontSize="2xl" fontWeight="bold" color="green.600">
                   {summary.byType.token}
                 </Text>
                 <Text fontSize="sm" color="gray.600">Tokens BEP-20</Text>
@@ -641,10 +916,17 @@ const WalletMonitoring: React.FC = () => {
           <Button colorScheme="green" leftIcon={<Calendar size={16} />}>
             Exporter CSV
           </Button>
-          <Button colorScheme="blue" leftIcon={<Info size={16} />}>
+          <Button 
+            colorScheme="blue" 
+            leftIcon={<Info size={16} />}
+            onClick={() => setShowReport(true)}
+          >
             Générer Rapport
           </Button>
         </HStack>
+
+        {/* Modal du rapport de transparence */}
+        <TransparencyReportModal />
       </VStack>
     </Box>
   );

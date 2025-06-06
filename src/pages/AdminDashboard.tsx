@@ -34,6 +34,7 @@ interface PlatformStats {
   totalInvested: string;
   totalUsers: string;
   totalFees: string;
+  contractBalance: string;
 }
 
 interface StakeInfo {
@@ -54,6 +55,7 @@ const AdminDashboard = () => {
     totalInvested: '0',
     totalUsers: '0',
     totalFees: '0',
+    contractBalance: '0',
   });
   const [stakes, setStakes] = useState<StakeInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +69,42 @@ const AdminDashboard = () => {
   const bgColor = 'transparent'; // Utiliser une couleur de fond transparente
   const bgColorCard = useColorModeValue('white', 'gray.800'); // Couleur de fond pour le thème clair/sombre
   const textColor = useColorModeValue('gray.600', 'gray.200');
+
+  const BNB_PRICE_USDC = 670; // Prix approximatif BNB en USDC
+
+  // Fonction pour formater le montant BNB du contrat avec sa valeur en USDC
+  const formatBNBWithUSDC = (bnbAmount: string): string => {
+  const bnb = parseFloat(bnbAmount);
+  const usdcValue = bnb * BNB_PRICE_USDC;
+  return `${bnb.toFixed(4)} BNB ($${usdcValue.toLocaleString('en-US', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  })})`;
+};
+
+// Ajouter cette fonction pour récupérer le solde USDC
+const getUSDCBalance = async () => {
+  try {
+    if (stakingContract) {
+      const usdcAddress = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC BSC
+      const usdcABI = ["function balanceOf(address) view returns (uint256)"];
+      const provider = stakingContract.runner?.provider || new ethers.BrowserProvider(window.ethereum);
+      const usdcContract = new ethers.Contract(usdcAddress, usdcABI, provider);
+      
+      const balance = await usdcContract.balanceOf(stakingContract.target);
+      const balanceFormatted = parseFloat(ethers.formatUnits(balance, 18)).toFixed(2);
+      
+      console.log('Solde USDC du contrat:', balanceFormatted);
+      
+      setStats(prev => ({
+        ...prev,
+        contractBalance: `${balanceFormatted} USDC`
+      }));
+    }
+  } catch (error) {
+    console.error('Erreur récupération solde USDC:', error);
+  }
+};
 
   // Fonction pour récupérer les adresses des investisseurs via l'API BSCScan
   const fetchInvestorsFromBSCScan = async () => {
@@ -227,6 +265,15 @@ const AdminDashboard = () => {
           console.error("Erreur lors de l'appel au contrat pour les statistiques:", contractError);
         }
         
+          try {
+  if (stakingContract && stakingContract.target) {
+    console.log('🔍 Debug solde contrat:');
+    await getUSDCBalance();
+  }
+} catch (error) {
+  console.error('❌ Erreur récupération solde contrat:', error);
+}
+
         // Récupérer les investissements - traiter dans un bloc try/catch séparé
         try {
           let allStakes = [];
@@ -442,6 +489,16 @@ const AdminDashboard = () => {
               <StatLabel color={textColor}>Nombre d'utilisateurs</StatLabel>
               <StatNumber>{stats.totalUsers}</StatNumber>
               <StatHelpText>Utilisateurs uniques</StatHelpText>
+            </Stat>
+          </CardBody>
+        </Card>
+
+        <Card bg={bgColorCard}>
+          <CardBody>
+            <Stat>
+              <StatLabel color={textColor}>Solde du Contrat (USDC)</StatLabel>
+              <StatNumber>{stats.contractBalance}</StatNumber>
+              <StatHelpText>Liquidités disponibles</StatHelpText>
             </Stat>
           </CardBody>
         </Card>

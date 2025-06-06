@@ -162,6 +162,8 @@ const AdminPage: React.FC = () => {
           • Wallet : {user?.walletAddress}
           <br />
           • Statut Owner : {isOwner ? '✅ Confirmé' : '❌ Non autorisé'}
+          <br />
+          • Contrat CryptoVault: 0x719fd9F511DDc561D03801161742D84ECb9445e9
         </Box>
       </VStack>
     </Box>
