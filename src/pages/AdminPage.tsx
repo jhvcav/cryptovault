@@ -20,14 +20,16 @@ import { useOwner } from '../hooks/useOwner';
 import { useAuth } from '../contexts/AuthContext';
 import UsersManagement from './UsersManagement';
 import AdminDashboard from './AdminDashboard';
+import WalletMonitoring from './WalletMonitoring';
 
 const AdminPage: React.FC = () => {
   const { isOwner } = useOwner();
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
 
-  const bgColor = useColorModeValue('white', 'gray.800');
+  //const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const bgColor = 'transparent'; // Couleur de fond transparente pour le thème sombre
 
   // Rediriger si pas authentifié
   if (!isAuthenticated) {
@@ -112,6 +114,17 @@ const AdminPage: React.FC = () => {
               >
                 👥 Gestion des Utilisateurs
               </Tab>
+              <Tab 
+                fontWeight="medium"
+                _selected={{ 
+                  color: 'green.600', 
+                  borderColor: 'green.500',
+                  borderBottomColor: 'white',
+                  bg: 'black'
+                }}
+              >
+                💰 Monitoring Wallet
+              </Tab>
             </TabList>
 
             <TabPanels>
@@ -123,6 +136,11 @@ const AdminPage: React.FC = () => {
               {/* Onglet 2: Gestion des utilisateurs */}
               <TabPanel p={0}>
                 <UsersManagement />
+              </TabPanel>
+
+              {/* Onglet 3: Monitoring Wallet */}
+              <TabPanel p={0}>
+                <WalletMonitoring />
               </TabPanel>
             </TabPanels>
           </Tabs>

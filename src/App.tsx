@@ -4,12 +4,10 @@ import { WalletProvider } from './contexts/WalletContext';
 import { InvestmentProvider } from './contexts/InvestmentContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useOwner } from './hooks/useOwner';
 
 // Pages
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
 import InvestPage from './pages/InvestPage';
 import RoadmapPage from './pages/RoadmapPage';
 import StrategyManagement from './pages/StrategyManagement';
@@ -22,7 +20,6 @@ import AdminPage from './pages/AdminPage';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ProtectedRoute from './components/utils/ProtectedRoute';
-import AdminRoute from './components/utils/AdminRoute';
 
 // Composant pour gérer l'authentification globale
 const AppContent: React.FC = () => {

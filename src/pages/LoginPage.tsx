@@ -21,7 +21,6 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
-import AirtableAuthService from '../services/AirtableAuthService';
 
 // Déclaration TypeScript pour window.ethereum
 declare global {
@@ -358,14 +357,6 @@ const LoginPage: React.FC = () => {
                   >
                     Se connecter à la plateforme
                   </Button>
-
-                  <Button 
-  onClick={() => AirtableAuthService.testConnection()}
-  colorScheme="green" 
-  size="sm"
->
-  Test Connexion Airtable
-</Button>
 
                   {/* Message d'erreur */}
                   {error && (

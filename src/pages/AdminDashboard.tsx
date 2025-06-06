@@ -64,7 +64,8 @@ const AdminDashboard = () => {
   const [knownUsers, setKnownUsers] = useState<string[]>([]);
   
   const navigate = useNavigate();
-  const bgColor = useColorModeValue('white', 'gray.700');
+  const bgColor = 'transparent'; // Utiliser une couleur de fond transparente
+  const bgColorCard = useColorModeValue('white', 'gray.800'); // Couleur de fond pour le thème clair/sombre
   const textColor = useColorModeValue('gray.600', 'gray.200');
 
   // Fonction pour récupérer les adresses des investisseurs via l'API BSCScan
@@ -397,7 +398,7 @@ const AdminDashboard = () => {
   return (
     <Box p={8}>
       <Flex justify="space-between" align="center" mb={6}>
-        <Heading>Tableau de bord {isAdmin ? 'administrateur' : 'utilisateur'}</Heading>
+        <Heading color= "green.600">Tableau de bord {isAdmin ? 'administrateur' : 'utilisateur'}</Heading>
         <Flex gap={2}>
           <Button
             leftIcon={<Icon as={RefreshCw} />}
@@ -425,7 +426,7 @@ const AdminDashboard = () => {
       )}
       
       <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} mb={8}>
-        <Card bg={bgColor}>
+        <Card bg={bgColorCard}>
           <CardBody>
             <Stat>
               <StatLabel color={textColor}>Total investi</StatLabel>
@@ -435,7 +436,7 @@ const AdminDashboard = () => {
           </CardBody>
         </Card>
 
-        <Card bg={bgColor}>
+        <Card bg={bgColorCard}>
           <CardBody>
             <Stat>
               <StatLabel color={textColor}>Nombre d'utilisateurs</StatLabel>
@@ -445,7 +446,7 @@ const AdminDashboard = () => {
           </CardBody>
         </Card>
 
-        <Card bg={bgColor}>
+        <Card bg={bgColorCard}>
           <CardBody>
             <Stat>
               <StatLabel color={textColor}>Frais de plateforme</StatLabel>
@@ -458,7 +459,7 @@ const AdminDashboard = () => {
       
       {/* Formulaire d'ajout d'adresse pour l'administrateur */}
       {isAdmin && (
-        <Card bg={bgColor} mb={4}>
+        <Card bg={bgColorCard} mb={4}>
           <CardBody>
             <Heading size="md" mb={4}>Ajouter une adresse à surveiller</Heading>
             <Flex gap={2}>
@@ -495,7 +496,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Tableau des investissements */}
-      <Card bg={bgColor} mb={8}>
+      <Card bg={bgColorCard} mb={8}>
         <CardBody>
           <Flex justify="space-between" align="center" mb={4}>
             <Heading size="md">Investissements actifs</Heading>
@@ -546,7 +547,7 @@ const AdminDashboard = () => {
         </CardBody>
       </Card>
       
-      <Card bg={bgColor}>
+      <Card bg={bgColorCard}>
         <CardBody>
           <Heading size="md" mb={4}>Actions rapides</Heading>
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
