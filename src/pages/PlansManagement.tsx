@@ -77,9 +77,61 @@ const PlansManagement: React.FC = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
-  // Charger les utilisateurs connus depuis localStorage (synchronisé avec AdminDashboard)
-  const loadKnownUsers = () => {
+  // Fonction pour récupérer automatiquement tous les investisseurs via les événements
+  const getAllInvestorsFromEvents = async (contract) => {
     try {
+      console.log('🔍 Récupération de tous les investisseurs via événements...');
+      
+      // Récupérer tous les événements Staked
+      const stakedFilter = contract.filters.Staked();
+      const stakedEvents = await contract.queryFilter(stakedFilter, 0, 'latest');
+      
+      // Extraire toutes les adresses uniques
+      const allInvestors = [...new Set(
+        stakedEvents.map(event => event.args.user.toLowerCase())
+      )];
+      
+      console.log(`✅ ${allInvestors.length} investisseurs détectés via événements:`, allInvestors);
+      return allInvestors;
+      
+    } catch (error) {
+      console.error('❌ Erreur récupération investisseurs via événements:', error);
+      
+      // Fallback vers utilisateurs par défaut
+      const fallbackUsers = [
+        "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
+        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
+      ];
+      console.log('🔄 Utilisation des utilisateurs par défaut:', fallbackUsers);
+      return fallbackUsers;
+    }
+  };
+
+  // Charger les utilisateurs connus depuis localStorage (synchronisé avec AdminDashboard)
+  const loadKnownUsers = async () => {
+    try {
+      // D'abord essayer de récupérer tous les investisseurs automatiquement
+      if (typeof window.ethereum !== 'undefined') {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(
+          '0x719fd9F511DDc561D03801161742D84ECb9445e9',
+          [
+            "event Staked(address indexed user, uint256 planId, uint256 amount, uint256 startTime, uint256 endTime, address token)"
+          ],
+          provider
+        );
+        
+        const autoDetectedUsers = await getAllInvestorsFromEvents(contract);
+        if (autoDetectedUsers.length > 0) {
+          setKnownUsers(autoDetectedUsers);
+          // Sauvegarder dans localStorage pour les prochaines fois
+          localStorage.setItem('knownUsers', JSON.stringify(autoDetectedUsers));
+          console.log('✅ Utilisateurs auto-détectés sauvegardés dans localStorage');
+          return;
+        }
+      }
+      
+      // Fallback : utiliser localStorage existant
       const savedUsers = localStorage.getItem('knownUsers');
       if (savedUsers) {
         const users = JSON.parse(savedUsers);
@@ -432,12 +484,7 @@ const PlansManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    loadKnownUsers();
-    
-    // Configurer la synchronisation en temps réel
-    const cleanupSync = syncWithLocalStorage();
-    
-    return cleanupSync; // Nettoyer l'écouteur au démontage
+    loadKnownUsers(); // Maintenant async
   }, []);
 
   useEffect(() => {
@@ -553,7 +600,6 @@ const PlansManagement: React.FC = () => {
                     <Th>APR</Th>
                     <Th>Durée</Th>
                     <Th>Montant Min</Th>
-                    <Th>Tota Investit</Th>
                     <Th>Utilisateurs Actifs</Th>
                     <Th>Statut</Th>
                     <Th>Actions</Th>
@@ -570,7 +616,6 @@ const PlansManagement: React.FC = () => {
                       </Td>
                       <Td>{plan.duration} jours</Td>
                       <Td>{plan.minAmount.toLocaleString()} USDT</Td>
-                      <Td>{plan.totalInvested.toLocaleString()} USDT</Td>
                       <Td>
                         <HStack>
                           <Text fontWeight="bold" color="blue.500">
