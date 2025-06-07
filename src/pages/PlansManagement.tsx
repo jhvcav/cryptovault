@@ -77,31 +77,68 @@ const PlansManagement: React.FC = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
-  // Charger les utilisateurs connus depuis localStorage (comme AdminDashboard)
+  // Charger les utilisateurs connus depuis localStorage (synchronisé avec AdminDashboard)
   const loadKnownUsers = () => {
     try {
       const savedUsers = localStorage.getItem('knownUsers');
       if (savedUsers) {
         const users = JSON.parse(savedUsers);
-        setKnownUsers(Array.isArray(users) ? users : []);
-      } else {
-        // Utilisateurs par défaut
-        const defaultUsers = [
-          "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
-          "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
-        ];
-        setKnownUsers(defaultUsers);
-        localStorage.setItem('knownUsers', JSON.stringify(defaultUsers));
+        if (Array.isArray(users) && users.length > 0) {
+          setKnownUsers(users);
+          console.log('Utilisateurs chargés depuis localStorage:', users);
+          return;
+        }
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement des utilisateurs connus:', error);
-      // Fallback vers les utilisateurs par défaut
+      
+      // Si localStorage est vide ou invalide, utiliser les mêmes valeurs par défaut qu'AdminDashboard
+      console.log('localStorage vide, initialisation avec utilisateurs par défaut');
       const defaultUsers = [
         "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
         "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
       ];
       setKnownUsers(defaultUsers);
+      localStorage.setItem('knownUsers', JSON.stringify(defaultUsers));
+      console.log('Utilisateurs par défaut sauvegardés:', defaultUsers);
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs connus:', error);
+      // Fallback vers les utilisateurs par défaut (même logique qu'AdminDashboard)
+      const defaultUsers = [
+        "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
+        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
+      ];
+      setKnownUsers(defaultUsers);
+      // Forcer la sauvegarde même en cas d'erreur
+      try {
+        localStorage.setItem('knownUsers', JSON.stringify(defaultUsers));
+      } catch (saveError) {
+        console.error('Impossible de sauvegarder dans localStorage:', saveError);
+      }
     }
+  };
+
+  // Fonction pour écouter les changements du localStorage (synchronisation en temps réel)
+  const syncWithLocalStorage = () => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'knownUsers' && e.newValue) {
+        try {
+          const users = JSON.parse(e.newValue);
+          if (Array.isArray(users)) {
+            console.log('Synchronisation détectée, mise à jour des utilisateurs:', users);
+            setKnownUsers(users);
+          }
+        } catch (error) {
+          console.error('Erreur lors de la synchronisation:', error);
+        }
+      }
+    };
+
+    // Écouter les changements du localStorage depuis d'autres onglets/pages
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   };
 
   // Fonction pour calculer le montant total investi sur un plan
@@ -381,11 +418,19 @@ const PlansManagement: React.FC = () => {
 
   useEffect(() => {
     loadKnownUsers();
+    
+    // Configurer la synchronisation en temps réel
+    const cleanupSync = syncWithLocalStorage();
+    
+    return cleanupSync; // Nettoyer l'écouteur au démontage
   }, []);
 
   useEffect(() => {
     if (knownUsers.length > 0) {
+      console.log('Chargement des plans avec', knownUsers.length, 'utilisateurs connus');
       loadPlans();
+    } else {
+      console.log('Aucun utilisateur connu, attente...');
     }
   }, [knownUsers]);
 
@@ -494,7 +539,6 @@ const PlansManagement: React.FC = () => {
                     <Th>Durée</Th>
                     <Th>Montant Min</Th>
                     <Th>Utilisateurs Actifs</Th>
-                    <Th>Total Investit</Th>
                     <Th>Statut</Th>
                     <Th>Actions</Th>
                   </Tr>
@@ -520,7 +564,6 @@ const PlansManagement: React.FC = () => {
                           </Text>
                         </HStack>
                       </Td>
-                      <Td>{plan.totalInvested} USD</Td>
                       <Td>
                         <Badge 
                           colorScheme={plan.active ? "green" : "red"}
