@@ -666,7 +666,7 @@ const ContractMonitoring: React.FC = () => {
         {/* Résumé */}
         <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Total Dépôts</StatLabel>
+            <StatLabel color="black">Total Dépôts</StatLabel>
             <StatNumber color="green.500">{formatValueWithUSD(summary.totalDeposits)}</StatNumber>
             <StatHelpText>
               <StatArrow type="increase" />
@@ -675,7 +675,7 @@ const ContractMonitoring: React.FC = () => {
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Total Retraits</StatLabel>
+            <StatLabel color="black">Total Retraits</StatLabel>
             <StatNumber color="orange.500">{formatValueWithUSD(summary.totalWithdrawals)}</StatNumber>
             <StatHelpText>
               <StatArrow type="decrease" />
@@ -684,7 +684,7 @@ const ContractMonitoring: React.FC = () => {
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Flux Net</StatLabel>
+            <StatLabel color="black">Flux Net</StatLabel>
             <StatNumber color={summary.netFlow >= 0 ? "green.500" : "red.500"}>
               {formatValueWithUSD(Math.abs(summary.netFlow))}
             </StatNumber>
@@ -695,7 +695,7 @@ const ContractMonitoring: React.FC = () => {
           </Stat>
 
           <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-            <StatLabel color="white">Utilisateurs Actifs</StatLabel>
+            <StatLabel color="black">Utilisateurs Actifs</StatLabel>
             <StatNumber color="blue.500">{summary.userCount}</StatNumber>
             <StatHelpText>Participants uniques</StatHelpText>
           </Stat>

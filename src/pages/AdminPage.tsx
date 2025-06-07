@@ -172,7 +172,7 @@ const AdminPage: React.FC = () => {
           borderColor="black.200"
           fontSize="sm"
         >
-          <strong>ℹ️ Informations de debug :</strong>
+          <strong>ℹ️ Informations:</strong>
           <br />
           • Utilisateur connecté : {user?.firstName} {user?.lastName}
           <br />
