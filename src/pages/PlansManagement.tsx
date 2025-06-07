@@ -84,8 +84,23 @@ const PlansManagement: React.FC = () => {
       if (savedUsers) {
         const users = JSON.parse(savedUsers);
         if (Array.isArray(users) && users.length > 0) {
-          setKnownUsers(users);
-          console.log('Utilisateurs chargés depuis localStorage:', users);
+          // S'assurer que tous les utilisateurs critiques sont présents
+          const criticalUsers = [
+            "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
+            "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
+          ];
+          
+          // Fusionner avec les utilisateurs critiques
+          const allUsers = [...new Set([...users, ...criticalUsers])];
+          
+          setKnownUsers(allUsers);
+          console.log('Utilisateurs chargés depuis localStorage:', allUsers);
+          
+          // Mettre à jour localStorage si nécessaire
+          if (allUsers.length !== users.length) {
+            localStorage.setItem('knownUsers', JSON.stringify(allUsers));
+            console.log('localStorage mis à jour avec tous les utilisateurs critiques');
+          }
           return;
         }
       }
@@ -94,7 +109,7 @@ const PlansManagement: React.FC = () => {
       console.log('localStorage vide, initialisation avec utilisateurs par défaut');
       const defaultUsers = [
         "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
-        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
+        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"  // ← Adresse qui a les stakes actifs
       ];
       setKnownUsers(defaultUsers);
       localStorage.setItem('knownUsers', JSON.stringify(defaultUsers));
@@ -105,7 +120,7 @@ const PlansManagement: React.FC = () => {
       // Fallback vers les utilisateurs par défaut (même logique qu'AdminDashboard)
       const defaultUsers = [
         "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
-        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
+        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"  // ← Adresse qui a les stakes actifs
       ];
       setKnownUsers(defaultUsers);
       // Forcer la sauvegarde même en cas d'erreur
@@ -538,7 +553,7 @@ const PlansManagement: React.FC = () => {
                     <Th>APR</Th>
                     <Th>Durée</Th>
                     <Th>Montant Min</Th>
-                    <Th>Total Investi</Th>
+                    <Th>Tota Investit</Th>
                     <Th>Utilisateurs Actifs</Th>
                     <Th>Statut</Th>
                     <Th>Actions</Th>
