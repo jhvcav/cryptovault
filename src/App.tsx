@@ -16,6 +16,8 @@ import InvestmentCalculatorMultiCritere from './pages/InvestmentCalculatorMultiC
 import LoginPage from './pages/LoginPage'; // Nouveau
 import FAQ from './pages/FAQ';
 import AdminPage from './pages/AdminPage';
+import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
+
 
 // Components
 import Navbar from './components/layout/Navbar';
@@ -61,6 +63,7 @@ const AppContent: React.FC = () => {
           <Route path="/calculator" element={<InvestmentCalculator />} />
           <Route path="/calculator-multi-critere" element={<InvestmentCalculatorMultiCritere />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/history" element={<TransactionHistoryUsers />} />
           
           {/* Routes protégées */}
           <Route

@@ -5,10 +5,12 @@ import {
   DollarSign, 
   BarChart3, 
   Clock, 
-  RefreshCw 
+  RefreshCw,
+  History
 } from 'lucide-react';
 import { useWallet } from '../contexts/WalletContext';
 import { useInvestment } from '../contexts/InvestmentContext';
+import { useNavigate } from 'react-router-dom';
 import StatsCard from '../components/dashboard/StatsCard';
 import InvestmentCard from '../components/dashboard/InvestmentCard';
 import InvestmentChart from '../components/dashboard/InvestmentChart';
@@ -24,6 +26,8 @@ const Dashboard = () => {
     getTotalInvested, 
     getTotalReturns 
   } = useInvestment();
+  
+  const navigate = useNavigate();
   
   const [withdrawingId, setWithdrawingId] = useState(null);
   const [withdrawingCapitalId, setWithdrawingCapitalId] = useState(null);
@@ -226,7 +230,17 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
-        
+
+       {/*Bouton accès Historique transactions users*/}
+<button
+  onClick={() => navigate('/history')}
+  className="flex items-center px-4 py-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors mb-4"
+  title="Accéder à l'historique des transactions"
+>
+  <History size={16} className="mr-2" />
+  Historique Transaction
+</button>
+
         {/* Cartes statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard 
