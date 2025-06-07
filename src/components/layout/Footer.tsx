@@ -46,6 +46,11 @@ const Footer = () => {
                   Calculateur d'Investissement
                 </Link>
               </li>
+              <li>
+                <Link to="/calculator-multi-critere" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  Calculateur d'Investissement avancé
+                </Link>
+              </li>
               {/*<li>
                 <Link to="/affiliate" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Plan Affiliation

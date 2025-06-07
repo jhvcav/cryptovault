@@ -6,7 +6,8 @@ import { Link } from 'react-router-dom';
 const INVESTMENT_PLANS = [
   { id: 'starter', name: 'Plan Starter', apr: 10, duration: 30 },
   { id: 'standard', name: 'Plan Standard', apr: 15, duration: 90 },
-  { id: 'premium', name: 'Plan Premium', apr: 20, duration: 180 }
+  { id: 'premium', name: 'Plan Premium', apr: 20, duration: 180 },
+  { id: 'privilege', name: 'Plan Privilege', apr: 150, duration: 360}
 ];
 
 const InvestmentCalculator = () => {
@@ -22,15 +23,17 @@ const InvestmentCalculator = () => {
 
   // Calculer les rendements lorsque le plan ou le montant change
   useEffect(() => {
-    if (amount <= 0) {
-      setResults({
-        dailyReturn: 0,
-        monthlyReturn: 0,
-        totalReturn: 0,
-        totalAmount: 0
-      });
-      return;
-    }
+    const numericAmount = typeof amount === 'string' ? 0 : amount;
+  
+  if (numericAmount <= 0) {
+    setResults({
+      dailyReturn: 0,
+      monthlyReturn: 0,
+      totalReturn: 0,
+      totalAmount: 0
+    });
+    return;
+  }
 
     // Calcul du rendement quotidien
     const dailyReturn = (amount * (selectedPlan.apr / 100)) / 365;
@@ -62,9 +65,17 @@ const InvestmentCalculator = () => {
 
   // Gérer le changement de montant
   const handleAmountChange = (e) => {
-    const value = parseFloat(e.target.value);
-    setAmount(isNaN(value) ? 0 : value);
-  };
+  const value = e.target.value;
+  
+  // Permettre une chaîne vide temporaire
+  if (value === '') {
+    setAmount('');
+    return;
+  }
+  
+  const numericValue = parseFloat(value);
+  setAmount(isNaN(numericValue) ? '' : numericValue);
+};
 
   // Formater les nombres avec 2 décimales et séparateur de milliers
   const formatNumber = (num) => {

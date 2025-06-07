@@ -879,11 +879,21 @@ try {
             {stakes.map((stake, index) => {
               const plan = plans ? plans.find(p => p.id === stake.planId) : null;
               
-              // Calculer les gains réalisés
-              const stakeAmount = parseFloat(stake.amount) || 0;
-              const totalWithdrawn = parseFloat(stake.totalWithdrawn || '0');
-              const realizedGains = totalWithdrawn - stakeAmount;
-              const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) : 0;
+              // Calculer les gains réalisés selon le statut
+const stakeAmount = parseFloat(stake.amount) || 0;
+const totalWithdrawn = parseFloat(stake.totalWithdrawn || '0');
+const availableRewards = parseFloat(stake.availableRewards || '0');
+
+let realizedGains;
+if (stake.active) {
+  // Plan ACTIF : gains en cours = récompenses disponibles
+  realizedGains = availableRewards;
+} else {
+  // Plan TERMINÉ : gains réalisés = total retiré - montant investi
+  realizedGains = totalWithdrawn - stakeAmount;
+}
+
+const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) : 0;
               
               return (
                 <Tr key={index}>

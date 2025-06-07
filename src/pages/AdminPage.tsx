@@ -22,15 +22,15 @@ import UsersManagement from './UsersManagement';
 import AdminDashboard from './AdminDashboard';
 import WalletMonitoring from './WalletMonitoring';
 import ContractMonitoring from './ContractMonitoring';
+import PlansManagement from './PlansManagement'; // Nouveau import
 
 const AdminPage: React.FC = () => {
   const { isOwner } = useOwner();
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
 
-  //const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const bgColor = 'transparent'; // Couleur de fond transparente pour le thème sombre
+  const bgColor = 'transparent';
 
   // Rediriger si pas authentifié
   if (!isAuthenticated) {
@@ -118,6 +118,17 @@ const AdminPage: React.FC = () => {
               <Tab 
                 fontWeight="medium"
                 _selected={{ 
+                  color: 'purple.600', 
+                  borderColor: 'purple.500',
+                  borderBottomColor: 'white',
+                  bg: 'black'
+                }}
+              >
+                📋 Gestion des Plans
+              </Tab>
+              <Tab 
+                fontWeight="medium"
+                _selected={{ 
                   color: 'green.600', 
                   borderColor: 'green.500',
                   borderBottomColor: 'white',
@@ -150,12 +161,17 @@ const AdminPage: React.FC = () => {
                 <UsersManagement />
               </TabPanel>
 
-              {/* Onglet 3: Monitoring Wallet */}
+              {/* Onglet 3: Gestion des Plans */}
+              <TabPanel p={0}>
+                <PlansManagement />
+              </TabPanel>
+
+              {/* Onglet 4: Monitoring Wallet */}
               <TabPanel p={0}>
                 <WalletMonitoring />
               </TabPanel>
 
-            {/* Onglet 3: Monitoring Contrat*/}
+              {/* Onglet 5: Monitoring Contrat */}
               <TabPanel p={0}>
                 <ContractMonitoring />
               </TabPanel>
@@ -163,7 +179,7 @@ const AdminPage: React.FC = () => {
           </Tabs>
         </Box>
 
-        {/* Informations de debug (optionnel - à supprimer en production) */}
+        {/* Informations de debug */}
         <Box 
           bg="black.50" 
           p={4} 
