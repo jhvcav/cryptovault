@@ -538,6 +538,7 @@ const PlansManagement: React.FC = () => {
                     <Th>APR</Th>
                     <Th>Durée</Th>
                     <Th>Montant Min</Th>
+                    <Th>Total Investi</Th>
                     <Th>Utilisateurs Actifs</Th>
                     <Th>Statut</Th>
                     <Th>Actions</Th>
@@ -554,6 +555,7 @@ const PlansManagement: React.FC = () => {
                       </Td>
                       <Td>{plan.duration} jours</Td>
                       <Td>{plan.minAmount.toLocaleString()} USDT</Td>
+                      <Td>{plan.totalInvested.toLocaleString()} USDT</Td>
                       <Td>
                         <HStack>
                           <Text fontWeight="bold" color="blue.500">
