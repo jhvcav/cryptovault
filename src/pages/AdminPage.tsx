@@ -21,6 +21,7 @@ import { useAuth } from '../contexts/AuthContext';
 import UsersManagement from './UsersManagement';
 import AdminDashboard from './AdminDashboard';
 import WalletMonitoring from './WalletMonitoring';
+import ContractMonitoring from './ContractMonitoring';
 
 const AdminPage: React.FC = () => {
   const { isOwner } = useOwner();
@@ -125,6 +126,17 @@ const AdminPage: React.FC = () => {
               >
                 💰 Monitoring Wallet
               </Tab>
+              <Tab 
+                fontWeight="medium"
+                _selected={{ 
+                  color: 'green.600', 
+                  borderColor: 'green.500',
+                  borderBottomColor: 'white',
+                  bg: 'black'
+                }}
+              >
+                📝 Monitoring SmartContrat
+              </Tab>
             </TabList>
 
             <TabPanels>
@@ -141,6 +153,11 @@ const AdminPage: React.FC = () => {
               {/* Onglet 3: Monitoring Wallet */}
               <TabPanel p={0}>
                 <WalletMonitoring />
+              </TabPanel>
+
+            {/* Onglet 3: Monitoring Contrat*/}
+              <TabPanel p={0}>
+                <ContractMonitoring />
               </TabPanel>
             </TabPanels>
           </Tabs>
