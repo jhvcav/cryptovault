@@ -234,11 +234,11 @@ const Dashboard = () => {
        {/*Bouton accès Historique transactions users*/}
 <button
   onClick={() => navigate('/history')}
-  className="flex items-center px-4 py-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors mb-4"
+  className="flex items-center px-5 py-2 bg-transparent border-2 border-white-500 text-white-500 hover:bg-purple-600 hover:text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 mb-4"
   title="Accéder à l'historique des transactions"
 >
-  <History size={16} className="mr-2" />
-  Historique Transaction
+  <History size={18} className="mr-3" />
+  <span className="text-white">Historique Transaction</span>
 </button>
 
         {/* Cartes statistiques */}
