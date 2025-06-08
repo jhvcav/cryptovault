@@ -153,7 +153,7 @@ const Navbar = () => {
                     disabled={isConnecting}
                     className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70"
                   >
-                    {isConnecting ? 'Connexion...' : 'Connecter le Portefeuille'}
+                    {isConnecting ? 'Connexion...' : 'Connect..Wallet'}
                   </button>
                 )}
               </>
