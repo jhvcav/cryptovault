@@ -6,7 +6,7 @@ const Footer = () => {
   return (
     <footer className="bg-slate-900 border-t border-slate-800">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="md:col-span-1">
             <h3 className="text-lg font-semibold mb-4 text-white">CryptoVault</h3>
             <p className="text-slate-400 text-sm">
@@ -42,13 +42,8 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/calculator" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
-                  Calculateur d'Investissement
-                </Link>
-              </li>
-              <li>
-                <Link to="/calculator-multi-critere" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
-                  Calculateur d'Investissement avancé
+                <Link to="/card-nft" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  NFT
                 </Link>
               </li>
               {/*<li>
@@ -75,6 +70,22 @@ const Footer = () => {
               <li>
                 <Link to="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Sécurité
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-white">Utilitaires</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/calculator" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  Calculateur d'Investissement
+                </Link>
+              </li>
+              <li>
+                <Link to="/calculator-multi-critere" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  Calculateur d'Investissement avancé
                 </Link>
               </li>
             </ul>
