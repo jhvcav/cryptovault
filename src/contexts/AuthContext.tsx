@@ -1,7 +1,6 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import HybridAuthService from '../services/HybridAuthService';
-import { AuthResult } from '../services/LocalAuthService';
+import HybridAuthService, { AuthResult } from '../services/HybridAuthService'; // ✅ IMPORT MODIFIÉ
 
 interface AuthContextType {
   user: AuthResult | null;
@@ -61,6 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Format d\'adresse wallet invalide');
       }
 
+      // ✅ UTILISE SEULEMENT HYBRIDAUTHSERVICE
       const authResult = await HybridAuthService.checkWalletAccess(walletAddress);
       
       if (authResult.isAuthorized && authResult.isActive) {
