@@ -1,284 +1,172 @@
-import React from 'react';
-import { Box, Text, Flex, Grid, GridItem } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { Gift, ShoppingCart, Check, AlertCircle, Crown } from 'lucide-react';
+import { useFidelityStatus } from '../hooks/useFidelityStatus';
+import { useWallet } from '../contexts/WalletContext';
 
-const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
+const NFTCard = ({ nft, onPurchase, onFidelityClaim, loading }) => {
+  const { address, isConnected } = useWallet();
+  const { isFidel, hasClaimedNFT, loading: fidelityLoading } = useFidelityStatus(address);
+  
+  // Vérifier si c'est le NFT Privilège ET si l'user est fidèle
+  const isPrivilegeForFidelUser = nft.name === 'NFT Privilège' && isFidel;
+  const showFidelityButton = isPrivilegeForFidelUser && !hasClaimedNFT;
+  const showPurchaseButton = !isPrivilegeForFidelUser || hasClaimedNFT;
 
-interface NFTCardProps {
-  title: string;
-  subtitle: string;
-  accessLevel: string;
-  icon: string;
-  cardNumber: string;
-  colorScheme: 'bronze' | 'silver' | 'gold' | 'privilege';
-}
-
-const NFTCard: React.FC<NFTCardProps> = ({
-  title,
-  subtitle,
-  accessLevel,
-  icon,
-  cardNumber,
-  colorScheme
-}) => {
-  const colorSchemes = {
-    bronze: {
-      background: 'linear-gradient(135deg, #cd7f32 0%, #8b4513 25%, #a0522d 50%, #daa520 75%, #cd7f32 100%)',
-      borderColor: '#8b4513',
-      shadowColor: 'rgba(205, 127, 50, 0.3)',
-      glowColor: 'linear-gradient(45deg, #cd7f32, #daa520, #8b4513)',
-    },
-    silver: {
-      background: 'linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 25%, #a8a8a8 50%, #d3d3d3 75%, #e8e8e8 100%)',
-      borderColor: '#a8a8a8',
-      shadowColor: 'rgba(192, 192, 192, 0.3)',
-      glowColor: 'linear-gradient(45deg, #e8e8e8, #c0c0c0, #a8a8a8)',
-    },
-    gold: {
-      background: 'linear-gradient(135deg, #ffd700 0%, #ffb347 25%, #ff8c00 50%, #ffa500 75%, #ffd700 100%)',
-      borderColor: '#ff8c00',
-      shadowColor: 'rgba(255, 215, 0, 0.4)',
-      glowColor: 'linear-gradient(45deg, #ffd700, #ffb347, #ff8c00)',
-    },
-    privilege: {
-      background: 'linear-gradient(135deg, #9b59b6 0%, #8e44ad 20%, #e74c3c 40%, #f39c12 60%, #e67e22 80%, #9b59b6 100%)',
-      borderColor: '#8e44ad',
-      shadowColor: 'rgba(155, 89, 182, 0.4)',
-      glowColor: 'linear-gradient(45deg, #9b59b6, #e74c3c, #f39c12, #8e44ad)',
-    },
+  const handleFidelityClaim = async () => {
+    try {
+      await onFidelityClaim(nft);
+      // Marquer comme réclamé en base
+      await supabase
+        .from('community_whitelist')
+        .update({ fidelity_nft_claimed: true })
+        .eq('wallet_address', address.toLowerCase());
+    } catch (error) {
+      console.error('Erreur réclamation fidélité:', error);
+    }
   };
 
-  const scheme = colorSchemes[colorScheme];
-
   return (
-    <MotionBox
-      position="relative"
-      w="100%"
-      h="400px"
-      borderRadius="20px"
-      overflow="hidden"
-      cursor="pointer"
-      border="3px solid"
-      borderColor={scheme.borderColor}
-      bgGradient={scheme.background}
-      boxShadow={`0 15px 35px ${scheme.shadowColor}, inset 0 0 20px rgba(255,255,255,0.1)`}
-      whileHover={{
-        y: -10,
-        scale: 1.02,
-        boxShadow: `0 25px 50px ${scheme.shadowColor.replace('0.3', '0.5').replace('0.4', '0.6')}, inset 0 0 30px rgba(255,255,255,0.2)`
-      }}
-      transition={{ duration: 0.3 }}
-    >
-      {/* Glow Effect */}
-      <Box
-        position="absolute"
-        top="-2px"
-        left="-2px"
-        right="-2px"
-        bottom="-2px"
-        borderRadius="22px"
-        bgGradient={scheme.glowColor}
-        opacity={0}
-        _hover={{ opacity: 0.7 }}
-        transition="opacity 0.3s ease"
-        animation="glowPulse 2s ease-in-out infinite alternate"
-        sx={{
-          '@keyframes glowPulse': {
-            '0%': { opacity: 0.5 },
-            '100%': { opacity: 1 }
-          }
-        }}
-      />
+    <div className={`relative bg-gradient-to-br ${nft.bgGradient} p-1 rounded-2xl ${nft.glowColor} hover:shadow-2xl transition-all duration-300`}>
+      {/* Badge Fidélité pour Privilège */}
+      {isPrivilegeForFidelUser && !hasClaimedNFT && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
+          <Crown size={14} />
+          <span>Fidélité</span>
+        </div>
+      )}
 
-      {/* Shimmer Effect */}
-      <Box
-        position="absolute"
-        top="-50%"
-        left="-50%"
-        w="200%"
-        h="200%"
-        bgGradient="linear(45deg, transparent, rgba(255,255,255,0.1), transparent)"
-        animation="shimmer 3s infinite"
-        sx={{
-          '@keyframes shimmer': {
-            '0%': { transform: 'translateX(-100%) translateY(-100%) rotate(45deg)' },
-            '100%': { transform: 'translateX(100%) translateY(100%) rotate(45deg)' }
-          }
-        }}
-      />
+      {/* Badge Déjà Réclamé */}
+      {isPrivilegeForFidelUser && hasClaimedNFT && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
+          <Check size={14} />
+          <span>Réclamé</span>
+        </div>
+      )}
 
-      {/* Overlay */}
-      <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        bottom={0}
-        bg="rgba(0,0,0,0.3)"
-        backdropFilter="blur(1px)"
-      />
+      {/* Popularité pour les autres */}
+      {nft.popular && !isPrivilegeForFidelUser && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+          ⭐ Populaire
+        </div>
+      )}
 
-      {/* Content */}
-      <Flex
-        position="relative"
-        zIndex={2}
-        h="100%"
-        direction="column"
-        justify="space-between"
-        p={8}
-        color="white"
-      >
+      {/* Card Content */}
+      <div className="bg-slate-900 rounded-2xl p-6 h-full">
         {/* Header */}
-        <Box textAlign="center">
-          <Text
-            fontSize="2xl"
-            fontWeight="bold"
-            mb={2}
-            textShadow="2px 2px 4px rgba(0,0,0,0.5)"
-          >
-            {title}
-          </Text>
-          <Text
-            fontSize="md"
-            opacity={0.9}
-            textShadow="1px 1px 2px rgba(0,0,0,0.5)"
-          >
-            {subtitle}
-          </Text>
-        </Box>
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-3">{nft.icon}</div>
+          <h3 className="text-white font-bold text-xl mb-2">{nft.name}</h3>
+          
+          {/* Prix avec condition fidélité */}
+          <div className="flex items-center justify-center space-x-2">
+            {showFidelityButton ? (
+              <div className="text-center">
+                <span className="text-3xl font-bold text-green-400">GRATUIT</span>
+                <p className="text-sm text-green-300">Récompense Fidélité</p>
+              </div>
+            ) : (
+              <>
+                <span className="text-3xl font-bold text-white">{nft.price}</span>
+                <span className="text-slate-400">USDC</span>
+              </>
+            )}
+          </div>
+        </div>
 
-        {/* Center Icon */}
-        <Flex justify="center" align="center" flex={1}>
-          <Flex
-            w="80px"
-            h="80px"
-            borderRadius="50%"
-            bg="rgba(255,255,255,0.2)"
-            align="center"
-            justify="center"
-            fontSize="2.5rem"
-            backdropFilter="blur(10px)"
-            border="2px solid rgba(255,255,255,0.3)"
-          >
-            {icon}
-          </Flex>
-        </Flex>
+        {/* Multiplier Highlight */}
+        <div className="bg-slate-800 rounded-lg p-3 mb-4 text-center">
+          <p className="text-slate-400 text-sm">Bonus Récompenses</p>
+          <p className="text-2xl font-bold text-green-400">{nft.multiplier}</p>
+          <p className="text-green-300 text-sm">{nft.multiplierPercent}</p>
+        </div>
 
-        {/* Footer */}
-        <Box textAlign="center">
-          <Text fontSize="sm" opacity={0.8} mb={4}>
-            Niveau d'Accès: {accessLevel}
-          </Text>
-          <Text
-            fontSize="xl"
-            fontWeight="bold"
-            fontFamily="'Courier New', monospace"
-            textShadow="1px 1px 2px rgba(0,0,0,0.5)"
-          >
-            {cardNumber}
-          </Text>
-        </Box>
-      </Flex>
-    </MotionBox>
-  );
-};
+        {/* Supply Info avec condition fidélité */}
+        <div className="flex justify-between text-sm mb-4">
+          <span className="text-slate-400">Supply Total:</span>
+          <span className="text-white">
+            {isPrivilegeForFidelUser ? '10 (Fidélité)' : nft.supply}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm mb-6">
+          <span className="text-slate-400">Disponibles:</span>
+          <span className={`font-semibold ${nft.remaining < 100 ? 'text-red-400' : 'text-green-400'}`}>
+            {isPrivilegeForFidelUser ? (hasClaimedNFT ? '0' : '1') : nft.remaining}
+          </span>
+        </div>
 
-const NFTCards: React.FC = () => {
-  const cards = [
-    {
-      title: 'NFT BRONZE',
-      subtitle: 'Accès de Base',
-      accessLevel: 'Essentiel',
-      icon: '🥉',
-      cardNumber: '#001',
-      colorScheme: 'bronze' as const,
-    },
-    {
-      title: 'NFT ARGENT',
-      subtitle: 'Accès Intermédiaire',
-      accessLevel: 'Avancé',
-      icon: '🥈',
-      cardNumber: '#002',
-      colorScheme: 'silver' as const,
-    },
-    {
-      title: 'NFT GOLD',
-      subtitle: 'Accès Premium',
-      accessLevel: 'Premium',
-      icon: '🥇',
-      cardNumber: '#003',
-      colorScheme: 'gold' as const,
-    },
-    {
-      title: 'NFT PRIVILÈGE',
-      subtitle: 'Accès Exclusif',
-      accessLevel: 'Exclusif',
-      icon: '💎',
-      cardNumber: '#004',
-      colorScheme: 'privilege' as const,
-    },
-  ];
-
-  return (
-    <Box
-      minH="100vh"
-      bgGradient="transparent"
-      py={10}
-      px={5}
-    >
-      <MotionFlex
-        direction="column"
-        align="center"
-        maxW="1400px"
-        mx="auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Text
-          color="blue.500"
-          fontSize={{ base: '2xl', md: '4xl' }}
-          fontWeight="bold"
-          mb={10}
-          textAlign="center"
-          textShadow="2px 2px 4px rgba(0,0,0,0.3)"
-          border="3px solid"
-            borderColor="blue.400"
-            borderRadius="xl"
-            bg="rgba(255,255,255,0.05)"
-            p={8}
-            boxShadow="0 4px 20px rgba(0,0,0,0.1)"
-            py={3}
-            px={7}
-        >
-          Collection NFT - Droit d'Accès à la Plateforme
-        </Text>
-
-        <Grid
-          templateColumns={{
-            base: '1fr',
-            md: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)'
-          }}
-          gap={8}
-          w="100%"
-        >
-          {cards.map((card, index) => (
-            <GridItem key={card.cardNumber}>
-              <MotionBox
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <NFTCard {...card} />
-              </MotionBox>
-            </GridItem>
+        {/* Features */}
+        <div className="space-y-2 mb-6">
+          {nft.features.map((feature, index) => (
+            <div key={index} className="flex items-start space-x-2">
+              <Check size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
+              <span className="text-slate-300 text-sm">{feature}</span>
+            </div>
           ))}
-        </Grid>
-      </MotionFlex>
-    </Box>
+          
+          {/* Feature spéciale fidélité */}
+          {isPrivilegeForFidelUser && (
+            <div className="flex items-start space-x-2 border-t border-slate-600 pt-2 mt-4">
+              <Crown size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+              <span className="text-yellow-300 text-sm font-medium">
+                Récompense de fidélité exclusive
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Action Button */}
+        {fidelityLoading ? (
+          <button disabled className="w-full py-3 px-4 rounded-lg bg-slate-700 text-slate-400">
+            Vérification...
+          </button>
+        ) : showFidelityButton ? (
+          <button
+            onClick={handleFidelityClaim}
+            disabled={loading}
+            className="w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <>
+                <Gift size={18} />
+                <span>Réclamer Fidélité</span>
+              </>
+            )}
+          </button>
+        ) : hasClaimedNFT && isPrivilegeForFidelUser ? (
+          <button disabled className="w-full py-3 px-4 rounded-lg bg-green-700 text-green-100 flex items-center justify-center space-x-2">
+            <Check size={18} />
+            <span>Déjà Réclamé</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onPurchase(nft)}
+            disabled={!isConnected || loading}
+            className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+              !isConnected
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'
+            }`}
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : !isConnected ? (
+              <>
+                <AlertCircle size={18} />
+                <span>Connecter Wallet</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart size={18} />
+                <span>Acheter Maintenant</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
   );
 };
 
-export default NFTCards;
+export default NFTCard;

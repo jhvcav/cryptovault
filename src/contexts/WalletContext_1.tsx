@@ -187,24 +187,16 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Effet pour récupérer le chainId initial
   useEffect(() => {
     const getCurrentChainId = async () => {
-  if (window.ethereum) {
-    try {
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      const numericChainId = parseInt(chainId, 16);
-      
-      // DEBUG LOGS
-      console.log('🔍 WalletContext ChainId Debug:', {
-        rawChainId: chainId,
-        numericChainId,
-        isBSC: numericChainId === 56
-      });
-      
-      setChainId(numericChainId);
-    } catch (error) {
-      console.error('Erreur récupération chainId:', error);
-    }
-  }
-};
+      if (window.ethereum) {
+        try {
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          setChainId(parseInt(chainId, 16));
+        } catch (error) {
+          console.error('Erreur récupération chainId:', error);
+        }
+      }
+    };
+
     getCurrentChainId();
   }, []);
 

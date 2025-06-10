@@ -17,7 +17,7 @@ import LoginPage from './pages/LoginPage'; // Nouveau
 import FAQ from './pages/FAQ';
 import AdminPage from './pages/AdminPage';
 import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
-import NFTCards from './pages/NFTCards';
+import NFTMarketplace from './pages/NFTMarketplace';
 
 
 // Components
@@ -65,7 +65,7 @@ const AppContent: React.FC = () => {
           <Route path="/calculator-multi-critere" element={<InvestmentCalculatorMultiCritere />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/history" element={<TransactionHistoryUsers />} />
-          <Route path="/card-nft" element={<NFTCards />} />
+          <Route path="/nft-collection" element={<NFTMarketplace />} />
           
           {/* Routes protégées */}
           <Route

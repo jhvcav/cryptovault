@@ -46,6 +46,7 @@ interface User {
   lastName: string;
   registrationDate: string;
   status: 'Active' | 'Suspended' | 'Inactive';
+  fidelityStatus: 'OUI' | 'NON';
   userType: string;
   userTypeId: number;
 }
@@ -70,6 +71,7 @@ const UsersManagement: React.FC = () => {
     firstName: '',
     lastName: '',
     status: 'Active' as 'Active' | 'Suspended' | 'Inactive',
+    fidelityStatus: 'OUI' as 'OUI' | 'NON',
     userTypeId: 1
   });
 
@@ -125,7 +127,8 @@ const UsersManagement: React.FC = () => {
       firstName: '',
       lastName: '',
       status: 'Active',
-      userTypeId: 1
+      userTypeId: 1,
+      fidelityStatus: 'NON'
     });
   };
 
@@ -197,58 +200,66 @@ const UsersManagement: React.FC = () => {
       firstName: user.firstName,
       lastName: user.lastName,
       status: user.status,
+      fidelityStatus: user.fidelityStatus,
       userTypeId: user.userTypeId
     });
     onEditOpen();
   };
 
   const handleUpdate = async () => {
-    if (!editingUser || !validateForm()) return;
+  if (!editingUser || !validateForm()) return;
 
-    setIsLoading(true);
-    try {
-      // Mise à jour du statut
-      const statusSuccess = await HybridAuthService.updateUserStatus(
-        editingUser.walletAddress,
-        formData.status
-      );
+  setIsLoading(true);
+  try {
+    // Mise à jour du statut
+    const statusSuccess = await HybridAuthService.updateUserStatus(
+      editingUser.walletAddress,
+      formData.status
+    );
 
-      // Mise à jour du type d'utilisateur
-      const typeSuccess = await HybridAuthService.updateUserType(
-        editingUser.walletAddress,
-        formData.userTypeId
-      );
+    // Mise à jour du type d'utilisateur
+    const typeSuccess = await HybridAuthService.updateUserType(
+      editingUser.walletAddress,
+      formData.userTypeId
+    );
 
-      if (statusSuccess && typeSuccess) {
-        toast({
-          title: "Succès",
-          description: "Utilisateur mis à jour avec succès",
-          status: "success",
-          duration: 3000,
-        });
-        setEditingUser(null);
-        resetForm();
-        onEditClose();
-        loadUsers();
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Impossible de mettre à jour l'utilisateur",
-          status: "error",
-          duration: 3000,
-        });
-      }
-    } catch (error) {
+    // ✅ NOUVELLE LIGNE À AJOUTER ICI
+    const fidelitySuccess = await HybridAuthService.updateUserFidelity(
+      editingUser.walletAddress,
+      formData.fidelityStatus
+    );
+
+    // ✅ MODIFIER CETTE CONDITION AUSSI
+    if (statusSuccess && typeSuccess && fidelitySuccess) {
+      toast({
+        title: "Succès",
+        description: "Utilisateur mis à jour avec succès",
+        status: "success",
+        duration: 3000,
+      });
+      setEditingUser(null);
+      resetForm();
+      onEditClose();
+      loadUsers();
+    } else {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la mise à jour",
+        description: "Impossible de mettre à jour l'utilisateur",
         status: "error",
         duration: 3000,
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error) {
+    toast({
+      title: "Erreur",
+      description: "Une erreur est survenue lors de la mise à jour",
+      status: "error",
+      duration: 3000,
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleDelete = (user: User) => {
     setDeletingUser(user);
@@ -563,6 +574,7 @@ const UsersManagement: React.FC = () => {
                       <Th color="gray.700" fontWeight="bold" fontSize="sm">Type</Th>
                       <Th color="gray.700" fontWeight="bold" fontSize="sm">Statut</Th>
                       <Th color="gray.700" fontWeight="bold" fontSize="sm">Date d'inscription</Th>
+                      <Th color="gray.700" fontWeight="bold" fontSize="sm">Statut Fidélité</Th>
                       <Th width="150px" color="gray.700" fontWeight="bold" fontSize="sm">Actions</Th>
                     </Tr>
                   </Thead>
@@ -612,6 +624,18 @@ const UsersManagement: React.FC = () => {
                           </Badge>
                         </Td>
                         <Td color="gray.700" fontWeight="medium">{user.registrationDate}</Td>
+                        <Td>
+                          <Badge 
+                            colorScheme={getStatusColor(user.fidelityStatus)} 
+                            variant="subtle"
+                            borderRadius="full"
+                            px={3}
+                            py={1}
+                            fontWeight="bold"
+                          >
+                            {user.fidelityStatus}
+                          </Badge>
+                        </Td>
                         <Td>
                           <HStack spacing={1}>
                             <IconButton
@@ -796,6 +820,17 @@ const UsersManagement: React.FC = () => {
                         {getUserTypeBadge(type.typeName)} {type.typeName}
                       </option>
                     ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Fidélité</FormLabel>
+                  <Select
+                    value={formData.fidelityStatus}
+                    onChange={(e) => setFormData({...formData, fidelityStatus: e.target.value as any})}
+                  >
+                    <option value="OUI">OUI</option>
+                    <option value="NON">NON</option>
                   </Select>
                 </FormControl>
 
