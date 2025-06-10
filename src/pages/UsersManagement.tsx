@@ -29,6 +29,8 @@ import {
   Card,
   CardBody,
   IconButton,
+  Alert,
+  AlertIcon,
   AlertDialog,
   AlertDialogBody,
   AlertDialogFooter,
@@ -65,6 +67,8 @@ const UsersManagement: React.FC = () => {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showWalletWarning, setShowWalletWarning] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     walletAddress: '',
@@ -121,6 +125,20 @@ const UsersManagement: React.FC = () => {
     }
   };
 
+  const handleUpdateWithConfirmation = () => {
+  // Si l'adresse wallet a changé, demander confirmation
+  if (editingUser && formData.walletAddress !== editingUser.walletAddress) {
+    setShowConfirmDialog(true);
+  } else {
+    handleUpdate();
+  }
+};
+
+const confirmUpdate = () => {
+  setShowConfirmDialog(false);
+  handleUpdate();
+};
+
   const resetForm = () => {
     setFormData({
       walletAddress: '',
@@ -132,24 +150,24 @@ const UsersManagement: React.FC = () => {
     });
   };
 
-  const validateForm = () => {
-    if (!formData.walletAddress.trim()) {
-      toast({ title: "Erreur", description: "L'adresse wallet est requise", status: "error" });
-      return false;
-    }
-    
-    if (!formData.walletAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
-      toast({ title: "Erreur", description: "Format d'adresse wallet invalide", status: "error" });
-      return false;
-    }
+  const validateForm = (isEdit: boolean = false) => {
+  if (!formData.walletAddress.trim()) {
+    toast({ title: "Erreur", description: "L'adresse wallet est requise", status: "error" });
+    return false;
+  }
+  
+  if (!formData.walletAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
+    toast({ title: "Erreur", description: "Format d'adresse wallet invalide", status: "error" });
+    return false;
+  }
 
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      toast({ title: "Erreur", description: "Prénom et nom sont requis", status: "error" });
-      return false;
-    }
+  if (!formData.firstName.trim() || !formData.lastName.trim()) {
+    toast({ title: "Erreur", description: "Prénom et nom sont requis", status: "error" });
+    return false;
+  }
 
-    return true;
-  };
+  return true;
+};
 
   const handleAdd = async () => {
     if (!validateForm()) return;
@@ -194,43 +212,46 @@ const UsersManagement: React.FC = () => {
   };
 
   const handleEdit = (user: User) => {
-    setEditingUser(user);
-    setFormData({
-      walletAddress: user.walletAddress,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      status: user.status,
-      fidelityStatus: user.fidelityStatus,
-      userTypeId: user.userTypeId
-    });
-    onEditOpen();
-  };
+  console.log('📝 Modification utilisateur:', user);
+  setEditingUser(user);
+  setFormData({
+    walletAddress: user.walletAddress,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    status: user.status,
+    fidelityStatus: user.fidelityStatus,
+    userTypeId: user.userTypeId
+  });
+  setShowWalletWarning(false); // Réinitialiser le warning
+  onEditOpen();
+};
+
+  const handleEditClose = () => {
+  setShowWalletWarning(false);
+  setEditingUser(null);
+  resetForm();
+  onEditClose();
+};
 
   const handleUpdate = async () => {
-  if (!editingUser || !validateForm()) return;
+  if (!editingUser || !validateForm(true)) return;
 
   setIsLoading(true);
   try {
-    // Mise à jour du statut
-    const statusSuccess = await HybridAuthService.updateUserStatus(
+    // Utiliser la méthode de mise à jour complète
+    const success = await HybridAuthService.updateUserComplete(
       editingUser.walletAddress,
-      formData.status
+      {
+        walletAddress: formData.walletAddress,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        status: formData.status,
+        fidelityStatus: formData.fidelityStatus,
+        userTypeId: formData.userTypeId
+      }
     );
 
-    // Mise à jour du type d'utilisateur
-    const typeSuccess = await HybridAuthService.updateUserType(
-      editingUser.walletAddress,
-      formData.userTypeId
-    );
-
-    // ✅ NOUVELLE LIGNE À AJOUTER ICI
-    const fidelitySuccess = await HybridAuthService.updateUserFidelity(
-      editingUser.walletAddress,
-      formData.fidelityStatus
-    );
-
-    // ✅ MODIFIER CETTE CONDITION AUSSI
-    if (statusSuccess && typeSuccess && fidelitySuccess) {
+    if (success) {
       toast({
         title: "Succès",
         description: "Utilisateur mis à jour avec succès",
@@ -258,6 +279,17 @@ const UsersManagement: React.FC = () => {
     });
   } finally {
     setIsLoading(false);
+  }
+};
+
+const handleWalletAddressChange = (newAddress: string) => {
+  setFormData({...formData, walletAddress: newAddress});
+  
+  // Afficher un warning si l'adresse change
+  if (editingUser && newAddress !== editingUser.walletAddress) {
+    setShowWalletWarning(true);
+  } else {
+    setShowWalletWarning(false);
   }
 };
 
@@ -723,11 +755,25 @@ const UsersManagement: React.FC = () => {
                   />
                 </FormControl>
 
+                {/* Debug des données */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Box p={3} bg="gray.100" borderRadius="md" fontSize="xs">
+                    <Text fontWeight="bold">Debug:</Text>
+                    <Text>UserTypeId actuel: {formData.userTypeId}</Text>
+                    <Text>Types disponibles: {userTypes.length}</Text>
+                    <Text>Types: {userTypes.map(t => `${t.id}:${t.typeName}`).join(', ')}</Text>
+                  </Box>
+                )}
+
                 <FormControl>
                   <FormLabel>Type d'utilisateur</FormLabel>
-                  <Select
-                    value={formData.userTypeId}
-                    onChange={(e) => setFormData({...formData, userTypeId: parseInt(e.target.value)})}
+                    c<Select
+                      value={formData.userTypeId}
+                      onChange={(e) => {
+                        const newValue = parseInt(e.target.value);
+                        console.log('🔄 Changement type utilisateur:', newValue);
+                        setFormData({...formData, userTypeId: newValue});
+                      }}
                   >
                     {userTypes.map((type) => (
                       <option key={type.id} value={type.id}>
@@ -735,6 +781,10 @@ const UsersManagement: React.FC = () => {
                       </option>
                     ))}
                   </Select>
+                  {/* Affichage de la valeur actuelle pour debug */}
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    Valeur sélectionnée: {formData.userTypeId}
+                  </Text>
                 </FormControl>
 
                 <FormControl>
@@ -775,79 +825,121 @@ const UsersManagement: React.FC = () => {
             <ModalCloseButton />
             <ModalBody pb={6}>
               <VStack spacing={4}>
-                <FormControl isDisabled>
+                {/* Adresse Wallet - MAINTENANT MODIFIABLE */}
+                <FormControl isRequired>
                   <FormLabel>Adresse Wallet</FormLabel>
                   <Input
                     value={formData.walletAddress}
+                    onChange={(e) => handleWalletAddressChange(e.target.value)}
                     fontFamily="mono"
-                    bg="gray.100"
+                    placeholder="0x742d35Cc6634C0532925a3b8D404dEBC..."
                   />
-                  <Text fontSize="xs" color="gray.500" mt={1}>
-                    L'adresse wallet ne peut pas être modifiée
-                  </Text>
+                  {showWalletWarning && (
+                    <Alert status="warning" mt={2} borderRadius="md">
+                      <AlertIcon />
+                      <Box fontSize="sm">
+                        <Text fontWeight="bold">⚠️ Attention !</Text>
+                        <Text>La modification de l'adresse wallet est une opération sensible. 
+                        Assurez-vous que la nouvelle adresse est correcte.</Text>
+                      </Box>
+                    </Alert>
+                  )}
                 </FormControl>
                 
-                <FormControl isDisabled>
+                {/* Prénom - MAINTENANT MODIFIABLE */}
+                <FormControl isRequired>
                   <FormLabel>Prénom</FormLabel>
                   <Input
                     value={formData.firstName}
-                    bg="gray.100"
+                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                    placeholder="Jean"
                   />
-                  <Text fontSize="xs" color="gray.500" mt={1}>
-                    Le prénom ne peut pas être modifié
-                  </Text>
                 </FormControl>
                 
-                <FormControl isDisabled>
+                {/* Nom - MAINTENANT MODIFIABLE */}
+                <FormControl isRequired>
                   <FormLabel>Nom</FormLabel>
                   <Input
                     value={formData.lastName}
-                    bg="gray.100"
+                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                    placeholder="Dupont"
                   />
-                  <Text fontSize="xs" color="gray.500" mt={1}>
-                    Le nom ne peut pas être modifié
-                  </Text>
                 </FormControl>
 
+                {/* Type d'utilisateur */}
                 <FormControl>
                   <FormLabel>Type d'utilisateur</FormLabel>
                   <Select
                     value={formData.userTypeId}
-                    onChange={(e) => setFormData({...formData, userTypeId: parseInt(e.target.value)})}
+                    onChange={(e) => {
+                      const newValue = parseInt(e.target.value);
+                      console.log('🔄 Changement type utilisateur:', newValue);
+                      setFormData({...formData, userTypeId: newValue});
+                    }}
                   >
                     {userTypes.map((type) => (
                       <option key={type.id} value={type.id}>
-                        {getUserTypeBadge(type.typeName)} {type.typeName}
+                        {getUserTypeBadge(type.typeName)} {type.typeName} - {type.description}
                       </option>
                     ))}
                   </Select>
                 </FormControl>
 
+                {/* Statut de fidélité */}
                 <FormControl>
-                  <FormLabel>Fidélité</FormLabel>
+                  <FormLabel>Statut de fidélité</FormLabel>
                   <Select
                     value={formData.fidelityStatus}
                     onChange={(e) => setFormData({...formData, fidelityStatus: e.target.value as any})}
                   >
-                    <option value="OUI">OUI</option>
-                    <option value="NON">NON</option>
+                    <option value="OUI">🌟 Fidèle (OUI)</option>
+                    <option value="NON">⭐ Non fidèle (NON)</option>
                   </Select>
                 </FormControl>
 
+                {/* Statut */}
                 <FormControl>
                   <FormLabel>Statut</FormLabel>
                   <Select
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value as any})}
                   >
-                    <option value="Active">Actif</option>
-                    <option value="Suspended">Suspendu</option>
-                    <option value="Inactive">Inactif</option>
+                    <option value="Active">✅ Actif</option>
+                    <option value="Suspended">⏸️ Suspendu</option>
+                    <option value="Inactive">❌ Inactif</option>
                   </Select>
                 </FormControl>
 
+                {/* Informations additionnelles */}
+                <Box 
+                  bg="blue.50" 
+                  p={4} 
+                  borderRadius="lg" 
+                  border="1px solid" 
+                  borderColor="blue.200"
+                  w="full"
+                >
+                  <Text fontSize="sm" color="blue.700">
+                    <strong>ℹ️ Informations :</strong>
+                    <br />
+                    • La modification de l'adresse wallet mettra à jour la clé primaire
+                    <br />
+                    • Les modifications sont instantanées et irréversibles
+                    <br />
+                    • L'utilisateur sera notifié si il est connecté
+                  </Text>
+                </Box>
+
+                {/* Boutons d'action */}
                 <HStack spacing={3} w="full" pt={4}>
-                  <Button variant="outline" onClick={onEditClose} flex={1}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowWalletWarning(false);
+                      onEditClose();
+                    }} 
+                    flex={1}
+                  >
                     Annuler
                   </Button>
                   <Button 
@@ -855,14 +947,52 @@ const UsersManagement: React.FC = () => {
                     onClick={handleUpdate} 
                     flex={1}
                     isLoading={isLoading}
+                    loadingText="Mise à jour..."
                   >
-                    Mettre à jour
+                    💾 Mettre à jour
                   </Button>
                 </HStack>
               </VStack>
             </ModalBody>
           </ModalContent>
         </Modal>
+
+        <AlertDialog
+  isOpen={showConfirmDialog}
+  leastDestructiveRef={cancelRef}
+  onClose={() => setShowConfirmDialog(false)}
+>
+  <AlertDialogOverlay>
+    <AlertDialogContent>
+      <AlertDialogHeader fontSize="lg" fontWeight="bold">
+        ⚠️ Confirmation de modification
+      </AlertDialogHeader>
+
+      <AlertDialogBody>
+        <VStack spacing={3} align="start">
+          <Text>
+            Vous êtes sur le point de modifier des informations sensibles :
+          </Text>
+          
+          {formData.walletAddress !== editingUser?.walletAddress && (
+            <Box p={3} bg="red.50" borderRadius="md" w="full">
+              <Text fontSize="sm" color="red.700">
+                <strong>🔐 Adresse Wallet :</strong>
+                <br />
+                <code>{editingUser?.walletAddress}</code>
+                <br />
+                <strong>→</strong>
+                <br />
+                <code>{formData.walletAddress}</code>
+              </Text>
+            </Box>
+          )}
+          
+          <Text fontSize="sm" color="gray.600">
+            Cette action est irréversible. Êtes-vous sûr de vouloir continuer ?
+          </Text>
+        </VStack>
+      </AlertDialogBody>
 
         {/* Dialog de confirmation de suppression */}
         <AlertDialog
@@ -885,6 +1015,26 @@ const UsersManagement: React.FC = () => {
                   Cette action peut être annulée en modifiant le statut.
                 </Text>
               </AlertDialogBody>
+
+              <AlertDialogFooter>
+        <Button 
+          ref={cancelRef} 
+          onClick={() => setShowConfirmDialog(false)}
+        >
+          Annuler
+        </Button>
+        <Button 
+          colorScheme="red" 
+          onClick={confirmUpdate} 
+          ml={3}
+          isLoading={isLoading}
+        >
+          Confirmer les modifications
+        </Button>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialogOverlay>
+</AlertDialog>
 
               <AlertDialogFooter>
                 <Button ref={cancelRef} onClick={onDeleteClose}>

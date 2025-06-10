@@ -122,103 +122,291 @@ class HybridAuthService {
    * Récupère tous les utilisateurs autorisés (fonction admin)
    */
   async getAllUsers(): Promise<UserData[]> {
-    try {
-      console.log('🔍 Récupération de tous les utilisateurs...');
-      
-      const { data, error } = await supabase
-        .from('users_authorized')
-        .select(`
-          wallet_address,
-          first_name,
-          last_name,
-          registration_date,
-          status,
-          fidelity_status,
-          fidelity_nft_claimed,
-          fidelity_nft_claimed_date
-        `)
-        .order('registration_date', { ascending: false });
+  try {
+    console.log('🔍 Récupération de tous les utilisateurs...');
+    
+    const { data, error } = await supabase
+      .from('users_authorized')
+      .select(`
+        wallet_address,
+        first_name,
+        last_name,
+        registration_date,
+        status,
+        fidelity_status,
+        fidelity_nft_claimed,
+        fidelity_nft_claimed_date,
+        user_type_id,
+        user_types!inner(
+          id,
+          type_name,
+          description
+        )
+      `)
+      .order('registration_date', { ascending: false });
 
-      if (error) {
-        console.error('❌ Erreur Supabase getAllUsers:', error);
-        throw error;
-      }
+    if (error) {
+      console.error('❌ Erreur Supabase getAllUsers:', error);
+      throw error;
+    }
 
-      if (!data) {
-        console.log('⚠️ Aucune donnée retournée');
-        return [];
-      }
-
-      console.log(`✅ ${data.length} utilisateurs récupérés`);
-
-      return data.map((record: any) => ({
-        walletAddress: record.wallet_address || '',
-        firstName: record.first_name || '',
-        lastName: record.last_name || '',
-        registrationDate: record.registration_date || '',
-        status: record.status || 'Inactive',
-        fidelityStatus: record.fidelity_status || 'NON',
-        fidelityNftClaimed: record.fidelity_nft_claimed || false,
-        userType: 'MemberSimple', // Valeur par défaut, à adapter selon votre logique
-        userTypeId: 1 // Valeur par défaut, à adapter selon votre logique
-      }));
-
-    } catch (error) {
-      console.error('❌ Erreur lors de la récupération des utilisateurs:', error);
+    if (!data) {
+      console.log('⚠️ Aucune donnée retournée');
       return [];
     }
+
+    console.log(`✅ ${data.length} utilisateurs récupérés`);
+
+    return data.map((record: any) => ({
+      walletAddress: record.wallet_address || '',
+      firstName: record.first_name || '',
+      lastName: record.last_name || '',
+      registrationDate: record.registration_date || '',
+      status: record.status || 'Inactive',
+      fidelityStatus: record.fidelity_status || 'NON',
+      fidelityNftClaimed: record.fidelity_nft_claimed || false,
+      userType: record.user_types?.type_name || 'MemberSimple',
+      userTypeId: record.user_type_id || 1
+    }));
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération des utilisateurs:', error);
+    return [];
   }
+}
 
   /**
    * Ajoute un nouvel utilisateur autorisé
    */
   async addAuthorizedUser(
-    walletAddress: string, 
-    firstName: string, 
-    lastName: string, 
-    userTypeId: number = 1
-  ): Promise<boolean> {
-    try {
-      // Validation des données
-      if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
-        throw new Error('Format d\'adresse wallet invalide');
-      }
+  walletAddress: string, 
+  firstName: string, 
+  lastName: string, 
+  userTypeId: number = 1
+): Promise<boolean> {
+  try {
+    // Validation des données
+    if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
+      throw new Error('Format d\'adresse wallet invalide');
+    }
 
-      if (!firstName.trim() || !lastName.trim()) {
-        throw new Error('Prénom et nom requis');
-      }
+    if (!firstName.trim() || !lastName.trim()) {
+      throw new Error('Prénom et nom requis');
+    }
 
-      const normalizedAddress = walletAddress.toLowerCase();
-      console.log('➕ Ajout utilisateur:', normalizedAddress);
+    // Vérifier que le type d'utilisateur existe
+    const { data: typeExists, error: typeError } = await supabase
+      .from('user_types')
+      .select('id')
+      .eq('id', userTypeId)
+      .single();
 
-      const { data, error } = await supabase
-        .from('users_authorized')
-        .insert([
-          {
-            wallet_address: normalizedAddress,
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            registration_date: new Date().toISOString().split('T')[0],
-            status: 'Active',
-            fidelity_status: 'NON',
-            fidelity_nft_claimed: false
-          }
-        ])
-        .select();
+    if (typeError || !typeExists) {
+      console.error('❌ Type d\'utilisateur inexistant:', userTypeId);
+      userTypeId = 1; // Fallback vers MemberSimple
+    }
 
-      if (error) {
-        console.error('❌ Erreur lors de l\'ajout:', error);
-        return false;
-      }
+    const normalizedAddress = walletAddress.toLowerCase();
+    console.log('➕ Ajout utilisateur:', normalizedAddress);
 
-      console.log('✅ Utilisateur ajouté avec succès:', data);
-      return true;
+    const { data, error } = await supabase
+      .from('users_authorized')
+      .insert([
+        {
+          wallet_address: normalizedAddress,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          registration_date: new Date().toISOString().split('T')[0],
+          status: 'Active',
+          fidelity_status: 'NON',
+          fidelity_nft_claimed: false,
+          user_type_id: userTypeId
+        }
+      ])
+      .select();
 
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'ajout utilisateur:', error);
+    if (error) {
+      console.error('❌ Erreur lors de l\'ajout:', error);
       return false;
     }
+
+    console.log('✅ Utilisateur ajouté avec succès:', data);
+    return true;
+
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'ajout utilisateur:', error);
+    return false;
   }
+}
+
+  /**
+ * Met à jour les informations personnelles d'un utilisateur (prénom, nom)
+ */
+async updateUserPersonalInfo(
+  walletAddress: string,
+  firstName: string,
+  lastName: string
+): Promise<boolean> {
+  try {
+    // Validation des données
+    if (!firstName.trim() || !lastName.trim()) {
+      throw new Error('Prénom et nom requis');
+    }
+
+    const normalizedAddress = walletAddress.toLowerCase();
+    console.log('🔄 Mise à jour infos personnelles pour:', normalizedAddress);
+
+    const { error } = await supabase
+      .from('users_authorized')
+      .update({ 
+        first_name: firstName.trim(),
+        last_name: lastName.trim()
+      })
+      .eq('wallet_address', normalizedAddress);
+
+    if (error) {
+      console.error('❌ Erreur mise à jour infos personnelles:', error);
+      return false;
+    }
+
+    console.log('✅ Informations personnelles mises à jour avec succès');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la mise à jour des infos personnelles:', error);
+    return false;
+  }
+}
+
+  /**
+ * Met à jour l'adresse wallet d'un utilisateur (ATTENTION: opération sensible)
+ */
+async updateUserWalletAddress(
+  oldWalletAddress: string,
+  newWalletAddress: string
+): Promise<boolean> {
+  try {
+    // Validation du format de la nouvelle adresse
+    if (!newWalletAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
+      throw new Error('Format de nouvelle adresse wallet invalide');
+    }
+
+    const oldNormalizedAddress = oldWalletAddress.toLowerCase();
+    const newNormalizedAddress = newWalletAddress.toLowerCase();
+    
+    console.log('🔄 Mise à jour adresse wallet:', oldNormalizedAddress, '->', newNormalizedAddress);
+
+    // Vérifier que la nouvelle adresse n'est pas déjà utilisée
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users_authorized')
+      .select('wallet_address')
+      .eq('wallet_address', newNormalizedAddress)
+      .single();
+
+    if (existingUser && !checkError) {
+      console.error('❌ La nouvelle adresse wallet est déjà utilisée');
+      return false;
+    }
+
+    // Mettre à jour l'adresse wallet
+    const { error } = await supabase
+      .from('users_authorized')
+      .update({ wallet_address: newNormalizedAddress })
+      .eq('wallet_address', oldNormalizedAddress);
+
+    if (error) {
+      console.error('❌ Erreur mise à jour adresse wallet:', error);
+      return false;
+    }
+
+    console.log('✅ Adresse wallet mise à jour avec succès');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la mise à jour de l\'adresse wallet:', error);
+    return false;
+  }
+}
+
+  /**
+ * Met à jour tous les champs d'un utilisateur en une seule opération
+ */
+async updateUserComplete(
+  oldWalletAddress: string,
+  userData: {
+    walletAddress?: string;
+    firstName: string;
+    lastName: string;
+    status: 'Active' | 'Suspended' | 'Inactive';
+    fidelityStatus: 'OUI' | 'NON';
+    userTypeId: number;
+  }
+): Promise<boolean> {
+  try {
+    const oldNormalizedAddress = oldWalletAddress.toLowerCase();
+    console.log('🔄 Mise à jour complète utilisateur:', oldNormalizedAddress);
+
+    // Si l'adresse wallet change, d'abord vérifier qu'elle n'existe pas
+    if (userData.walletAddress && userData.walletAddress !== oldWalletAddress) {
+      const newNormalizedAddress = userData.walletAddress.toLowerCase();
+      
+      const { data: existingUser } = await supabase
+        .from('users_authorized')
+        .select('wallet_address')
+        .eq('wallet_address', newNormalizedAddress)
+        .single();
+
+      if (existingUser) {
+        console.error('❌ La nouvelle adresse wallet est déjà utilisée');
+        return false;
+      }
+    }
+
+    // Vérifier que le type d'utilisateur existe
+    const { data: typeExists } = await supabase
+      .from('user_types')
+      .select('id')
+      .eq('id', userData.userTypeId)
+      .single();
+
+    if (!typeExists) {
+      console.error('❌ Type d\'utilisateur inexistant:', userData.userTypeId);
+      return false;
+    }
+
+    // Préparer les données de mise à jour
+    const updateData: any = {
+      first_name: userData.firstName.trim(),
+      last_name: userData.lastName.trim(),
+      status: userData.status,
+      fidelity_status: userData.fidelityStatus,
+      user_type_id: userData.userTypeId
+    };
+
+    // Ajouter l'adresse wallet si elle change
+    if (userData.walletAddress && userData.walletAddress !== oldWalletAddress) {
+      updateData.wallet_address = userData.walletAddress.toLowerCase();
+    }
+
+    // Effectuer la mise à jour
+    const { error } = await supabase
+      .from('users_authorized')
+      .update(updateData)
+      .eq('wallet_address', oldNormalizedAddress);
+
+    if (error) {
+      console.error('❌ Erreur mise à jour complète:', error);
+      return false;
+    }
+
+    console.log('✅ Utilisateur mis à jour complètement avec succès');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la mise à jour complète:', error);
+    return false;
+  }
+}
 
   /**
    * Met à jour le statut d'un utilisateur
@@ -314,52 +502,115 @@ class HybridAuthService {
    * Met à jour le type d'utilisateur (stub - à implémenter selon vos besoins)
    */
   async updateUserType(walletAddress: string, userTypeId: number): Promise<boolean> {
-    try {
-      // TODO: Implémenter la logique de type d'utilisateur si vous avez une table séparée
-      console.log('🔄 Mise à jour type utilisateur (stub):', walletAddress, userTypeId);
-      
-      // Pour l'instant, retourner true car cette fonctionnalité n'est pas encore implémentée
-      return true;
+  try {
+    const normalizedAddress = walletAddress.toLowerCase();
+    console.log('🔄 Mise à jour type utilisateur pour:', normalizedAddress, 'vers:', userTypeId);
 
-    } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour du type:', error);
+    // Vérifier que le type d'utilisateur existe
+    const { data: typeExists, error: typeError } = await supabase
+      .from('user_types')
+      .select('id')
+      .eq('id', userTypeId)
+      .single();
+
+    if (typeError || !typeExists) {
+      console.error('❌ Type d\'utilisateur inexistant:', userTypeId);
       return false;
     }
+
+    // Mettre à jour le type d'utilisateur
+    const { error } = await supabase
+      .from('users_authorized')
+      .update({ user_type_id: userTypeId })
+      .eq('wallet_address', normalizedAddress);
+
+    if (error) {
+      console.error('❌ Erreur mise à jour type utilisateur:', error);
+      return false;
+    }
+
+    console.log('✅ Type utilisateur mis à jour avec succès');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la mise à jour du type:', error);
+    return false;
   }
+}
 
   /**
    * Récupère les types d'utilisateurs (stub - à implémenter selon vos besoins)
    */
   async getUserTypes(): Promise<UserType[]> {
-    try {
-      // TODO: Implémenter la récupération des types depuis une table dédiée
-      // Pour l'instant, retourner des types par défaut
-      return [
-        {
-          id: 1,
-          typeName: 'MemberSimple',
-          description: 'Membre standard',
-          permissions: { canInvest: true, canWithdraw: true }
-        },
-        {
-          id: 2,
-          typeName: 'MemberPrivilégié',
-          description: 'Membre privilégié avec avantages',
-          permissions: { canInvest: true, canWithdraw: true, hasBonus: true }
-        },
-        {
-          id: 3,
-          typeName: 'Admin',
-          description: 'Administrateur',
-          permissions: { canInvest: true, canWithdraw: true, canManageUsers: true }
-        }
-      ];
+  try {
+    console.log('🔍 Récupération des types d\'utilisateurs...');
+    
+    const { data, error } = await supabase
+      .from('user_types')
+      .select(`
+        id,
+        type_name,
+        description,
+        permissions
+      `)
+      .order('id', { ascending: true });
 
-    } catch (error) {
-      console.error('❌ Erreur lors de la récupération des types:', error);
+    if (error) {
+      console.error('❌ Erreur Supabase getUserTypes:', error);
+      throw error;
+    }
+
+    if (!data) {
+      console.log('⚠️ Aucun type d\'utilisateur trouvé');
       return [];
     }
+
+    console.log(`✅ ${data.length} types d\'utilisateurs récupérés`);
+
+    return data.map((record: any) => ({
+      id: record.id,
+      typeName: record.type_name || '',
+      description: record.description || '',
+      permissions: record.permissions || {}
+    }));
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération des types:', error);
+    // Fallback vers les types par défaut
+    return [
+      {
+        id: 1,
+        typeName: 'MemberSimple',
+        description: 'Membre standard',
+        permissions: { canInvest: true, canWithdraw: true }
+      },
+      {
+        id: 2,
+        typeName: 'MemberPrivilégié',
+        description: 'Membre privilégié avec avantages',
+        permissions: { canInvest: true, canWithdraw: true, hasBonus: true }
+      },
+      {
+        id: 3,
+        typeName: 'UtilisateurExterne',
+        description: 'Utilisateur externe avec accès limité',
+        permissions: { dashboard: true }
+      },
+      {
+        id: 4,
+        typeName: 'Admin',
+        description: 'Administrateur',
+        permissions: { canInvest: true, canWithdraw: true, canManageUsers: true }
+      },
+      {
+        id: 5,
+        typeName: 'Invité',
+        description: 'Accès invité temporaire',
+        permissions: { invest: false, dashboard: false }
+      }
+    ];
   }
+}
 
   /**
    * Vérifie le statut de fidélité d'un utilisateur

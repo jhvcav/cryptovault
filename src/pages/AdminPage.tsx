@@ -8,6 +8,7 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  Text,
   Heading,
   VStack,
   Alert,
@@ -22,7 +23,7 @@ import UsersManagement from './UsersManagement';
 import AdminDashboard from './AdminDashboard';
 import WalletMonitoring from './WalletMonitoring';
 import ContractMonitoring from './ContractMonitoring';
-import PlansManagement from './PlansManagement'; // Nouveau import
+import PlansManagement from './PlansManagement';
 
 const AdminPage: React.FC = () => {
   const { isOwner } = useOwner();
@@ -39,44 +40,66 @@ const AdminPage: React.FC = () => {
 
   // Afficher une erreur si pas owner
   if (!isOwner) {
-    return (
-      <Box p={6} maxW="800px" mx="auto">
-        <VStack spacing={6}>
-          <Alert status="error" borderRadius="lg">
-            <AlertIcon />
-            <Box>
-              <strong>Accès refusé</strong>
-              <br />
+  return (
+    <Box p={6} maxW="800px" mx="auto">
+      <VStack spacing={6}>
+        {/* Alert principal - Modifier les couleurs ici */}
+        <Alert 
+          status="error" 
+          borderRadius="lg"
+          bg="red.50"              // 🎨 Couleur de fond de l'alert
+          borderColor="red.300"    // 🎨 Couleur de bordure
+          border="2px solid"
+        >
+          <AlertIcon color="red.500" />  {/* 🎨 Couleur de l'icône */}
+          <Box>
+            <Text fontWeight="bold" color="red.700">  {/* 🎨 Couleur du titre */}
+              Accès refusé
+            </Text>
+            <Text color="red.600" mt={1}>  {/* 🎨 Couleur du texte descriptif */}
               Seul le propriétaire de la plateforme peut accéder à cette section.
-            </Box>
-          </Alert>
-          
-          <Box textAlign="center" p={6} bg="gray.50" borderRadius="lg">
-            <Heading size="md" color="gray.600" mb={2}>
-              🔒 Zone Administrateur
-            </Heading>
-            <p>Cette section est réservée au propriétaire de la plateforme.</p>
+            </Text>
           </Box>
-        </VStack>
-      </Box>
-    );
-  }
+        </Alert>
+        
+        {/* Box informative - Modifier les couleurs ici */}
+        <Box 
+          textAlign="center" 
+          p={6} 
+          bg="gray.100"           // 🎨 Couleur de fond de la box
+          borderRadius="lg"
+          border="2px solid"
+          borderColor="gray.300"  // 🎨 Couleur de bordure de la box
+        >
+          <Heading size="md" color="gray.700" mb={2}>  {/* 🎨 Couleur du titre */}
+            🔒 Zone Administrateur
+          </Heading>
+          <Text color="gray.600">  {/* 🎨 Couleur du texte */}
+            Cette section est réservée au propriétaire de la plateforme.
+          </Text>
+        </Box>
+      </VStack>
+    </Box>
+  );
+}
 
   return (
-    <Box p={6} maxW="1600px" mx="auto">
-      <VStack spacing={6} align="stretch">
-        {/* En-tête Admin */}
-        <Box>
-          <HStack spacing={4} align="center" mb={2}>
-            <Heading size="xl" color="blue.600">
-              🛠️ Administration
-            </Heading>
-            <Badge colorScheme="yellow" variant="solid" px={3} py={1}>
-              👑 OWNER
-            </Badge>
-          </HStack>
-          <p>Bienvenue {user?.firstName} ! Vous avez accès à toutes les fonctionnalités d'administration.</p>
-        </Box>
+  <Box p={6} maxW="1600px" mx="auto">
+    <VStack spacing={6} align="stretch">
+      {/* En-tête Admin */}
+      <Box>
+        <HStack spacing={4} align="center" mb={2}>
+          <Heading size="xl" color="blue.500">
+            🛠️ Administration
+          </Heading>
+          <Badge colorScheme="yellow" variant="solid" px={3} py={1}>
+            👑 OWNER
+          </Badge>
+        </HStack>
+        <Text color="white">  {/* Utiliser Text au lieu de <p> */}
+          Bienvenue {user?.firstName} ! Vous avez accès à toutes les fonctionnalités d'administration.
+        </Text>
+      </Box>
 
         {/* Onglets Admin */}
         <Box
@@ -107,9 +130,9 @@ const AdminPage: React.FC = () => {
               <Tab 
                 fontWeight="medium"
                 _selected={{ 
-                  color: 'white.600', 
+                  color: 'blue.600', 
                   borderColor: 'blue.500',
-                  borderBottomColor: 'red',
+                  borderBottomColor: 'white',
                   bg: 'black'
                 }}
               >
@@ -129,7 +152,7 @@ const AdminPage: React.FC = () => {
               <Tab 
                 fontWeight="medium"
                 _selected={{ 
-                  color: 'green.600', 
+                  color: 'white', 
                   borderColor: 'green.500',
                   borderBottomColor: 'white',
                   bg: 'black'
@@ -140,7 +163,7 @@ const AdminPage: React.FC = () => {
               <Tab 
                 fontWeight="medium"
                 _selected={{ 
-                  color: 'green.600', 
+                  color: 'white', 
                   borderColor: 'green.500',
                   borderBottomColor: 'white',
                   bg: 'black'
@@ -181,12 +204,14 @@ const AdminPage: React.FC = () => {
 
         {/* Informations de debug */}
         <Box 
-          bg="black.50" 
+         bgGradient="linear(135deg, gray.800 0%, gray.900 100%)"
           p={4} 
           borderRadius="lg" 
-          border="1px" 
-          borderColor="black.200"
+          border="1px solid" 
+          borderColor="gray.600"
           fontSize="sm"
+          color="white"
+          shadow="lg"                // Ajouter une ombre
         >
           <strong>ℹ️ Informations:</strong>
           <br />

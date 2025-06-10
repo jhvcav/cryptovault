@@ -32,17 +32,12 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4 text-white">Produits</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
-                  Plans de Staking
-                </Link>
-              </li>
-              <li>
                 <Link to="/invest" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Plans Lp Farming
                 </Link>
               </li>
               <li>
-                <Link to="/card-nft" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/nft-collection" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   NFT
                 </Link>
               </li>

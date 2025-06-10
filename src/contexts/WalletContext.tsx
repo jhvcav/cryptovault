@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { ethers } from 'ethers';
+import { useAuth } from './AuthContext';
 
 // Adresses des tokens BSC
 const TOKEN_ADDRESSES = {
@@ -29,6 +30,7 @@ interface WalletContextType {
   chainId: number | null;
   switchNetwork: (chainId: number) => Promise<void>;
   refreshBalances: () => Promise<void>;
+  checkWalletConnection: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -39,6 +41,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState<number | null>(null);
+  
+  // Contexte d'authentification pour la sécurité
+  const { isAuthenticated, logout } = useAuth();
+  
+  // Référence pour l'adresse autorisée (sécurité)
+  const authorizedAddressRef = useRef<string | null>(null);
+  const isSecurityInitializedRef = useRef(false);
 
   // Fonction pour récupérer le solde d'un token
   const getTokenBalance = async (tokenAddress: string, userAddress: string): Promise<number> => {
@@ -82,10 +91,67 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
+  // Fonction de vérification de sécurité
+  const checkAddressSecurity = useCallback((currentAddress: string | null) => {
+    if (!isAuthenticated || !currentAddress) return true;
+
+    // Si pas encore initialisé, enregistrer l'adresse actuelle comme autorisée
+    if (!isSecurityInitializedRef.current) {
+      authorizedAddressRef.current = currentAddress.toLowerCase();
+      isSecurityInitializedRef.current = true;
+      console.log('🔒 Adresse autorisée enregistrée:', currentAddress);
+      return true;
+    }
+
+    // Vérifier si l'adresse actuelle correspond à l'adresse autorisée
+    const isAuthorized = currentAddress.toLowerCase() === authorizedAddressRef.current;
+    
+    if (!isAuthorized) {
+      console.error('🚨 ALERTE SÉCURITÉ: Changement d\'adresse non autorisé détecté');
+      console.error('Adresse autorisée:', authorizedAddressRef.current);
+      console.error('Adresse actuelle:', currentAddress.toLowerCase());
+      
+      // Déconnecter immédiatement
+      handleSecurityBreach();
+      return false;
+    }
+
+    return true;
+  }, [isAuthenticated]);
+
+  // Fonction pour gérer les violations de sécurité
+  const handleSecurityBreach = useCallback(() => {
+    console.log('🔒 Déconnexion de sécurité en cours...');
+    
+    // Nettoyer les données locales
+    setAddress(null);
+    setBalance({ usdt: 0, usdc: 0 });
+    setIsConnected(false);
+    setChainId(null);
+    localStorage.removeItem('walletConnected');
+    
+    // Réinitialiser les références de sécurité
+    authorizedAddressRef.current = null;
+    isSecurityInitializedRef.current = false;
+    
+    // Déconnecter l'utilisateur de la plateforme
+    logout();
+    
+    // Afficher un message de sécurité
+    setTimeout(() => {
+      alert('Changement d\'adresse wallet détecté. Vous avez été déconnecté pour des raisons de sécurité.');
+    }, 100);
+  }, [logout]);
+
   // Fonction de connexion
   const connectWallet = async () => {
     if (!window.ethereum) {
       alert('Veuillez installer MetaMask');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      alert('Vous devez d\'abord vous authentifier sur la plateforme');
       return;
     }
 
@@ -97,9 +163,18 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (accounts.length > 0) {
         const userAddress = accounts[0];
+        
+        // Vérification de sécurité avant de définir l'adresse
+        if (!checkAddressSecurity(userAddress)) {
+          setIsConnecting(false);
+          return;
+        }
+        
         setAddress(userAddress);
         setIsConnected(true);
         localStorage.setItem('walletConnected', 'true');
+        
+        console.log('✅ Wallet connecté avec succès:', userAddress);
         
         // Charger les soldes immédiatement
         await updateBalances(userAddress);
@@ -113,20 +188,55 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Fonction de déconnexion
-  const disconnectWallet = () => {
+  const disconnectWallet = useCallback(() => {
+    console.log('🔌 Déconnexion du wallet...');
     setAddress(null);
     setBalance({ usdt: 0, usdc: 0 });
     setIsConnected(false);
     setChainId(null);
     localStorage.removeItem('walletConnected');
-  };
+    
+    // Ne pas réinitialiser les références de sécurité ici
+    // car cela pourrait être une déconnexion volontaire
+  }, []);
+
+  // Fonction pour vérifier la connexion wallet
+  const checkWalletConnection = useCallback(async () => {
+    if (!window.ethereum || !isAuthenticated) {
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      
+      if (accounts && accounts.length > 0) {
+        const currentAddress = accounts[0];
+        
+        // Vérification de sécurité
+        if (!checkAddressSecurity(currentAddress)) {
+          return;
+        }
+        
+        setAddress(currentAddress);
+        setIsConnected(true);
+        await updateBalances(currentAddress);
+      } else {
+        setAddress(null);
+        setIsConnected(false);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification de la connexion wallet:', error);
+      setAddress(null);
+      setIsConnected(false);
+    }
+  }, [isAuthenticated, checkAddressSecurity, updateBalances]);
 
   // Fonction pour rafraîchir les soldes
   const refreshBalances = useCallback(async () => {
-    if (address) {
+    if (address && isAuthenticated) {
       await updateBalances(address);
     }
-  }, [address, updateBalances]);
+  }, [address, isAuthenticated, updateBalances]);
 
   // Fonction pour changer de réseau
   const switchNetwork = async (targetChainId: number) => {
@@ -164,16 +274,28 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Effet pour la reconnexion automatique
   useEffect(() => {
-    const checkWalletConnection = async () => {
+    const checkInitialConnection = async () => {
       const wasConnected = localStorage.getItem('walletConnected') === 'true';
       
-      if (wasConnected && window.ethereum) {
+      if (wasConnected && window.ethereum && isAuthenticated) {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts.length > 0) {
-            setAddress(accounts[0]);
-            setIsConnected(true);
-            await updateBalances(accounts[0]);
+            const userAddress = accounts[0];
+            
+            // Pour la reconnexion automatique, on considère cette adresse comme autorisée
+            if (!isSecurityInitializedRef.current) {
+              authorizedAddressRef.current = userAddress.toLowerCase();
+              isSecurityInitializedRef.current = true;
+              console.log('🔒 Adresse autorisée lors de la reconnexion:', userAddress);
+            }
+            
+            // Vérification de sécurité
+            if (checkAddressSecurity(userAddress)) {
+              setAddress(userAddress);
+              setIsConnected(true);
+              await updateBalances(userAddress);
+            }
           }
         } catch (error) {
           console.error('Erreur reconnexion:', error);
@@ -181,68 +303,122 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     };
 
-    checkWalletConnection();
-  }, [updateBalances]);
+    if (isAuthenticated) {
+      checkInitialConnection();
+    }
+  }, [isAuthenticated, checkAddressSecurity, updateBalances]);
 
   // Effet pour récupérer le chainId initial
   useEffect(() => {
     const getCurrentChainId = async () => {
-  if (window.ethereum) {
-    try {
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      const numericChainId = parseInt(chainId, 16);
-      
-      // DEBUG LOGS
-      console.log('🔍 WalletContext ChainId Debug:', {
-        rawChainId: chainId,
-        numericChainId,
-        isBSC: numericChainId === 56
-      });
-      
-      setChainId(numericChainId);
-    } catch (error) {
-      console.error('Erreur récupération chainId:', error);
-    }
-  }
-};
+      if (window.ethereum) {
+        try {
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          const numericChainId = parseInt(chainId, 16);
+          
+          console.log('🔍 WalletContext ChainId Debug:', {
+            rawChainId: chainId,
+            numericChainId,
+            isBSC: numericChainId === 56
+          });
+          
+          setChainId(numericChainId);
+        } catch (error) {
+          console.error('Erreur récupération chainId:', error);
+        }
+      }
+    };
+    
     getCurrentChainId();
   }, []);
 
-  // Effet pour les événements MetaMask
+  // Effet pour les événements MetaMask avec sécurité
   useEffect(() => {
-    if (!window.ethereum) return;
+    if (!window.ethereum || !isAuthenticated) return;
 
     const handleAccountsChanged = async (accounts: string[]) => {
-      if (accounts.length > 0) {
-        setAddress(accounts[0]);
-        setIsConnected(true);
-        await updateBalances(accounts[0]);
-      } else {
+      console.log('🔄 Changement d\'adresse MetaMask détecté:', accounts);
+      
+      if (accounts.length === 0) {
+        // L'utilisateur a déconnecté MetaMask
+        console.log('❌ Aucun compte MetaMask disponible');
         disconnectWallet();
+        return;
       }
+
+      const newAddress = accounts[0];
+      
+      // Vérification de sécurité critique
+      if (!checkAddressSecurity(newAddress)) {
+        // La fonction checkAddressSecurity gère déjà la déconnexion
+        return;
+      }
+
+      // Si l'adresse est autorisée, mettre à jour
+      setAddress(newAddress);
+      setIsConnected(true);
+      await updateBalances(newAddress);
     };
 
     const handleChainChanged = async (chainId: string) => {
       const newChainId = parseInt(chainId, 16);
+      console.log('🔗 Changement de réseau détecté:', newChainId);
       setChainId(newChainId);
       
-      if (address) {
+      if (address && isAuthenticated) {
         await updateBalances(address);
       }
     };
 
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
+    // Ajouter les écouteurs d'événements
+    if (window.ethereum.on) {
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on('chainChanged', handleChainChanged);
+    }
 
+    // Vérification périodique de sécurité (backup)
+    const securityCheckInterval = setInterval(async () => {
+      if (!window.ethereum || !isAuthenticated) return;
+
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          checkAddressSecurity(accounts[0]);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification de sécurité périodique:', error);
+      }
+    }, 3000); // Vérifier toutes les 3 secondes
+
+    // Nettoyage
     return () => {
-      if (window.ethereum) {
+      if (window.ethereum.removeListener) {
         window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
+      clearInterval(securityCheckInterval);
     };
-  }, [address, updateBalances]);
+  }, [address, isAuthenticated, checkAddressSecurity, updateBalances, disconnectWallet]);
 
-  const value = {
+  // Effet pour gérer la déconnexion de la plateforme
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Réinitialiser complètement en cas de déconnexion de la plateforme
+      setAddress(null);
+      setBalance({ usdt: 0, usdc: 0 });
+      setIsConnected(false);
+      setChainId(null);
+      localStorage.removeItem('walletConnected');
+      
+      // Réinitialiser les références de sécurité
+      authorizedAddressRef.current = null;
+      isSecurityInitializedRef.current = false;
+      
+      console.log('🔒 Wallet déconnecté suite à la déconnexion de la plateforme');
+    }
+  }, [isAuthenticated]);
+
+  const value: WalletContextType = {
     address,
     balance,
     connectWallet,
@@ -251,7 +427,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isConnected,
     chainId,
     switchNetwork,
-    refreshBalances
+    refreshBalances,
+    checkWalletConnection
   };
 
   return (
