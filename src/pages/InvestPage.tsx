@@ -177,7 +177,7 @@ const InvestPage: React.FC = () => {
               <h4 className="text-white font-medium mb-2">Exemple (1000 USDT)</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Rendement quotidien:</span>
+                  <span className="text-slate-400">Récompense quotidien:</span>
                   <span className="text-green-400">
                     ~{((1000 * (effectiveAPR / 100)) / 365).toFixed(3)} USDT
                   </span>
@@ -228,7 +228,7 @@ const InvestPage: React.FC = () => {
               onClick={() => openModal(plan)}
             >
               <ArrowRight size={18} className="mr-2" />
-              Investir Maintenant
+              Déposer Maintenant
             </button>
           ) : (
             <Link

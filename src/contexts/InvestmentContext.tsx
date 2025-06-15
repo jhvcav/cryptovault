@@ -100,7 +100,7 @@ useEffect(() => {
           description: "Plan d'entrée idéal pour les nouveaux utilisateurs. Offre un équilibre entre récompense et durée de blocage courte.",
           apr: 12,
           duration: 30,
-          minAmount: 100,
+          minAmount: 150,
           active: true
         },
         {
