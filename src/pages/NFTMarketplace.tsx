@@ -185,7 +185,7 @@ const NFTMarketplace: React.FC = () => {
         'Bonus 50% sur récompenses',
         'Support prioritaire',
         'Périodes : 30-90 jours',
-        'Insights hebdomadaires'
+        'Insights trimestriels'
       ],
       bgGradient: 'from-slate-400 to-slate-600',
       borderColor: 'border-slate-400',
@@ -207,7 +207,7 @@ const NFTMarketplace: React.FC = () => {
       features: [
         'Accès toutes stratégies premium',
         'Bonus 100% sur récompenses',
-        'Support VIP 24/7',
+        'Support VIP',
         'Périodes : 30-180 jours',
         'Sessions stratégie 1-on-1',
         'Accès beta nouvelles fonctionnalités'
@@ -231,12 +231,12 @@ const NFTMarketplace: React.FC = () => {
       features: [
         'Accès exclusif toutes stratégies',
         'Bonus 150% sur récompenses',
-        'Gestionnaire de compte dédié',
         'Toutes périodes disponibles',
         'Consultations stratégiques illimitées',
         'Accès anticipé nouveaux produits',
         'Participation gouvernance plateforme',
-        'Événements privés'
+        'Événements privés',
+        'Insights mensuels'
       ],
       bgGradient: 'from-purple-600 via-pink-600 to-purple-800',
       borderColor: 'border-purple-500',
@@ -864,7 +864,7 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
                   <td className="p-4 font-medium">Support</td>
                   <td className="p-4 text-center">Communautaire</td>
                   <td className="p-4 text-center">Prioritaire</td>
-                  <td className="p-4 text-center">VIP 24/7</td>
+                  <td className="p-4 text-center">VIP</td>
                   <td className="p-4 text-center">Dédié</td>
                 </tr>
                 <tr className="border-t border-slate-600 bg-slate-750">

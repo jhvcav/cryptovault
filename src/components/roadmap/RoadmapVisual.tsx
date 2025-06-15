@@ -43,11 +43,12 @@ const RoadmapVisual = () => {
       keyPoints: [
         "Déploiement des 1er plans de stratégie à la communauté",
         "Diversification des stratégies DeFi",
-        "Développement du plan d'affiliation"
+        "Optimisation de la plateforme de service de récompenses",
       ],
       milestones: [
         "Programme fidélité 100% opérationnel",
-        "Premiers affiliés VIP investisseurs",
+        "Attribution cadeaux de fidélité aux membres de la communauté",
+        "Premières acquisition de plans récompense par la communauté",
         "Premier retour sur les récompenses obtenus",
       ]
     },
@@ -58,13 +59,12 @@ const RoadmapVisual = () => {
       color: "#F59E0B", // Amber
       icon: "💎",
       keyPoints: [
-        "Optimisation du programme d'affiliation",
-        "Lancement du programme de fidélité"
+        "Lancement du programme de fidélité",
+        "Optimisation des plans de récompenses",
+        "Optimisation du système de suivi des stratégies",
       ],
       milestones: [
-        "Système d'affiliation conçu",
-        "Dashboard d'affiliation déployé",
-        "Affiliés préparés pour intégration token"
+        "Suivi des retours des récompenses",
       ]
     },
     {
@@ -76,7 +76,7 @@ const RoadmapVisual = () => {
       keyPoints: [
         "Conception et développement du token",
         "Intégration du token dans la communauté",
-        "Retour de la communauté sur les rendements"
+        "Retour de la communauté sur les récompenses"
       ],
       milestones: [
         "Validation satisfaction de la communauté",
@@ -92,13 +92,12 @@ const RoadmapVisual = () => {
       keyPoints: [
         "Création et lancement du token du projet",
         "Optimisation de toutes les stratégies",
-        "Affiliation multi-niveaux avancée",
-        "Audit Smart contrat"
+        "Préparation audit Smart contrat"
       ],
       milestones: [
-        "Audit complet et optimisations",
-        "Programme d'affiliation multi-niveaux",
-        "Smart contract audité",
+        "Retour de la communauté sur satisfaction des récompenses",
+        "Bilan des résultats des stratégies de l'année",
+        "Membres de la communauté satisfaits",
       ]
     }
   ];
