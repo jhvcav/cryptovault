@@ -72,13 +72,13 @@ const InvestmentCard = ({
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">Plan {plan.name}</h3>
           <div className="bg-blue-600 rounded-full px-3 py-1 text-xs font-semibold text-white">
-            {plan.apr}% APR
+            {plan.apr}% Récompenses
           </div>
         </div>
         
         {/* Montant investi */}
         <div className="mb-4">
-          <div className="text-sm text-slate-400 mb-1">Montant Investi</div>
+          <div className="text-sm text-slate-400 mb-1">Montant Déposé</div>
           <div className="text-xl font-bold text-white">
             {investment.amount.toFixed(2)} {investment.token}
           </div>
@@ -124,7 +124,7 @@ const InvestmentCard = ({
           <div className="flex justify-between items-center mb-2">
             <div className="text-sm text-slate-400 flex items-center">
               <TrendingUp size={14} className="mr-1" />
-              <span>Rendements Actuels</span>
+              <span>Récompenses Actuels</span>
             </div>
             <div className="text-green-400 font-medium">
               {calculatedReturns.toFixed(4)} {investment.token}
@@ -133,7 +133,7 @@ const InvestmentCard = ({
           <div className="flex justify-between items-center">
             <div className="text-sm text-slate-400 flex items-center">
               <DollarSign size={14} className="mr-1" />
-              <span>Rendement Quotidien</span>
+              <span>Récompenses Quotidiens</span>
             </div>
             <div className="text-white">
               {investment.dailyReturn.toFixed(4)} {investment.token}
@@ -156,8 +156,8 @@ const InvestmentCard = ({
             {isWithdrawing
               ? 'Traitement en cours...'
               : canWithdraw
-                ? `Retirer les intérêts (${calculatedReturns.toFixed(2)} ${investment.token})`
-                : `Retrait d'intérêts (> 0.4 ${investment.token})`
+                ? `Récolter les récompenses (${calculatedReturns.toFixed(2)} ${investment.token})`
+                : `Récolte des récompenses (> 0.4 ${investment.token})`
             }
           </button>
           
@@ -174,12 +174,12 @@ const InvestmentCard = ({
             >
               {isWithdrawingCapital
                 ? 'Traitement en cours...'
-                : `Retirer le capital (${investment.amount.toFixed(2)} ${investment.token})`
+                : `Retirer le dépôt (${investment.amount.toFixed(2)} ${investment.token})`
               }
             </button>
           ) : (
             <div className="text-xs text-slate-400 text-center mt-1">
-              Le retrait du capital sera disponible le {formatDate(investment.endDate)}
+              La récolte du dépôt sera disponible le {formatDate(investment.endDate)}
             </div>
           )}
         </div>

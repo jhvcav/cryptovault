@@ -154,7 +154,7 @@ const Dashboard = () => {
         const total = await getTotalReturns();
         setTotalReturnsValue(total || 0);
       } catch (error) {
-        console.error('Erreur lors du calcul des rendements totaux:', error);
+        console.error('Erreur lors du calcul des récompenses totaux:', error);
         setTotalReturnsValue(0);
       }
     };
@@ -189,7 +189,7 @@ const Dashboard = () => {
         
         setCalculatedInvestments(processed.filter(Boolean));
       } catch (error) {
-        console.error('Erreur dans le calcul des rendements:', error);
+        console.error('Erreur dans le calcul des récompenses:', error);
         setCalculatedInvestments([]);
       }
     };
@@ -316,13 +316,13 @@ const Dashboard = () => {
             className={safeBalance.usdc === 0 ? 'border-yellow-500' : ''}
           />
           <StatsCard 
-            title="Total Investi" 
+            title="Total Déposé" 
             value={`${totalInvested.toFixed(2)} USDT/USDC`}
             icon={<BarChart3 size={22} />}
             change={{ value: '15.3%', positive: true }}
           />
           <StatsCard 
-            title="Rendements Totaux" 
+            title="Récompenses Totaux" 
             value={`${totalReturnsValue.toFixed(2)} USDT/USDC`}
             icon={<ArrowUpRight size={22} />}
             change={{ value: '8.2%', positive: true }}
@@ -422,7 +422,7 @@ const Dashboard = () => {
           {/* Colonne droite - Statistiques et informations */}
           <div className="space-y-8">
             <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-              <h2 className="text-xl font-semibold text-white mb-6">Résumé des récompenses</h2>
+              <h2 className="text-xl font-semibold text-white mb-6">Résumé des Récompenses</h2>
               
               <div className="space-y-4">
                 <div>
@@ -440,7 +440,7 @@ const Dashboard = () => {
                 
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-400">Rendements Actuels</span>
+                    <span className="text-slate-400">Récompenses Actuels</span>
                     <span className="text-white">{totalReturnsValue.toFixed(2)} USDT/USDC</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">
