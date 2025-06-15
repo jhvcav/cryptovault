@@ -1,0 +1,36 @@
+{
+  "name": "CryptocaVault Privilège NFT #4",
+  "description": "Ce NFT donne accès exclusif à toutes les fonctionnalités de la plateforme CryptocaVault avec un bonus de 150% sur toutes les récompenses et un accès à la gouvernance.",
+  "image": "https://gateway.pinata.cloud/ipfs/bafybeihdqgktpmsrln2nwrvpgiedi23mutp4atqd7bdcfishti2neh6xoe/privilege_4.jpg",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Privilège"
+    },
+    {
+      "trait_type": "Multiplier",
+      "value": "2.5X"
+    },
+    {
+      "display_type": "boost_percentage",
+      "trait_type": "Bonus",
+      "value": 150
+    },
+    {
+      "trait_type": "Plans d'accès",
+      "value": "Starter, Standard, Premium, Privilège"
+    },
+    {
+      "trait_type": "Périodes de blocage",
+      "value": "30-360 jours"
+    },
+    {
+      "trait_type": "Support",
+      "value": "Gestionnaire de compte dédié"
+    },
+    {
+      "trait_type": "Gouvernance",
+      "value": "Oui"
+    }
+  ]
+}

@@ -89,9 +89,9 @@ const InvestmentCalculator = () => {
     <div className="py-12 px-4 bg-slate-900 min-h-screen">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-white mb-2">Calculateur d'Investissement</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Calculateur de récompense</h1>
           <p className="text-slate-400">
-            Estimez vos rendements potentiels en fonction de nos différents plans d'investissement
+            Estimez vos récompenses potentielles en fonction de nos différents plans de récompense.
           </p>
         </div>
         
@@ -99,7 +99,7 @@ const InvestmentCalculator = () => {
           <div className="p-6 border-b border-slate-700">
             <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
               <Calculator className="mr-2 text-blue-400" size={24} />
-              Simulez votre investissement
+              Simulez votre récompenses
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -207,10 +207,10 @@ const InvestmentCalculator = () => {
               Les rendements affichés sont des estimations basées sur le taux APR actuel. Les rendements réels peuvent varier en fonction des conditions du marché.
             </p>
             <p>
-              Le calcul suppose que le taux APR reste constant pendant toute la durée de l'investissement. Le rendement quotidien est calculé en divisant le taux APR annuel par 365 jours.
+              Le calcul suppose que les résultats des stratégies restent constant pendant toute la durée de vos plan de récompense. Les récompenses quotidiens est calculé en divisant le taux APR annuel par 365 jours.
             </p>
             <p>
-              Les plans d'investissement comportent une période de blocage pendant laquelle le capital ne peut pas être retiré. Les rendements, cependant, peuvent être retirés à tout moment.
+              Les plans de récompense comportent une période de blocage pendant laquelle le capital ne peut pas être retiré. Les rendements, cependant, peuvent être retirés à tout moment.
             </p>
           </div>
         </div>

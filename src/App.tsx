@@ -19,6 +19,8 @@ import NFTMarketplace from './pages/NFTMarketplace';
 import LoadingSpinner from './components/LoadingSpinner';
 import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
 import Footer from './components/layout/Footer';
+import NFTCards1 from './pages/NFTCards1';
+import YieldCalculatorPage from './pages/YieldCalculatorPage';
 
 // Configuration du thème Chakra UI
 const chakraTheme = extendTheme({
@@ -167,8 +169,14 @@ const AppContent: React.FC = () => {
                     {/* NFT Market */}
                     <Route path="/nft-collection" element={<NFTMarketplace />} />
 
+                    {/* NFT Cards - Page de cartes NFT */}
+                    <Route path="/nft-cards" element={<NFTCards1 />} />
+
                     {/* Historique des transactions */}
                     <Route path="/history" element={<TransactionHistoryUsers />} />
+
+                    {/* Calculateur de rendement */}
+                    <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
                     
                     {/* Redirection de toutes les autres routes vers HomePage */}
                     <Route path="*" element={<Navigate to="/" replace />} />

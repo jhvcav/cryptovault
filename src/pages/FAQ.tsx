@@ -8,13 +8,13 @@ const FAQ = () => {
   const faqItems = [
     {
       id: 1,
-      question: "Comment les rendements sont-ils générés ?",
-      answer: "Les rendements sont générés par plusieurs stratégies d'investissement, notamment l'allocation d'actifs diversifiée, les dividendes d'actions, les intérêts obligataires et les plus-values sur le capital. Notre équipe d'experts financiers analyse continuellement le marché pour optimiser les rendements tout en maintenant un profil de risque approprié."
+      question: "Comment les récompenses sont-ils générés ?",
+      answer: "Les récompenses sont générés par plusieurs stratégies de récompense, notamment l'allocation d'actifs diversifiée, les dividendes d'actions, les intérêts obligataires et les plus-values sur le capital. Notre équipe d'experts financiers analyse continuellement le marché pour optimiser les récompenses tout en maintenant un profil de risque approprié."
     },
     {
       id: 2,
       question: "Mon investissement est-il sûr ?",
-      answer: "Nous prenons la sécurité de vos investissements très au sérieux. Nous utilisons des protocoles de sécurité avancés et diversifions les investissements à travers différentes classes d'actifs et secteurs pour minimiser les risques. Cependant, comme pour tout investissement, il existe un certain niveau de risque. Nous recommandons toujours d'investir uniquement ce que vous pouvez vous permettre de perdre et de consulter un conseiller financier avant de prendre des décisions d'investissement importantes."
+      answer: "Nous prenons la sécurité de vos dépôts très au sérieux. Nous utilisons des protocoles de sécurité avancés et diversifions les stratégies à travers différentes classes d'actifs et secteurs pour minimiser les risques. Cependant, comme pour tout investissement, il existe un certain niveau de risque. Nous recommandons toujours d'utiliser uniquement ce que vous pouvez vous permettre de perdre et de consulter un conseiller financier avant de prendre des décisions d'implication dans des stratégies de récompenses importantes."
     },
     {
       id: 3,
@@ -28,18 +28,18 @@ const FAQ = () => {
     },
     {
       id: 5,
-      question: "Quels types d'investissements proposez-vous ?",
-      answer: "Notre plateforme propose une large gamme d'options d'investissement, incluant des actions, des obligations, des ETF, des fonds communs de placement, et des produits structurés. Nous offrons également des opportunités dans des secteurs émergents comme les technologies vertes et l'intelligence artificielle. Chaque option est accompagnée d'informations détaillées sur le risque, le rendement potentiel et l'horizon d'investissement recommandé."
+      question: "Quels types de stratégie proposez-vous ?",
+      answer: "Notre plateforme propose une large gamme d'options de stratégie, incluant des stratégies dans des actions, des obligations, des ETF, des fonds communs de placement, et des produits structurés. Nous offrons également des opportunités dans des secteurs émergents comme les technologies vertes et l'intelligence artificielle. Chaque option est accompagnée d'informations détaillées sur le risque, les récompenses potentielles et l'horizon des stratégies recommandés."
     },
     {
       id: 6,
-      question: "Comment commencer à investir sur votre plateforme ?",
-      answer: "Pour commencer, créez simplement un compte en fournissant les informations requises pour la vérification KYC. Une fois votre compte vérifié, vous pouvez déposer des fonds via virement bancaire, carte de crédit ou autres méthodes de paiement acceptées. Après le dépôt, vous pouvez explorer nos options d'investissement et commencer à construire votre portefeuille. Notre équipe de support est disponible pour vous guider à chaque étape."
+      question: "Comment commencer à particper aux programmes de récompense sur votre plateforme ?",
+      answer: "Pour commencer, créez simplement un compte en fournissant les informations nécessaires à la communauté. Une fois votre compte vérifié, vous pouvez déposer des fonds dans les plans de stratégie et de récompense, par cryptomonnaie, seule méthode acceptée. Après le dépôt, vous pouvez explorer nos options de récompense et commencer à construire votre portefeuille de NFT. Notre équipe de support est disponible pour vous guider à chaque étape."
     },
     {
       id: 7,
-      question: "Proposez-vous des conseils personnalisés en investissement ?",
-      answer: "Oui, nous offrons des conseils personnalisés adaptés à vos objectifs financiers, votre tolérance au risque et votre horizon temporel. Nos conseillers financiers certifiés peuvent vous aider à élaborer une stratégie d'investissement sur mesure. Pour les comptes premium, nous proposons également des services de gestion de portefeuille plus avancés avec des conseils réguliers et des ajustements basés sur les conditions du marché."
+      question: "Proposez-vous des conseils personnalisés dans les stratégies de récompense ?",
+      answer: "Oui, nous offrons des conseils personnalisés adaptés à vos objectifs financiers, votre tolérance au risque et votre horizon temporel. Nos conseillers financiers certifiés peuvent vous aider à élaborer une stratégie sur mesure. Pour les comptes premium, nous proposons également des services de gestion de portefeuille plus avancés avec des conseils réguliers et des ajustements basés sur les conditions du marché."
     },
     {
       id: 8,

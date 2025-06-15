@@ -1,0 +1,36 @@
+{
+  "name": "NFT GOLD #99",
+  "description": "Accès Premium - Niveau d'accès Premium pour la plateforme CryptoVault. Ce NFT donne accès aux stratégies d'investissement correspondantes avec des multiplicateurs de bonus exclusifs.",
+  "image": "https://nft.cryptovault.com/images/gold.png",
+  "external_url": "https://cryptovault.com",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "GOLD"
+    },
+    {
+      "trait_type": "Numéro",
+      "value": 99
+    },
+    {
+      "trait_type": "Niveau d'Accès",
+      "value": "Premium"
+    },
+    {
+      "trait_type": "Multiplicateur",
+      "value": "2.0x"
+    },
+    {
+      "trait_type": "Bonus",
+      "value": "+100%"
+    },
+    {
+      "trait_type": "Rareté",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Supply Total",
+      "value": 200
+    }
+  ]
+}

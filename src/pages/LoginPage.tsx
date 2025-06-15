@@ -217,33 +217,64 @@ const LoginPage: React.FC = () => {
           >
             {/* Bouton MetaMask flottant */}
             <Button
-              position="absolute"
-              top={6}
-              right={6}
-              size="md"
-              bg="linear-gradient(135deg, #f6851b 0%, #e2761b 100%)"
-              color="white"
-              _hover={{
-                transform: 'translateY(-2px)',
-                shadow: 'lg',
-                bg: 'linear-gradient(135deg, #e2761b 0%, #d1661b 100%)',
-              }}
-              _active={{ transform: 'translateY(0)' }}
-              onClick={connectMetaMask}
-              isLoading={isConnectingMetaMask}
-              loadingText="Connexion..."
-              leftIcon={<Text fontSize="20px">🦊</Text>}
-              borderRadius="xl"
-              px={6}
-              transition="all 0.3s ease"
-            >
-              MetaMask
-            </Button>
+  position="absolute"
+  top={6}
+  right={6}
+  size="md"
+  bg="linear-gradient(145deg, #ff7a00, #e85d00)"
+  color="white"
+  boxShadow="
+    0 8px 16px rgba(232, 93, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+  "
+  border="1px solid rgba(0, 0, 0, 0.1)"
+  _hover={{
+    transform: 'translateY(-2px)',
+    boxShadow: `
+      0 12px 24px rgba(232, 93, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+    `,
+    bg: "linear-gradient(145deg, #ff8500, #f06800)",
+  }}
+  _active={{
+    transform: 'translateY(1px)',
+    boxShadow: `
+      0 4px 8px rgba(232, 93, 0, 0.3),
+      inset 0 2px 4px rgba(0, 0, 0, 0.2)
+    `,
+    bg: "linear-gradient(145deg, #e85d00, #d15000)",
+  }}
+  onClick={connectMetaMask}
+  isLoading={isConnectingMetaMask}
+  loadingText="Connexion..."
+  leftIcon={
+    <Text 
+      fontSize="20px"
+      filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
+    >
+      🦊
+    </Text>
+  }
+  borderRadius="lg"
+  px={2}
+  py={3}
+  fontWeight="700"
+  fontSize="md"
+  textShadow="0 1px 2px rgba(0,0,0,0.3)"
+  transition="all 0.2s ease"
+  minW="110px"
+  mb={4}
+>
+  Connect MetaMask
+</Button>
 
             <VStack spacing={8} align="stretch" pt={4}>
               {/* En-tête avec logo et titre */}
-              <VStack spacing={4}>
+              <VStack spacing={0}>
                 <Box
+                  mt={9}
                   p={6}
                   bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                   rounded="full"
@@ -256,26 +287,30 @@ const LoginPage: React.FC = () => {
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Text fontSize="3xl" fontWeight="bold" color="white">CV</Text>
+                  <Text fontSize="4xl" fontWeight="bold" color="white">CV</Text>
                 </Box>
                 
-                <VStack spacing={2}>
+                <VStack spacing={1}>
                   <Heading
+                    mt="4" // ou mt="8", mt="16", etc.
                     size="2xl"
                     bgGradient="linear(to-r, #667eea, #764ba2)"
                     bgClip="text"
                     textAlign="center"
                     fontWeight="800"
+                    lineHeight="1.2"
                   >
-                    CryptoVault
+                    CryptocaVault
                   </Heading>
                   <Text
-                    fontSize="lg"
-                    color="gray.600"
+                    mt="3"
+                    size="2xl"
+                    bgGradient="linear(to-r, #667eea, #764ba2)"
+                    bgClip="text"
                     textAlign="center"
                     fontWeight="500"
                   >
-                    Plateforme d'investissement sécurisée
+                    Plateforme communautaire de récompense sécurisée
                   </Text>
                 </VStack>
               </VStack>
@@ -304,17 +339,17 @@ const LoginPage: React.FC = () => {
                 <VStack spacing={6}>
                   <FormControl isRequired>
                     <FormLabel
-                      color="gray.700"
+                      color="white"
                       fontWeight="600"
                       display="flex"
                       alignItems="center"
                       gap={2}
                     >
-                      <Text fontSize="18px" color="blue.500">💼</Text>
+                      <Text fontSize="18px" color="blue">💼</Text>
                       Adresse de votre Wallet
                     </FormLabel>
                     <Input
-                      type="text"
+                      type="text" color="black"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
                       placeholder="0x742d35Cc6634C0532925a3b8D404dEBC00000000"

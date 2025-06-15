@@ -24,7 +24,7 @@ const HomePage = () => {
               </h1>
               
               <p className="text-slate-300 text-lg max-w-lg">
-                Découvrez notre collection NFT exclusive qui vous donne accès à des opportunités d'investissement crypto réservées à notre communauté privée.
+                Découvrez notre collection NFT exclusive qui vous donne accès à des opportunités de récompense crypto réservées à notre communauté privée.
               </p>
               
               <div className="bg-slate-800/50 border border-blue-500/30 rounded-lg p-4 mb-6">
@@ -177,7 +177,7 @@ const HomePage = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">Pourquoi Choisir Notre Collection NFT</h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
-              Chaque NFT offre des avantages uniques et un accès différencié aux opportunités d'investissement.
+              Chaque NFT offre des avantages uniques et un accès différencié aux services de récompense.
             </p>
           </div>
           
@@ -198,7 +198,7 @@ const HomePage = () => {
               </div>
               <h3 className="text-white font-semibold text-lg mb-2">Accès Différencié</h3>
               <p className="text-slate-400 text-sm">
-                Les NFT de niveau supérieur débloquent l'accès à des stratégies d'investissement plus avancées.
+                Les NFT de niveau supérieur débloquent l'accès à des stratégies de récompense plus avancées.
               </p>
             </div>
             
@@ -262,7 +262,7 @@ const HomePage = () => {
               </div>
               <h3 className="text-white font-semibold text-lg mb-4 mt-2">Acquérez & Investissez</h3>
               <p className="text-slate-400">
-                Choisissez votre NFT selon vos objectifs et commencez à accéder aux opportunités d'investissement exclusives.
+                Choisissez votre NFT selon vos objectifs et commencez à accéder aux stratégies de récompenses exclusives.
               </p>
             </div>
           </div>
@@ -295,10 +295,10 @@ const HomePage = () => {
                 • <strong>NFT Requis :</strong> Un NFT d'accès est obligatoire pour utiliser les fonctionnalités de la plateforme.
               </p>
               <p>
-                • <strong>Investissements Risqués :</strong> Tous les investissements comportent des risques de perte. Les performances passées ne garantissent pas les résultats futurs.
+                • <strong>Les stratégies utilisées sont Risquées :</strong> Tous implication dans les services de récompenses comportent des risques de perte. Les performances passées ne garantissent pas les résultats futurs.
               </p>
               <p>
-                • <strong>Pas de Garanties :</strong> Aucun rendement n'est garanti. Les récompenses dépendent de la performance réelle des stratégies.
+                • <strong>Pas de Garanties :</strong> Aucune des récompenses n'est garanti. Les récompenses dépendent de la performance réelle des stratégies utilisées et du nombre d'utilisateur de la communauté.
               </p>
             </div>
           </div>

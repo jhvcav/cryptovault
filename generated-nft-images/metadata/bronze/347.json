@@ -1,0 +1,36 @@
+{
+  "name": "NFT BRONZE #347",
+  "description": "Accès de Base - Niveau d'accès Essentiel pour la plateforme CryptoVault. Ce NFT donne accès aux stratégies d'investissement correspondantes avec des multiplicateurs de bonus exclusifs.",
+  "image": "https://nft.cryptovault.com/images/bronze.png",
+  "external_url": "https://cryptovault.com",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "BRONZE"
+    },
+    {
+      "trait_type": "Numéro",
+      "value": 347
+    },
+    {
+      "trait_type": "Niveau d'Accès",
+      "value": "Essentiel"
+    },
+    {
+      "trait_type": "Multiplicateur",
+      "value": "1.2x"
+    },
+    {
+      "trait_type": "Bonus",
+      "value": "+20%"
+    },
+    {
+      "trait_type": "Rareté",
+      "value": "Commun"
+    },
+    {
+      "trait_type": "Supply Total",
+      "value": 1000
+    }
+  ]
+}

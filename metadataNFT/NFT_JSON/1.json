@@ -1,0 +1,28 @@
+{
+  "name": "CryptocaVault Bronze NFT #1",
+  "description": "Ce NFT donne accès aux stratégies de base de la plateforme CryptocaVault avec un bonus de 20% sur toutes les récompenses.",
+  "image": "https://gateway.pinata.cloud/ipfs/bafybeihdqgktpmsrln2nwrvpgiedi23mutp4atqd7bdcfishti2neh6xoe/bronze_1.jpg",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Bronze"
+    },
+    {
+      "trait_type": "Multiplier",
+      "value": "1.2X"
+    },
+    {
+      "display_type": "boost_percentage",
+      "trait_type": "Bonus",
+      "value": 20
+    },
+    {
+      "trait_type": "Plan d'accès",
+      "value": "Starter"
+    },
+    {
+      "trait_type": "Période de blocage",
+      "value": "30 jours"
+    }
+  ]
+}

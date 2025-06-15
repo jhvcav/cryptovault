@@ -37,7 +37,7 @@ const RoadmapVisual = () => {
     {
       id: 2,
       period: "MOIS 5-6",
-      title: "LANCEMENT INVESTISSEMENTS",
+      title: "LANCEMENT PLANS RECOMPENSES",
       color: "#10B981", // Emerald
       icon: "🚀",
       keyPoints: [
@@ -48,7 +48,7 @@ const RoadmapVisual = () => {
       milestones: [
         "Programme fidélité 100% opérationnel",
         "Premiers affiliés VIP investisseurs",
-        "Premier retour sur investissements",
+        "Premier retour sur les récompenses obtenus",
       ]
     },
     {
@@ -105,7 +105,7 @@ const RoadmapVisual = () => {
 
   return (
     <div className="flex flex-col items-center w-full bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl shadow-md">
-      <h1 className="text-3xl font-bold text-white mb-6">Roadmap - Projet RMR-M 2025</h1>
+      <h1 className="text-3xl font-bold text-white mb-6">Roadmap CryptocaVault 2025</h1>
       
       {/* Timeline Visual */}
       <div className="relative w-full flex justify-between items-center mb-8">
@@ -178,13 +178,13 @@ const RoadmapVisual = () => {
         <div className="w-full mt-4 p-6 rounded-xl bg-slate-800 shadow-md border border-slate-700">
           <div className="text-center text-gray-300">
             <p className="mb-2 font-medium">Cliquez sur une phase pour voir les détails</p>
-            <p>Cette feuille de route présente le plan de développement sur 12 mois pour votre plateforme d'investissement.</p>
+            <p>Cette feuille de route présente le plan de développement sur 12 mois pour votre plateforme de récompenses.</p>
           </div>
         </div>
       )}
       
       <div className="mt-6 text-sm text-gray-400 italic text-center">
-        Développez votre écosystème d'investissement DeFi en suivant cette roadmap stratégique
+        Développez votre écosystème de récompenses DeFi en suivant cette roadmap stratégique
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useWallet } from '../contexts/WalletContext';
 import { useInvestment } from '../contexts/InvestmentContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Ajouter Link ici
 import StatsCard from '../components/dashboard/StatsCard';
 import InvestmentCard from '../components/dashboard/InvestmentCard';
 import InvestmentChart from '../components/dashboard/InvestmentChart';
@@ -24,7 +24,9 @@ const Dashboard = () => {
     withdrawReturns, 
     withdrawCapital,
     getTotalInvested, 
-    getTotalReturns 
+    getTotalReturns,
+    isLoading,
+    error
   } = useInvestment();
   
   const navigate = useNavigate();
@@ -41,6 +43,11 @@ const Dashboard = () => {
     values: []
   });
 
+  // ✅ SÉCURISATION: Vérifier que les données sont chargées
+  const safeActiveInvestments = activeInvestments || [];
+  const safePlans = plans || [];
+  const safeBalance = balance || { usdt: 0, usdc: 0 };
+
   // Format pour afficher les dates de semaine
   const formatWeekLabel = (date) => {
     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
@@ -52,6 +59,40 @@ const Dashboard = () => {
     result.setDate(result.getDate() + days);
     return result;
   };
+
+  // ✅ CORRECTION: Affichage d'un écran de chargement si les données ne sont pas prêtes
+  if (isLoading) {
+    return (
+      <div className="py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+            <span className="ml-4 text-white text-lg">Chargement du tableau de bord...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ CORRECTION: Affichage d'une erreur si les données n'ont pas pu être chargées
+  if (error) {
+    return (
+      <div className="py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <h3 className="text-red-800 font-medium text-lg mb-2">Erreur de chargement</h3>
+            <p className="text-red-600 mb-4">{error.message || 'Impossible de charger les données du tableau de bord'}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Générer des données de graphique hebdomadaires
   useEffect(() => {
@@ -109,22 +150,34 @@ const Dashboard = () => {
   // Calculer les rendements totaux
   useEffect(() => {
     const fetchTotalReturns = async () => {
-      const total = await getTotalReturns();
-      setTotalReturnsValue(total);
+      try {
+        const total = await getTotalReturns();
+        setTotalReturnsValue(total || 0);
+      } catch (error) {
+        console.error('Erreur lors du calcul des rendements totaux:', error);
+        setTotalReturnsValue(0);
+      }
     };
-    fetchTotalReturns();
+    
+    if (getTotalReturns) {
+      fetchTotalReturns();
+    }
   }, [getTotalReturns]);
   
   // Traiter les investissements et calculer les rendements actuels
   useEffect(() => {
     const calculateAllReturns = async () => {
-      if (!activeInvestments.length || !plans.length) return;
+      // ✅ CORRECTION: Vérifier que les données sont disponibles
+      if (!safeActiveInvestments.length || !safePlans.length) {
+        setCalculatedInvestments([]);
+        return;
+      }
       
       try {
-        const processed = await Promise.all(activeInvestments.map(async (investment) => {
-          const plan = plans.find(p => p.id === investment.planId);
+        const processed = await Promise.all(safeActiveInvestments.map(async (investment) => {
+          const plan = safePlans.find(p => p.id === investment.planId);
           if (!plan) {
-            console.error(`Plan non trouvé pour l'investissement ${investment.id}`);
+            console.error(`Plan non trouvé pour les récompenses ${investment.id}`);
             return null;
           }
           
@@ -137,11 +190,14 @@ const Dashboard = () => {
         setCalculatedInvestments(processed.filter(Boolean));
       } catch (error) {
         console.error('Erreur dans le calcul des rendements:', error);
+        setCalculatedInvestments([]);
       }
     };
     
-    calculateAllReturns();
-  }, [activeInvestments, plans, calculateReturns]);
+    if (calculateReturns) {
+      calculateAllReturns();
+    }
+  }, [safeActiveInvestments, safePlans, calculateReturns]);
   
   // Gérer le retrait des rendements
   const handleWithdraw = async (investmentId) => {
@@ -174,21 +230,25 @@ const Dashboard = () => {
     setRefreshing(true);
     try {
       // Rafraîchir uniquement les données d'investissement
-      const total = await getTotalReturns();
-      setTotalReturnsValue(total);
+      if (getTotalReturns) {
+        const total = await getTotalReturns();
+        setTotalReturnsValue(total || 0);
+      }
       
       // Recalculer tous les rendements
-      const processed = await Promise.all(activeInvestments.map(async (investment) => {
-        const plan = plans.find(p => p.id === investment.planId);
-        if (!plan) return null;
+      if (safeActiveInvestments.length && safePlans.length && calculateReturns) {
+        const processed = await Promise.all(safeActiveInvestments.map(async (investment) => {
+          const plan = safePlans.find(p => p.id === investment.planId);
+          if (!plan) return null;
+          
+          const stakeId = parseInt(investment.id);
+          const returns = await calculateReturns(stakeId);
+          
+          return { investment, plan, returns };
+        }));
         
-        const stakeId = parseInt(investment.id);
-        const returns = await calculateReturns(stakeId);
-        
-        return { investment, plan, returns };
-      }));
-      
-      setCalculatedInvestments(processed.filter(Boolean));
+        setCalculatedInvestments(processed.filter(Boolean));
+      }
     } catch (error) {
       console.error('Erreur lors du rafraîchissement:', error);
     } finally {
@@ -196,11 +256,11 @@ const Dashboard = () => {
     }
   };
   
-  // Vérifier s'il y a des investissements actifs
-  const hasInvestments = activeInvestments.length > 0;
+  // ✅ CORRECTION: Vérification sécurisée des investissements
+  const hasInvestments = safeActiveInvestments.length > 0;
   
-  // Calculer les totaux
-  const totalInvested = getTotalInvested();
+  // ✅ CORRECTION: Calcul sécurisé des totaux
+  const totalInvested = getTotalInvested ? getTotalInvested() : 0;
   
   return (
     <div className="py-8 px-4">
@@ -209,7 +269,7 @@ const Dashboard = () => {
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Tableau de Bord</h1>
             <p className="text-slate-400">
-              Suivez vos investissements et rendements
+              Suivez vos récompenses
             </p>
           </div>
           <div className="flex items-center mt-4 md:mt-0">
@@ -224,7 +284,7 @@ const Dashboard = () => {
               onClick={handleRefresh}
               disabled={refreshing}
               className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-              title="Rafraîchir les données d'investissement"
+              title="Rafraîchir les données de récompenses"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
@@ -245,15 +305,15 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard 
             title="Solde USDT" 
-            value={`${balance.usdt.toFixed(2)} USDT`}
+            value={`${safeBalance.usdt.toFixed(2)} USDT`}
             icon={<DollarSign size={22} />}
-            className={balance.usdt === 0 ? 'border-yellow-500' : ''}
+            className={safeBalance.usdt === 0 ? 'border-yellow-500' : ''}
           />
           <StatsCard 
             title="Solde USDC" 
-            value={`${balance.usdc.toFixed(2)} USDC`}
+            value={`${safeBalance.usdc.toFixed(2)} USDC`}
             icon={<DollarSign size={22} />}
-            className={balance.usdc === 0 ? 'border-yellow-500' : ''}
+            className={safeBalance.usdc === 0 ? 'border-yellow-500' : ''}
           />
           <StatsCard 
             title="Total Investi" 
@@ -289,7 +349,7 @@ const Dashboard = () => {
               </div>
             )}
             
-            {chainId === 56 && balance.usdt === 0 && balance.usdc === 0 && (
+            {chainId === 56 && safeBalance.usdt === 0 && safeBalance.usdc === 0 && (
               <div className="bg-yellow-600/10 border border-yellow-600/20 rounded-lg p-4 mb-6">
                 <div className="flex items-center">
                   <div className="bg-yellow-600/20 rounded-full p-2 mr-3">
@@ -315,10 +375,10 @@ const Dashboard = () => {
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-white">Investissements Actifs</h2>
+                <h2 className="text-xl font-semibold text-white">Récompenses Actifs</h2>
                 {hasInvestments && (
                   <span className="bg-blue-600 rounded-full px-3 py-1 text-xs font-semibold text-white">
-                    {activeInvestments.length} Actif{activeInvestments.length > 1 ? 's' : ''}
+                    {safeActiveInvestments.length} Actif{safeActiveInvestments.length > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
@@ -326,16 +386,17 @@ const Dashboard = () => {
               {!hasInvestments ? (
                 <div className="text-center py-12">
                   <Clock size={48} className="text-slate-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">Aucun Investissement Actif</h3>
+                  <h3 className="text-lg font-medium text-white mb-2">Aucun plan de récompense Actif</h3>
                   <p className="text-slate-400 mb-6">
-                    Vous n'avez pas encore d'investissements actifs. Commencez à investir pour voir votre portefeuille ici.
+                    Vous n'avez pas encore de plan de récompense actifs. Commencez à choisir un plan de récompense pour voir votre portefeuille ici.
                   </p>
-                  <a 
-                    href="/invest"
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-2 px-6 rounded-lg font-medium transition-all duration-200"
+                  {/* ✅ CORRECTION: Remplacer <a> par <Link> pour éviter la déconnexion */}
+                  <Link 
+                    to="/nft-collection"
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-2 px-6 rounded-lg font-medium transition-all duration-200 inline-block"
                   >
                     Commencer à Investir
-                  </a>
+                  </Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -361,7 +422,7 @@ const Dashboard = () => {
           {/* Colonne droite - Statistiques et informations */}
           <div className="space-y-8">
             <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-              <h2 className="text-xl font-semibold text-white mb-6">Résumé des Investissements</h2>
+              <h2 className="text-xl font-semibold text-white mb-6">Résumé des récompenses</h2>
               
               <div className="space-y-4">
                 <div>
@@ -412,17 +473,17 @@ const Dashboard = () => {
             </div>
             
             <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-              <h2 className="text-xl font-semibold text-white mb-4">Distribution des Investissements</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">Distribution des Récompenses</h2>
               
               {!hasInvestments ? (
                 <div className="text-center py-6">
                   <p className="text-slate-400">
-                    Aucune donnée d'investissement à afficher
+                    Aucune donnée des récompenses à afficher
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {plans.map(plan => {
+                  {safePlans.map(plan => {
                     const planInvestments = calculatedInvestments.filter(
                       item => item.investment.planId === plan.id
                     );
@@ -470,7 +531,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {activeInvestments.slice(0, 3).map((investment) => (
+                  {safeActiveInvestments.slice(0, 3).map((investment) => (
                     <div key={investment.id} className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0">
                       <div className="flex items-center">
                         <div className="bg-blue-600/20 rounded-full p-2 mr-3">
@@ -478,7 +539,7 @@ const Dashboard = () => {
                         </div>
                         <div>
                           <div className="text-white text-sm font-medium">
-                            Investissement dans le Plan {plans.find(p => p.id === investment.planId)?.name || 'Inconnu'}
+                            Dépôt dans le Plan {safePlans.find(p => p.id === investment.planId)?.name || 'Inconnu'}
                           </div>
                           <div className="text-slate-400 text-xs">
                             {investment.startDate.toLocaleDateString('fr-FR')}

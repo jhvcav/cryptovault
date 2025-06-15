@@ -10,7 +10,7 @@ const Footer = () => {
           <div className="md:col-span-1">
             <h3 className="text-lg font-semibold mb-4 text-white">CryptoVault</h3>
             <p className="text-slate-400 text-sm">
-              Une plateforme de premier plan pour les investissements en staking et farming de cryptomonnaies avec des APR compétitifs.
+              Une plateforme de premier plan sur des stratégies en cryptomonnaies avec des récompenses compétitifs.
             </p>
             <div className="flex mt-4 space-x-4">
               <a href="#" className="text-slate-400 hover:text-blue-400 transition-colors">
@@ -37,7 +37,12 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/nft-collection" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/staking" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  Staking
+                </Link>
+              </li>
+              <li>
+                <Link to="/nft-cards" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   NFT
                 </Link>
               </li>
@@ -74,13 +79,13 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4 text-white">Utilitaires</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/calculator" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
-                  Calculateur d'Investissement
+                <Link to="/yield-calculator" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  Calculateur de récompense NFT et plans
                 </Link>
               </li>
               <li>
                 <Link to="/calculator-multi-critere" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
-                  Calculateur d'Investissement avancé
+                  Calculateur des plans décompenses
                 </Link>
               </li>
             </ul>

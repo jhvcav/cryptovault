@@ -105,36 +105,36 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
         return;
       }
       
-      console.log("Tentative d'investissement");
+      console.log("Tentative de dépôt");
       console.log("handleInvest appelé avec:", { planId: plan.id, amount: amountNum, token: selectedToken });
       
       const result = await onInvest(plan.id, amountNum, selectedToken as 'USDT' | 'USDC');
-      console.log("Résultat de l'investissement:", result);
+      console.log("Résultat du dépôt:", result);
       
       if (result) {
-        console.log("Investissement réussi");
+        console.log("Dépôt réussi");
         onClose(); // Fermer le modal
         toast({
-          title: "Investissement réussi",
-          description: `Vous avez investi ${amount} ${selectedToken} dans le plan ${plan.name}.`,
+          title: "Demande de récompense réussi",
+          description: `Vous avez déposé ${amount} ${selectedToken} dans le plan ${plan.name}.`,
           status: "success",
           duration: 5000,
           isClosable: true,
         });
       } else {
-        console.log("Échec de l'investissement");
-        setInvestmentError("L'investissement a échoué. Veuillez réessayer.");
+        console.log("Échec dépôt");
+        setInvestmentError("Le dépôt a échoué. Veuillez réessayer.");
       }
     } catch (error) {
-      console.error("Erreur lors de l'investissement:", error);
+      console.error("Erreur lors de du dépôt:", error);
       
       // Messages d'erreur personnalisés en fonction du type d'erreur
-      let errorMessage = "Une erreur s'est produite lors de l'investissement.";
+      let errorMessage = "Une erreur s'est produite lors de votre dépôt.";
       
       if (error.message?.includes("transfer amount exceeds allowance")) {
         errorMessage = "Autorisation insuffisante pour le transfert de tokens. Veuillez approuver le contrat et réessayer.";
       } else if (error.message?.includes("insufficient funds")) {
-        errorMessage = "Fonds insuffisants pour effectuer cet investissement.";
+        errorMessage = "Fonds insuffisants pour effectuer ce dépôt.";
       } else if (error.message?.includes("user rejected")) {
         errorMessage = "Transaction annulée par l'utilisateur.";
       } else if (error.reason) {
@@ -190,20 +190,20 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
                     </Text>
                   </Flex>
                   <Flex justifyContent="space-between">
-                    <Text color="gray.300">Investissement net</Text>
+                    <Text color="gray.300">Récompenses net</Text>
                     <Text color="white">
                       {(parseFloat(amount) * 0.98).toFixed(2)} {selectedToken}
                     </Text>
                   </Flex>
                   <Divider my={2} borderColor="gray.600" />
                   <Flex justifyContent="space-between">
-                    <Text color="gray.300">Rendement quotidien</Text>
+                    <Text color="gray.300">Récompense quotidien</Text>
                     <Text color="green.400">
                       {((parseFloat(amount) * 0.98 * (plan.apr / 100)) / 365).toFixed(4)} {selectedToken}
                     </Text>
                   </Flex>
                   <Flex justifyContent="space-between">
-                    <Text color="gray.300">Rendement total</Text>
+                    <Text color="gray.300">Récompense total</Text>
                     <Text color="green.400">
                       {((parseFloat(amount) * 0.98 * (plan.apr / 100) * plan.duration) / 365).toFixed(2)} {selectedToken}
                     </Text>
@@ -235,7 +235,7 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
               <>
               {parseFloat(amount) < plan.minAmount && (
               <Text color="red.500" fontSize="sm" mt={1}>
-                Le montant minimum d'investissement est de {plan.minAmount} {selectedToken}
+                Le montant minimum de dépôt est de {plan.minAmount} {selectedToken}
               </Text>
               )}
               {parseFloat(amount) > (selectedToken === 'USDT' ? balance.usdt : balance.usdc) && (

@@ -97,7 +97,7 @@ useEffect(() => {
         {
           id: 0,
           name: "Starter",
-          description: "Plan d'entrée idéal pour les nouveaux investisseurs. Offre un équilibre entre rendement et durée de blocage courte.",
+          description: "Plan d'entrée idéal pour les nouveaux utilisateurs. Offre un équilibre entre récompense et durée de blocage courte.",
           apr: 12,
           duration: 30,
           minAmount: 100,
@@ -106,7 +106,7 @@ useEffect(() => {
         {
           id: 1,
           name: "Standard",
-          description: "Plan intermédiaire avec un meilleur taux APR. Recommandé pour les investisseurs qui souhaitent un rendement stable sur une période moyenne.",
+          description: "Plan intermédiaire avec de meilleurs récompenses. Recommandé pour les utilisateurs qui souhaitent une récompense stable sur une période moyenne.",
           apr: 18,
           duration: 60,
           minAmount: 500,
@@ -115,7 +115,7 @@ useEffect(() => {
         {
           id: 2,
           name: "Premium",
-          description: "Plan avancé offrant un APR élevé sur une période plus longue. Idéal pour maximiser les rendements à moyen terme.",
+          description: "Plan avancé offrant des récompenses élevé sur une période plus longue. Idéal pour maximiser les récompenses à moyen terme.",
           apr: 24,
           duration: 90,
           minAmount: 1000,
@@ -134,19 +134,19 @@ useEffect(() => {
       const defaultPlanData = [
         {
           name: "Starter",
-          description: "Plan d'entrée idéal pour les nouveaux investisseurs. Offre un équilibre entre rendement et durée de blocage courte."
+          description: "Plan d'entrée idéal pour les nouveaux utilisateurs. Offre un équilibre entre récompense et durée de blocage courte."
         },
         {
           name: "Standard",
-          description: "Plan intermédiaire avec un meilleur taux APR. Recommandé pour les investisseurs qui souhaitent un rendement stable sur une période moyenne."
+          description: "Plan intermédiaire avec de meilleurs récompenses. Recommandé pour les utilisateurs qui souhaitent une récompense stable sur une période moyenne."
         },
         {
           name: "Premium",
-          description: "Plan avancé offrant un APR élevé sur une période plus longue. Idéal pour maximiser les rendements à moyen terme."
+          description: "Plan avancé offrant des récompenses élevés sur une période plus longue. Idéal pour maximiser les récompenses à moyen terme."
         },
         {
           name: "Enterprise",
-          description: "Notre plan le plus performant avec le taux APR le plus élevé. Destiné aux investisseurs sérieux recherchant des rendements maximaux."
+          description: "Notre plan le plus performant avec des récompenses les plus élevés. Destiné aux utilisateurs sérieux recherchant les meilleures récompenses."
         }
       ];
       
@@ -210,7 +210,7 @@ useEffect(() => {
             // Obtenir les données par défaut pour ce plan
             const defaultData = defaultPlanData[planId] || {
               name: `Plan ${planId + 1}`,
-              description: `Plan d'investissement avec un APR de ${finalApr}% sur une période de ${finalDuration} jours.`
+              description: `Plan de récompense avec des récompense variables de ${finalApr}% sur une période de ${finalDuration} jours.`
             };
             
             // Conversion du plan du contrat au format attendu par l'interface avec valeurs corrigées
@@ -241,7 +241,7 @@ useEffect(() => {
           {
             id: 0,
             name: "Starter",
-            description: "Plan d'entrée idéal pour les nouveaux investisseurs. Offre un équilibre entre rendement et durée de blocage courte.",
+            description: "Plan d'entrée idéal pour les nouveaux utilisateurs. Offre un équilibre entre récompense et durée de blocage courte.",
             apr: 12,
             duration: 30,
             minAmount: 150,
@@ -250,7 +250,7 @@ useEffect(() => {
           {
             id: 1,
             name: "Standard",
-            description: "Plan intermédiaire avec un meilleur taux APR. Recommandé pour les investisseurs qui souhaitent un rendement stable sur une période moyenne.",
+            description: "Plan intermédiaire avec de meilleures récompenses. Recommandé pour les utilisateurs qui souhaitent une récompense stable sur une période moyenne.",
             apr: 18,
             duration: 60,
             minAmount: 150,
@@ -259,7 +259,7 @@ useEffect(() => {
           {
             id: 2,
             name: "Premium",
-            description: "Plan avancé offrant un APR élevé sur une période plus longue. Idéal pour maximiser les rendements à moyen terme.",
+            description: "Plan avancé offrant des récompenses élevés sur une période plus longue. Idéal pour maximiser les récompenses à moyen terme.",
             apr: 24,
             duration: 90,
             minAmount: 150,
@@ -282,7 +282,7 @@ useEffect(() => {
         {
           id: 0,
           name: "Starter",
-          description: "Plan d'entrée idéal pour les nouveaux investisseurs. Offre un équilibre entre rendement et durée de blocage courte.",
+          description: "Plan d'entrée idéal pour les nouveaux utilisateurs. Offre un équilibre entre récompense et durée de blocage courte.",
           apr: 12,
           duration: 30,
           minAmount: 150,
@@ -291,7 +291,7 @@ useEffect(() => {
         {
           id: 1,
           name: "Standard",
-          description: "Plan intermédiaire avec un meilleur taux APR. Recommandé pour les investisseurs qui souhaitent un rendement stable sur une période moyenne.",
+          description: "Plan intermédiaire avec de meilleurs récompenses. Recommandé pour les utilisateurs qui souhaitent une récompense stable sur une période moyenne.",
           apr: 18,
           duration: 60,
           minAmount: 150,
@@ -300,7 +300,7 @@ useEffect(() => {
         {
           id: 2,
           name: "Premium",
-          description: "Plan avancé offrant un APR élevé sur une période plus longue. Idéal pour maximiser les rendements à moyen terme.",
+          description: "Plan avancé offrant des récompenses élevés sur une période plus longue. Idéal pour maximiser les récompenses à moyen terme.",
           apr: 24,
           duration: 90,
           minAmount: 150,
@@ -368,7 +368,7 @@ useEffect(() => {
       
       setActiveInvestments(activeInvestments);
     } catch (error) {
-      console.error('Erreur lors du chargement des investissements:', error);
+      console.error('Erreur lors du chargement des récompenses:', error);
     }
   };
 
@@ -484,7 +484,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
         throw new Error("L'approbation a échoué: " + (approvalError.message || approvalError));
       }
     } else {
-      console.log("Allowance suffisante, poursuite de l'investissement");
+      console.log("Allowance suffisante, poursuite du dépôt");
     }
     
     // 2. Procéder à l'investissement
@@ -507,7 +507,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
     
     // 3. Rafraîchir les investissements après l'investissement
     try {
-      console.log("Récupération des investissements mis à jour...");
+      console.log("Récupération des récompenses mis à jour...");
       const updatedStakes = await stakingContract.getUserStakes(userAddress);
       
       // Convertir et mettre à jour les investissements selon votre implémentation actuelle
@@ -539,7 +539,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
       setActiveInvestments(updatedInvestments);
       console.log("Investissements mis à jour!");
     } catch (refreshError) {
-      console.error("Erreur lors de la mise à jour des investissements:", refreshError);
+      console.error("Erreur lors de la mise à jour des récompenses:", refreshError);
       // On continue quand même car l'investissement a réussi
     }
     
@@ -557,7 +557,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
       );
       return rewards.reduce((total, reward) => total + reward, 0);
     } catch (error) {
-      console.error('Erreur lors du calcul des rendements totaux:', error);
+      console.error('Erreur lors du calcul des récompenses totaux:', error);
       return 0;
     }
   };
@@ -572,7 +572,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
     // Vérifier si la période de blocage est terminée
     const investment = activeInvestments.find(inv => inv.id === investmentId);
     if (!investment) {
-      throw new Error('Investissement non trouvé');
+      throw new Error('Récompense non trouvé');
     }
     
     const now = new Date();

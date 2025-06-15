@@ -1,0 +1,36 @@
+{
+  "name": "NFT PRIVILÈGE #25",
+  "description": "Accès Exclusif - Niveau d'accès Exclusif pour la plateforme CryptoVault. Ce NFT donne accès aux stratégies d'investissement correspondantes avec des multiplicateurs de bonus exclusifs.",
+  "image": "https://nft.cryptovault.com/images/privilege.png",
+  "external_url": "https://cryptovault.com",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "PRIVILÈGE"
+    },
+    {
+      "trait_type": "Numéro",
+      "value": 25
+    },
+    {
+      "trait_type": "Niveau d'Accès",
+      "value": "Exclusif"
+    },
+    {
+      "trait_type": "Multiplicateur",
+      "value": "2.5x"
+    },
+    {
+      "trait_type": "Bonus",
+      "value": "+150%"
+    },
+    {
+      "trait_type": "Rareté",
+      "value": "Légendaire"
+    },
+    {
+      "trait_type": "Supply Total",
+      "value": 50
+    }
+  ]
+}

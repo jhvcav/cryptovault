@@ -80,7 +80,7 @@ const PlansManagement: React.FC = () => {
   // Fonction pour récupérer automatiquement tous les investisseurs via les événements
   const getAllInvestorsFromEvents = async (contract) => {
     try {
-      console.log('🔍 Récupération de tous les investisseurs via événements...');
+      console.log('🔍 Récupération de tous les utilisateurs via événements...');
       
       // Récupérer tous les événements Staked
       const stakedFilter = contract.filters.Staked();
@@ -91,11 +91,11 @@ const PlansManagement: React.FC = () => {
         stakedEvents.map(event => event.args.user.toLowerCase())
       )];
       
-      console.log(`✅ ${allInvestors.length} investisseurs détectés via événements:`, allInvestors);
+      console.log(`✅ ${allInvestors.length} utilisateurs détectés via événements:`, allInvestors);
       return allInvestors;
       
     } catch (error) {
-      console.error('❌ Erreur récupération investisseurs via événements:', error);
+      console.error('❌ Erreur récupération utilisateurs via événements:', error);
       
       // Fallback vers utilisateurs par défaut
       const fallbackUsers = [

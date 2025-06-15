@@ -1,0 +1,36 @@
+{
+  "name": "NFT ARGENT #209",
+  "description": "Accès Intermédiaire - Niveau d'accès Avancé pour la plateforme CryptoVault. Ce NFT donne accès aux stratégies d'investissement correspondantes avec des multiplicateurs de bonus exclusifs.",
+  "image": "https://nft.cryptovault.com/images/silver.png",
+  "external_url": "https://cryptovault.com",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "ARGENT"
+    },
+    {
+      "trait_type": "Numéro",
+      "value": 209
+    },
+    {
+      "trait_type": "Niveau d'Accès",
+      "value": "Avancé"
+    },
+    {
+      "trait_type": "Multiplicateur",
+      "value": "1.5x"
+    },
+    {
+      "trait_type": "Bonus",
+      "value": "+50%"
+    },
+    {
+      "trait_type": "Rareté",
+      "value": "Peu Commun"
+    },
+    {
+      "trait_type": "Supply Total",
+      "value": 500
+    }
+  ]
+}
