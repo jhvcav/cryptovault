@@ -222,6 +222,7 @@ const AdminPage: React.FC = () => {
           • Statut Owner : {isOwner ? '✅ Confirmé' : '❌ Non autorisé'}
           <br />
           • Contrat CryptoVault: 0x719fd9F511DDc561D03801161742D84ECb9445e9
+          • Contrat NFT: 0x3b9E6cad77E65e153321C91Ac5225a4C564b3aE4
         </Box>
       </VStack>
     </Box>
