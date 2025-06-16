@@ -98,55 +98,109 @@ const LoginPage: React.FC = () => {
 
   // Fonction pour connecter MetaMask et récupérer l'adresse
   const connectMetaMask = async () => {
-    if (!window.ethereum) {
-      toast({
-        title: "MetaMask non détecté",
-        description: "Veuillez installer MetaMask pour utiliser cette fonctionnalité.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
+  console.log('🦊 Tentative de connexion MetaMask...');
+  console.log('📱 Appareil mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+
+  setIsConnectingMetaMask(true);
+  
+  try {
+    // Vérification améliorée pour mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Attendre que MetaMask soit disponible (important pour mobile)
+    let metamaskFound = false;
+    let attempts = 0;
+    const maxAttempts = 30; // 3 secondes
+    
+    while (!metamaskFound && attempts < maxAttempts) {
+      if (window.ethereum?.isMetaMask || 
+          (window.ethereum && isMobile) ||
+          /MetaMask/i.test(navigator.userAgent)) {
+        metamaskFound = true;
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
-
-    setIsConnectingMetaMask(true);
-    try {
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
-
-      if (accounts && accounts.length > 0) {
-        const metamaskAddress = accounts[0];
-        console.log('🦊 Adresse MetaMask récupérée:', metamaskAddress);
+    
+    if (!metamaskFound) {
+      console.log('❌ MetaMask non détecté après attente');
+      
+      if (isMobile) {
+        const shouldOpenMetaMask = confirm(
+          'MetaMask n\'est pas détecté. Voulez-vous ouvrir l\'application MetaMask ?'
+        );
         
-        setWalletAddress(metamaskAddress);
+        if (shouldOpenMetaMask) {
+          const metamaskDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+          window.open(metamaskDeepLink, '_blank');
+        }
+      } else {
         toast({
-          title: "Wallet connecté",
-          description: "Adresse MetaMask récupérée avec succès !",
-          status: "success",
-          duration: 3000,
+          title: "MetaMask non détecté",
+          description: "Veuillez installer MetaMask pour utiliser cette fonctionnalité.",
+          status: "error",
+          duration: 5000,
           isClosable: true,
         });
       }
-    } catch (error: any) {
-      console.error('Erreur lors de la connexion MetaMask:', error);
+      return;
+    }
+
+    console.log('✅ MetaMask détecté, demande de connexion...');
+
+    // Demander les permissions d'abord (important pour mobile)
+    try {
+      await window.ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }]
+      });
+    } catch (permError) {
+      console.log('⚠️ Permissions déjà accordées:', permError);
+    }
+
+    // Maintenant demander les comptes
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts'
+    });
+
+    if (accounts && accounts.length > 0) {
+      const metamaskAddress = accounts[0];
+      console.log('🦊 Adresse MetaMask récupérée:', metamaskAddress);
       
-      let errorMessage = "Erreur lors de la connexion à MetaMask";
-      if (error.code === 4001) {
-        errorMessage = "Connexion refusée par l'utilisateur";
-      }
+      setWalletAddress(metamaskAddress);
+      setError(''); // Effacer les erreurs précédentes
       
       toast({
-        title: "Erreur MetaMask",
-        description: errorMessage,
-        status: "error",
-        duration: 5000,
+        title: "Wallet connecté",
+        description: `Adresse récupérée: ${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
+        status: "success",
+        duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsConnectingMetaMask(false);
     }
-  };
+
+  } catch (error: any) {
+    console.error('❌ Erreur connexion MetaMask:', error);
+    
+    let errorMessage = "Erreur lors de la connexion à MetaMask";
+    if (error.code === 4001) {
+      errorMessage = "Connexion refusée par l'utilisateur";
+    } else if (error.code === -32002) {
+      errorMessage = "Une demande de connexion est déjà en cours dans MetaMask";
+    }
+    
+    toast({
+      title: "Erreur MetaMask",
+      description: errorMessage,
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+  } finally {
+    setIsConnectingMetaMask(false);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,6 +418,68 @@ const LoginPage: React.FC = () => {
                 </VStack>
               </HStack>
 
+              {/* Alerte spécifique mobile */}
+{/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
+  <Box
+    p={{ base: 3, md: 4 }}
+    bg={!window.ethereum ? "red.50" : "green.50"}
+    borderRadius="xl"
+    border="1px solid"
+    borderColor={!window.ethereum ? "red.200" : "green.200"}
+    w="full"
+  >
+    <HStack spacing={3} align="start">
+      <Text fontSize={{ base: "lg", md: "2xl" }}>
+        {!window.ethereum ? "📱" : "✅"}
+      </Text>
+      <VStack spacing={1} align="start" flex={1}>
+        <Text 
+          fontSize={{ base: "xs", md: "sm" }} 
+          fontWeight="600" 
+          color={!window.ethereum ? "red.800" : "green.800"}
+        >
+          {!window.ethereum ? "Appareil mobile détecté" : "MetaMask détecté"}
+        </Text>
+        {!window.ethereum ? (
+          <VStack spacing={1} align="start">
+            <Text 
+              fontSize={{ base: "2xs", md: "xs" }} 
+              color="red.700" 
+              lineHeight={1.4}
+            >
+              Pour une connexion optimale sur mobile :
+            </Text>
+            <Text 
+              fontSize={{ base: "2xs", md: "xs" }} 
+              color="red.700" 
+              lineHeight={1.4}
+              pl={2}
+            >
+              • Utilisez le navigateur intégré de MetaMask
+            </Text>
+            <Text 
+              fontSize={{ base: "2xs", md: "xs" }} 
+              color="red.700" 
+              lineHeight={1.4}
+              pl={2}
+            >
+              • Ou cliquez sur le bouton 🦊 pour ouvrir MetaMask
+            </Text>
+          </VStack>
+        ) : (
+          <Text 
+            fontSize={{ base: "2xs", md: "xs" }} 
+            color="green.700" 
+            lineHeight={1.4}
+          >
+            Vous pouvez maintenant cliquer sur le bouton MetaMask pour récupérer votre adresse.
+          </Text>
+        )}
+      </VStack>
+    </HStack>
+  </Box>
+)}
+
               {/* Formulaire de connexion */}
               <Box as="form" onSubmit={handleSubmit}>
                 <VStack spacing={{ base: 4, md: 6 }}>
@@ -503,8 +619,11 @@ const LoginPage: React.FC = () => {
                         color="orange.700" 
                         lineHeight={1.4}
                       >
-                        Cliquez sur le bouton MetaMask en haut à droite pour récupérer automatiquement votre adresse wallet.
-                      </Text>
+                        {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                            ? "Sur mobile, utilisez le navigateur intégré de MetaMask ou cliquez sur le bouton 🦊 pour ouvrir l'application."
+                            : "Cliquez sur le bouton MetaMask en haut à droite pour récupérer automatiquement votre adresse wallet."
+                        }
+                        </Text>
                     </VStack>
                   </HStack>
                 </Box>
