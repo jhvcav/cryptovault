@@ -1,10 +1,9 @@
-// NFTMarketplace.tsx - Version mise à jour avec Web3
+// NFTMarketplace.tsx - Version complète corrigée
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
 import { useFidelityStatus } from '../hooks/useFidelityStatus';
 import { useNFT } from '../hooks/useNFT';
-import FidelityService from '../services/FidelityService';
 import { 
   ShoppingCart, 
   Check, 
@@ -27,6 +26,9 @@ import {
 // Constantes réseau
 const BSC_MAINNET_CHAIN_ID = 56;
 const BSC_MAINNET_CHAIN_ID_HEX = '0x38';
+
+// Variables d'environnement Vite
+const isDevelopment = import.meta.env.DEV;
 
 interface NFTTier {
   id: number;
@@ -65,7 +67,20 @@ const NFTMarketplace: React.FC = () => {
   } = useWallet();
 
   // Hook de fidélité
-  const { isFidel, hasClaimedNFT, userInfo, loading: fidelityLoading } = useFidelityStatus(address);
+  const { 
+    isFidel, 
+    hasClaimedNFT, 
+    actuallyOwnsNFT, 
+    userInfo, 
+    loading: fidelityLoading,
+    inconsistencyDetected,
+    error: fidelityError,
+    syncStatus,
+    reloadStatus,
+    claimFidelityNFT: claimFromHook,
+    checkEligibility,
+    getStatusMessage
+  } = useFidelityStatus(address);
 
   // Hook NFT Web3
   const {
@@ -79,7 +94,10 @@ const NFTMarketplace: React.FC = () => {
     purchaseNFT,
     claimFidelityNFT,
     canPurchaseTier,
-    getNFTMultiplier
+    getNFTMultiplier,
+    initialized,
+    clearError,
+    retry
   } = useNFT();
 
   // DEBUG: Afficher les infos de debug
@@ -93,19 +111,10 @@ const NFTMarketplace: React.FC = () => {
     userInfo,
     userNFTInfo,
     tiersInfo,
-    nftError
+    nftError,
+    initialized,
+    tiersCount: Object.keys(tiersInfo).length
   });
-
-  // Debug pbl statut bouton NFT Bronze
-  console.log('🔍 DEBUG NFT Bronze:', {
-  tiersInfoExists: !!tiersInfo,
-  tier1Exists: !!tiersInfo[1],
-  supply: tiersInfo[1]?.supply,
-  minted: tiersInfo[1]?.minted, 
-  remaining: tiersInfo[1]?.remaining,
-  price: tiersInfo[1]?.price,
-  active: tiersInfo[1]?.active
-});
 
   // Vérifier si on est sur BSC
   const isOnBSC = chainId === BSC_MAINNET_CHAIN_ID || 
@@ -123,211 +132,180 @@ const NFTMarketplace: React.FC = () => {
     }
   }, [address, isConnected, loadUserNFTs]);
 
-  // Force refresh chainId au chargement de la page
+  // Force le chargement si les tiers sont vides mais que tout semble OK
   useEffect(() => {
-    const forceChainIdCheck = async () => {
-      if (window.ethereum && isConnected) {
-        try {
-          const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-          const numericChainId = parseInt(currentChainId, 16);
-          console.log('🔄 Force chainId check:', {
-            currentChainId,
-            numericChainId,
-            contextChainId: chainId
-          });
-        } catch (error) {
-          console.error('Erreur vérification chainId:', error);
-        }
-      }
-    };
-
-    forceChainIdCheck();
-  }, [isConnected, chainId]);
-
-  // Mise à jour des tiers NFT avec les données du smart contract
-  const nftTiers: NFTTier[] = [
-    {
-      id: 1,
-      name: 'NFT Bronze',
-      icon: '🥉',
-      price: tiersInfo[1] ? parseFloat(tiersInfo[1].price) : 10,
-      priceUSD: tiersInfo[1] ? `$${tiersInfo[1].price}` : '$10',
-      supply: tiersInfo[1]?.supply || 1000,
-      remaining: tiersInfo[1]?.remaining || 847,
-      multiplier: '1.2X',
-      multiplierPercent: '+20%',
-      lockPeriods: ['30 jours'],
-      accessPlans: ['starter'],
-      features: [
-        'Accès aux stratégies de base',
-        'Bonus 20% sur récompenses',
-        'Support communautaire',
-        'Période de blocage : 30 jours'
-      ],
-      bgGradient: 'from-amber-600 to-amber-800',
-      borderColor: 'border-amber-500',
-      glowColor: 'shadow-amber-500/20'
-    },
-    {
-      id: 2,
-      name: 'NFT Argent',
-      icon: '🥈',
-      price: tiersInfo[2] ? parseFloat(tiersInfo[2].price) : 250,
-      priceUSD: tiersInfo[2] ? `$${tiersInfo[2].price}` : '$250',
-      supply: tiersInfo[2]?.supply || 500,
-      remaining: tiersInfo[2]?.remaining || 312,
-      multiplier: '1.5X',
-      multiplierPercent: '+50%',
-      lockPeriods: ['30 jours', '90 jours'],
-      accessPlans: ['starter', 'standard'],
-      features: [
-        'Accès stratégies étendues',
-        'Bonus 50% sur récompenses',
-        'Support prioritaire',
-        'Périodes : 30-90 jours',
-        'Insights trimestriels'
-      ],
-      bgGradient: 'from-slate-400 to-slate-600',
-      borderColor: 'border-slate-400',
-      glowColor: 'shadow-slate-400/20',
-      popular: true
-    },
-    {
-      id: 3,
-      name: 'NFT Or',
-      icon: '🥇',
-      price: tiersInfo[3] ? parseFloat(tiersInfo[3].price) : 500,
-      priceUSD: tiersInfo[3] ? `$${tiersInfo[3].price}` : '$500',
-      supply: tiersInfo[3]?.supply || 200,
-      remaining: tiersInfo[3]?.remaining || 89,
-      multiplier: '2.0X',
-      multiplierPercent: '+100%',
-      lockPeriods: ['30 jours', '90 jours', '180 jours'],
-      accessPlans: ['starter', 'standard', 'premium'],
-      features: [
-        'Accès toutes stratégies premium',
-        'Bonus 100% sur récompenses',
-        'Support VIP',
-        'Périodes : 30-180 jours',
-        'Sessions stratégie 1-on-1',
-        'Accès beta nouvelles fonctionnalités'
-      ],
-      bgGradient: 'from-yellow-500 to-yellow-700',
-      borderColor: 'border-yellow-500',
-      glowColor: 'shadow-yellow-500/30'
-    },
-    {
-      id: 4,
-      name: 'NFT Privilège',
-      icon: '💎',
-      price: tiersInfo[4] ? parseFloat(tiersInfo[4].price) : 1000,
-      priceUSD: tiersInfo[4] ? `$${tiersInfo[4].price}` : '$1,000',
-      supply: tiersInfo[4]?.supply || 50,
-      remaining: tiersInfo[4]?.remaining || 23,
-      multiplier: '2.5X',
-      multiplierPercent: '+150%',
-      lockPeriods: ['30 jours', '90 jours', '180 jours', '360 jours'],
-      accessPlans: ['starter', 'standard', 'premium', 'privilege'],
-      features: [
-        'Accès exclusif toutes stratégies',
-        'Bonus 150% sur récompenses',
-        'Toutes périodes disponibles',
-        'Consultations stratégiques illimitées',
-        'Accès anticipé nouveaux produits',
-        'Participation gouvernance plateforme',
-        'Événements privés',
-        'Insights mensuels'
-      ],
-      bgGradient: 'from-purple-600 via-pink-600 to-purple-800',
-      borderColor: 'border-purple-500',
-      glowColor: 'shadow-purple-500/30',
-      exclusive: true
+    if (isConnected && !nftLoading && Object.keys(tiersInfo).length === 0 && !nftError) {
+      console.log('🔄 Force rechargement des tiers NFT...');
+      loadTiersInfo();
     }
-  ];
+  }, [isConnected, nftLoading, tiersInfo, nftError, loadTiersInfo]);
 
-  const ReloadButton = () => {
-  const { address, isConnected, chainId } = useWallet();
-  const { loadTiersInfo, loadUserNFTs } = useNFT();
-  const [loading, setLoading] = useState(false);
-
-  const handleReload = async () => {
-    setLoading(true);
-    try {
-      console.log('🔄 Recharging NFT data...');
-      await loadTiersInfo();
-      if (address) {
-        await loadUserNFTs(address);
+  // Mise à jour des tiers NFT avec fallback et données du contrat
+  const getNFTTiers = (): NFTTier[] => {
+    const baseTiers: NFTTier[] = [
+      {
+        id: 1,
+        name: 'NFT Bronze',
+        icon: '🥉',
+        price: 10,
+        priceUSD: '$10',
+        supply: 1000,
+        remaining: 847,
+        multiplier: '1.2X',
+        multiplierPercent: '+20%',
+        lockPeriods: ['30 jours'],
+        accessPlans: ['starter'],
+        features: [
+          'Accès aux stratégies de base',
+          'Bonus 20% sur récompenses',
+          'Support communautaire',
+          'Période de blocage : 30 jours'
+        ],
+        bgGradient: 'from-amber-600 to-amber-800',
+        borderColor: 'border-amber-500',
+        glowColor: 'shadow-amber-500/20'
+      },
+      {
+        id: 2,
+        name: 'NFT Argent',
+        icon: '🥈',
+        price: 250,
+        priceUSD: '$250',
+        supply: 500,
+        remaining: 312,
+        multiplier: '1.5X',
+        multiplierPercent: '+50%',
+        lockPeriods: ['30 jours', '90 jours'],
+        accessPlans: ['starter', 'standard'],
+        features: [
+          'Accès stratégies étendues',
+          'Bonus 50% sur récompenses',
+          'Support prioritaire',
+          'Périodes : 30-90 jours',
+          'Insights trimestriels'
+        ],
+        bgGradient: 'from-slate-400 to-slate-600',
+        borderColor: 'border-slate-400',
+        glowColor: 'shadow-slate-400/20',
+        popular: true
+      },
+      {
+        id: 3,
+        name: 'NFT Or',
+        icon: '🥇',
+        price: 500,
+        priceUSD: '$500',
+        supply: 200,
+        remaining: 89,
+        multiplier: '2.0X',
+        multiplierPercent: '+100%',
+        lockPeriods: ['30 jours', '90 jours', '180 jours'],
+        accessPlans: ['starter', 'standard', 'premium'],
+        features: [
+          'Accès toutes stratégies premium',
+          'Bonus 100% sur récompenses',
+          'Support VIP',
+          'Périodes : 30-180 jours',
+          'Sessions stratégie 1-on-1',
+          'Accès beta nouvelles fonctionnalités'
+        ],
+        bgGradient: 'from-yellow-500 to-yellow-700',
+        borderColor: 'border-yellow-500',
+        glowColor: 'shadow-yellow-500/30'
+      },
+      {
+        id: 4,
+        name: 'NFT Privilège',
+        icon: '💎',
+        price: 1000,
+        priceUSD: '$1,000',
+        supply: 50,
+        remaining: 23,
+        multiplier: '2.5X',
+        multiplierPercent: '+150%',
+        lockPeriods: ['30 jours', '90 jours', '180 jours', '360 jours'],
+        accessPlans: ['starter', 'standard', 'premium', 'privilege'],
+        features: [
+          'Accès exclusif toutes stratégies',
+          'Bonus 150% sur récompenses',
+          'Toutes périodes disponibles',
+          'Consultations stratégiques illimitées',
+          'Accès anticipé nouveaux produits',
+          'Participation gouvernance plateforme',
+          'Événements privés',
+          'Insights mensuels'
+        ],
+        bgGradient: 'from-purple-600 via-pink-600 to-purple-800',
+        borderColor: 'border-purple-500',
+        glowColor: 'shadow-purple-500/30',
+        exclusive: true
       }
-      // Forcer un rafraîchissement de l'interface
-      setTimeout(() => {
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Erreur reload:', error);
-      setLoading(false);
-    }
+    ];
+
+    // Mettre à jour avec les données du contrat si disponibles
+    return baseTiers.map(tier => {
+      const contractData = tiersInfo[tier.id];
+      if (contractData) {
+        return {
+          ...tier,
+          price: parseFloat(contractData.price || tier.price.toString()),
+          priceUSD: `$${contractData.price || tier.price}`,
+          supply: contractData.supply || tier.supply,
+          remaining: contractData.remaining !== undefined ? contractData.remaining : tier.remaining
+        };
+      }
+      return tier;
+    });
   };
 
-  return (
-    <div className="flex justify-center mb-8">
-      <button
-        onClick={handleReload}
-        disabled={loading || !isConnected}
-        className={`flex items-center space-x-2 px-6 py-3 rounded-lg ${
-          loading 
-            ? 'bg-blue-700 text-white cursor-wait' 
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
-        }`}
-      >
-        {loading ? (
-          <>
-            <Loader size={18} className="animate-spin" />
-            <span>Chargement des NFT...</span>
-          </>
-        ) : (
-          <>
-            <Clock size={18} />
-            <span>Recharger les NFT</span>
-          </>
-        )}
-      </button>
-      
-      {isConnected && (
-        <div className="ml-4 px-4 py-2 bg-slate-800 rounded-lg text-sm flex items-center">
-          <span className="text-slate-400 mr-2">ChainID:</span>
-          <span className="text-white">{chainId}</span>
-        </div>
-      )}
-    </div>
-  );
-};
+  const nftTiers = getNFTTiers();
 
   // Fonction de réclamation fidélité
   const handleFidelityClaim = async (nft: NFTTier) => {
-    if (!address) return;
+    if (!address) {
+      alert('Veuillez connecter votre wallet');
+      return;
+    }
+
+    // Vérifier l'éligibilité avant de procéder
+    const eligibility = checkEligibility();
+    if (!eligibility.canClaim) {
+      alert(eligibility.reason || 'Non éligible pour la réclamation');
+      return;
+    }
 
     try {
-      const result = await claimFidelityNFT(address);
+      console.log('🎁 Début réclamation NFT fidélité...');
+      
+      // Utiliser la fonction du hook qui gère tout
+      const result = await claimFromHook();
       
       if (result.success) {
-        // Marquer comme réclamé en base
-        await FidelityService.claimFidelityNFT(address);
-
+        console.log('✅ NFT fidélité réclamé avec succès:', result);
+        
         setPurchaseSuccess(true);
         setSelectedNFT({...nft, fidelityGift: true});
         setTxHash(result.txHash || '');
+        
+        // Recharger les données NFT utilisateur
+        if (address) {
+          await loadUserNFTs(address);
+          await loadTiersInfo();
+        }
         
         // Redirection vers dashboard après 5 secondes
         setTimeout(() => {
           window.location.href = '/app/dashboard';
         }, 5000);
+        
       } else {
-        alert(result.error || 'Erreur lors de l\'attribution du NFT de fidélité');
+        console.error('❌ Erreur réclamation:', result.error);
+        alert(result.error || 'Erreur lors de la réclamation du NFT de fidélité');
       }
       
     } catch (error: any) {
-      console.error('Erreur attribution fidélité:', error);
-      alert(error.message || 'Erreur lors de l\'attribution du NFT de fidélité');
+      console.error('❌ Erreur réclamation fidélité:', error);
+      alert(error.message || 'Erreur lors de la réclamation du NFT de fidélité');
     }
   };
 
@@ -352,7 +330,6 @@ const NFTMarketplace: React.FC = () => {
       }
       return;
     }
-    
 
     try {
       const result = await purchaseNFT(nft.id);
@@ -389,20 +366,99 @@ const NFTMarketplace: React.FC = () => {
     }
   };
 
-  // Composant NFT Card avec logique fidélité et Web3
-const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
-  const isPrivilegeForFidelUser = nft.name === 'NFT Privilège' && isFidel; // AJOUT
-  const showFidelityButton = isPrivilegeForFidelUser && !hasClaimedNFT;
-  const showPurchaseButton = !isPrivilegeForFidelUser || hasClaimedNFT;
+  // Composant d'erreur et de retry
+  const ErrorDisplay = () => {
+    if (!nftError) return null;
 
+    return (
+      <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="text-red-400" size={24} />
+            <div>
+              <h3 className="text-red-400 font-semibold">Erreur de chargement</h3>
+              <p className="text-slate-300 text-sm">{nftError}</p>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={clearError}
+              className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm"
+            >
+              Ignorer
+            </button>
+            <button
+              onClick={retry}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Composant de statut de chargement amélioré
+  const LoadingStatus = () => {
+    if (!nftLoading) return null;
+
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="bg-slate-800 rounded-lg p-6 flex items-center space-x-4">
+          <Loader size={24} className="animate-spin text-blue-400" />
+          <div>
+            <p className="text-white font-medium">Chargement des NFT...</p>
+            <p className="text-slate-400 text-sm">
+              {!initialized ? 'Initialisation du service...' : 'Récupération des données blockchain...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Composant NFT Card avec logique fidélité et Web3
+  const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
+    const isPrivilegeForFidelUser = nft.name === 'NFT Privilège' && isFidel;
     
-    // Vérifier si l'utilisateur possède déjà ce tier
-    const userOwnsTier = userNFTInfo?.ownedTiers.includes(nft.id) || false;
+    // Nouvelle logique qui priorise la blockchain
+    const reallyOwnsNFT = actuallyOwnsNFT && isPrivilegeForFidelUser;
+    const userOwnsTier = userNFTInfo?.ownedTiers.includes(nft.id) || reallyOwnsNFT;
+    
+    // Logique pour le bouton fidélité
+    const eligibility = checkEligibility();
+    const showFidelityButton = isPrivilegeForFidelUser && eligibility.canClaim;
+    
+    // Afficher un warning si incohérence détectée
+    const showInconsistencyWarning = inconsistencyDetected && isPrivilegeForFidelUser;
 
     return (
       <div className={`relative bg-gradient-to-br ${nft.bgGradient} p-1 rounded-2xl ${nft.glowColor} hover:shadow-2xl transition-all duration-300`}>
+        
+        {/* Warning d'incohérence avec bouton de synchronisation */}
+        {showInconsistencyWarning && (
+          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-white px-3 py-2 rounded text-xs flex items-center space-x-2 whitespace-nowrap">
+            <AlertCircle size={12} />
+            <span>Données incohérentes</span>
+            <button 
+              onClick={async () => {
+                console.log('🔄 Synchronisation manuelle...');
+                const success = await syncStatus();
+                if (success) {
+                  console.log('✅ Synchronisation réussie');
+                }
+              }}
+              className="ml-1 text-yellow-200 hover:text-white bg-yellow-700 px-2 py-1 rounded text-xs"
+              disabled={fidelityLoading}
+            >
+              {fidelityLoading ? '⏳' : '🔄 Sync'}
+            </button>
+          </div>
+        )}
+
         {/* Badge Fidélité */}
-        {isPrivilegeForFidelUser && !hasClaimedNFT && (
+        {showFidelityButton && (
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
             <Crown size={14} />
             <span>Fidélité</span>
@@ -417,11 +473,11 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
           </div>
         )}
 
-        {/* Badge Déjà Réclamé */}
-        {isPrivilegeForFidelUser && hasClaimedNFT && (
-          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
-            <Check size={14} />
-            <span>Réclamé</span>
+        {/* Badge d'erreur */}
+        {fidelityError && isPrivilegeForFidelUser && (
+          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
+            <AlertCircle size={14} />
+            <span>Erreur</span>
           </div>
         )}
 
@@ -523,6 +579,19 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
               <Loader size={18} className="animate-spin" />
               <span>Vérification...</span>
             </button>
+          ) : fidelityError && isPrivilegeForFidelUser ? (
+            <div className="space-y-2">
+              <button disabled className="w-full py-3 px-4 rounded-lg bg-red-700 text-red-100 flex items-center justify-center space-x-2">
+                <AlertCircle size={18} />
+                <span>Erreur de vérification</span>
+              </button>
+              <button
+                onClick={reloadStatus}
+                className="w-full py-2 px-4 rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm"
+              >
+                Réessayer
+              </button>
+            </div>
           ) : userOwnsTier ? (
             <button disabled className="w-full py-3 px-4 rounded-lg bg-green-700 text-green-100 flex items-center justify-center space-x-2">
               <Check size={18} />
@@ -542,11 +611,6 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
                   <span>Réclamer Fidélité</span>
                 </>
               )}
-            </button>
-          ) : hasClaimedNFT && isPrivilegeForFidelUser ? (
-            <button disabled className="w-full py-3 px-4 rounded-lg bg-green-700 text-green-100 flex items-center justify-center space-x-2">
-              <Check size={18} />
-              <span>Déjà Réclamé</span>
             </button>
           ) : (
             <button
@@ -587,6 +651,13 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
                 </>
               )}
             </button>
+          )}
+
+          {/* Message de statut pour debug (optionnel) */}
+          {isDevelopment && isPrivilegeForFidelUser && (
+            <div className="mt-2 text-xs text-slate-500 text-center">
+              {getStatusMessage()}
+            </div>
           )}
         </div>
       </div>
@@ -640,29 +711,6 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
     );
   }
 
-  // Afficher une erreur si nécessaire
-  if (nftError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertCircle size={40} className="text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-4">Erreur de Connexion</h1>
-          <p className="text-slate-300 mb-6">{nftError}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
-          >
-            Réessayer
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('🔍 DEBUG avant rendu NFT Cards');
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -684,18 +732,25 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
               Choisissez votre niveau d'accès et débloquez des bonus exclusifs sur vos récompenses.
             </p>
 
-            {isConnected && isOnBSC && (
+            {/* Bouton de rechargement manuel */}
+            <div className="mt-6">
               <button
                 onClick={() => {
+                  console.log('🔄 Rechargement manuel des NFT...');
                   loadTiersInfo();
                   if (address) loadUserNFTs(address);
                 }}
-                className="inline-flex items-center space-x-2 text-slate-400 hover:text-slate-300 font-medium px-6 py-3 border border-slate-500/30 rounded-lg hover:bg-slate-800/50 transition-colors"
+                disabled={nftLoading}
+                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
-                <Clock size={18} />
-                <span>Actualiser</span>
+                {nftLoading ? (
+                  <Loader size={18} className="animate-spin" />
+                ) : (
+                  <Clock size={18} />
+                )}
+                <span>Actualiser les NFT</span>
               </button>
-            )}
+            </div>
             
             {/* Affichage info utilisateur connecté */}
             {isConnected && userNFTInfo && userNFTInfo.highestTier > 0 && (
@@ -711,15 +766,31 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
             )}
             
             {/* Affichage info utilisateur fidèle */}
-            {isFidel && userInfo && !userNFTInfo?.ownedTiers.includes(4) && (
+            {isFidel && userInfo && !actuallyOwnsNFT && (
               <div className="mt-6 bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-500/30 rounded-lg p-4 max-w-md mx-auto">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Crown className="text-yellow-400" size={20} />
                   <span className="text-yellow-400 font-semibold">Membre Fidèle</span>
                 </div>
                 <p className="text-slate-300 text-sm">
-                  Bonjour {userInfo.firstName} ! Vous êtes éligible pour un NFT Privilège gratuit.
+                  Bonjour {userInfo.firstName} ! {checkEligibility().canClaim 
+                    ? 'Vous êtes éligible pour un NFT Privilège gratuit.'
+                    : getStatusMessage()
+                  }
                 </p>
+                
+                {/* Bouton de synchronisation si incohérence */}
+                {inconsistencyDetected && (
+                  <div className="mt-3 text-center">
+                    <button
+                      onClick={syncStatus}
+                      disabled={fidelityLoading}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
+                    >
+                      {fidelityLoading ? 'Synchronisation...' : 'Corriger les données'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -789,29 +860,67 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
         </div>
       </section>
 
+      {/* Affichage des erreurs */}
+      <ErrorDisplay />
+
       {/* NFT Grid */}
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
-          {nftLoading && !tiersInfo[1] ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader size={32} className="animate-spin text-blue-400" />
-              <span className="ml-3 text-slate-300">Chargement des NFT...</span>
+          {/* Statut de chargement */}
+          <LoadingStatus />
+
+          {/* Debug info pour développement */}
+          {isDevelopment && (
+            <div className="mb-8 bg-slate-800 rounded-lg p-4">
+              <h3 className="text-white font-bold mb-2">🔧 Debug Info</h3>
+              <div className="text-sm text-slate-300 space-y-1">
+                <p>Tiers chargés: {Object.keys(tiersInfo).length}</p>
+                <p>Service initialisé: {initialized.toString()}</p>
+                <p>En chargement: {nftLoading.toString()}</p>
+                <p>Erreur: {nftError || 'Aucune'}</p>
+                <p>Wallet connecté: {isConnected.toString()}</p>
+                <p>Réseau correct: {isOnBSC.toString()}</p>
+                <p>Mode: {import.meta.env.MODE}</p>
+                <p>API URL: {import.meta.env.VITE_API_URL}</p>
+                <p>Contract: {import.meta.env.VITE_NFT_CONTRACT_ADDRESS}</p>
+                <p>Tiers disponibles: {Object.keys(tiersInfo).join(', ') || 'Aucun'}</p>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-  {nftTiers.map((nft) => {
-    if (nft.id === 1) {
-      console.log('🔍 DEBUG NFT Bronze avant NFTCard:', {
-        nft: nft,
-        isConnected,
-        chainId,
-        balance
-      });
-    }
-    return <NFTCard key={nft.id} nft={nft} />;
-  })}
-</div>
           )}
+
+          {/* Grille des NFT */}
+          {!nftLoading && Object.keys(tiersInfo).length === 0 && !nftError ? (
+            <div className="text-center py-12">
+              <div className="bg-slate-800 rounded-lg p-8 max-w-md mx-auto">
+                <AlertCircle className="mx-auto mb-4 text-yellow-400" size={48} />
+                <h3 className="text-white font-semibold text-lg mb-2">Aucun NFT trouvé</h3>
+                <p className="text-slate-400 mb-4">
+                  Les NFT ne se chargent pas. Cela peut être dû à un problème de connexion blockchain.
+                </p>
+                <button
+                  onClick={() => {
+                    console.log('🔄 Retry chargement NFT...');
+                    loadTiersInfo();
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+                >
+                  Réessayer
+                </button>
+              </div>
+            </div>
+          ) : !nftLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {nftTiers.map((nft) => {
+                console.log(`🔍 Rendu NFT ${nft.name}:`, {
+                  id: nft.id,
+                  price: nft.price,
+                  remaining: nft.remaining,
+                  userConnected: isConnected
+                });
+                return <NFTCard key={nft.id} nft={nft} />;
+              })}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -989,79 +1098,6 @@ const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
                 Le NFT est immédiatement transféré dans votre wallet Metamask. Vous pouvez ensuite 
                 accéder aux plans de récompense correspondants où vos bonus seront automatiquement appliqués.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Informations Techniques */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">Informations Techniques</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Smart Contract */}
-            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-              <div className="flex items-start space-x-3">
-                <Gem className="text-blue-400 flex-shrink-0 mt-1" size={20} />
-                <div>
-                  <h3 className="text-blue-400 font-semibold mb-2">Smart Contract</h3>
-                  <ul className="text-blue-300 text-sm space-y-1">
-                    <li>• Contrat ERC-721 sur Binance Smart Chain</li>
-                    <li>• Code source audité et sécurisé</li>
-                    <li>• Propriété permanente et transférable</li>
-                    <li>• Métadonnées on-chain</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Paiement */}
-            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
-              <div className="flex items-start space-x-3">
-                <Shield className="text-green-400 flex-shrink-0 mt-1" size={20} />
-                <div>
-                  <h3 className="text-green-400 font-semibold mb-2">Paiement Sécurisé</h3>
-                  <ul className="text-green-300 text-sm space-y-1">
-                    <li>• Paiement en USDC uniquement</li>
-                    <li>• Réseau BSC pour des frais réduits</li>
-                    <li>• Transaction directe wallet à wallet</li>
-                    <li>• Confirmation instantanée</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Accès Plans */}
-            <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-6">
-              <div className="flex items-start space-x-3">
-                <Users className="text-purple-400 flex-shrink-0 mt-1" size={20} />
-                <div>
-                  <h3 className="text-purple-400 font-semibold mb-2">Accès aux Plans</h3>
-                  <ul className="text-purple-300 text-sm space-y-1">
-                    <li>• Bronze: Plan Starter uniquement</li>
-                    <li>• Argent: Plans Starter + Standard</li>
-                    <li>• Or: Plans Starter + Standard + Premium</li>
-                    <li>• Privilège: Tous les plans actuels et futurs</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Support */}
-            <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-6">
-              <div className="flex items-start space-x-3">
-                <Crown className="text-yellow-400 flex-shrink-0 mt-1" size={20} />
-                <div>
-                  <h3 className="text-yellow-400 font-semibold mb-2">Support & Assistance</h3>
-                  <ul className="text-yellow-300 text-sm space-y-1">
-                    <li>• Support technique 24/7</li>
-                    <li>• Guide d'installation Metamask</li>
-                    <li>• Assistance pour l'achat</li>
-                    <li>• Communauté Discord/Telegram</li>
-                  </ul>
-                </div>
-              </div>
             </div>
           </div>
         </div>

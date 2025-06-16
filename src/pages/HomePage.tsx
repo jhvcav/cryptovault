@@ -47,7 +47,7 @@ const HomePage = () => {
                 </Link>
                 <Link
                   to="/about"
-                  className="bg-slate-700 hover:bg-slate-600 text-white py-3 px-6 rounded-lg font-medium transition-colors"
+                  className="bg-slate-700 hover:bg-slate-600 text-white py-3 px-6 rounded-lg font-medium transition-colors text-center"
                 >
                   En Savoir Plus
                 </Link>

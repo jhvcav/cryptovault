@@ -1,308 +1,272 @@
-// hooks/useNFT.ts
-import { useState, useEffect, useCallback } from 'react';
-import nftService, { TierInfo, UserNFTInfo } from '../services/NFTService';
+// hooks/useNFT.ts - Version corrigée avec gestion d'erreurs
 
-interface UseNFTReturn {
-  // État
-  userNFTInfo: UserNFTInfo | null;
-  tiersInfo: Record<number, TierInfo>;
+import { useState, useEffect, useCallback } from 'react';
+import extensibleNFTService from '../services/NFTService';
+
+interface UseNFTState {
+  userNFTInfo: any;
+  tiersInfo: Record<number, any>;
   loading: boolean;
   error: string | null;
   purchasing: boolean;
-  
-  // Actions
-  loadUserNFTs: (address: string) => Promise<void>;
-  loadTiersInfo: () => Promise<void>;
-  purchaseNFT: (tier: number) => Promise<{ success: boolean; txHash?: string; error?: string }>;
-  claimFidelityNFT: (address: string) => Promise<{ success: boolean; txHash?: string; error?: string }>;
-  
-  // Utilitaires
-  hasAccessToPlans: (plans: string[]) => boolean;
-  getNFTMultiplier: () => number;
-  canPurchaseTier: (tier: number, usdcBalance: number) => boolean;
+  initialized: boolean;
 }
 
-export const useNFT = (): UseNFTReturn => {
-  const [userNFTInfo, setUserNFTInfo] = useState<UserNFTInfo | null>(null);
-  const [tiersInfo, setTiersInfo] = useState<Record<number, TierInfo>>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [purchasing, setPurchasing] = useState(false);
+export const useNFT = () => {
+  const [state, setState] = useState<UseNFTState>({
+    userNFTInfo: null,
+    tiersInfo: {},
+    loading: true,
+    error: null,
+    purchasing: false,
+    initialized: false
+  });
 
-  // Charger les infos des tiers
+  // Charger les infos des tiers de manière sécurisée
   const loadTiersInfo = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
+      console.log('🔄 Hook useNFT: Chargement des tiers...');
+      setState(prev => ({ ...prev, loading: true, error: null }));
       
-      const tiers: Record<number, TierInfo> = {};
+      const tiersInfo = await extensibleNFTService.loadTiersInfoSafely();
       
-      for (let tier = 1; tier <= 4; tier++) {
-        const tierInfo = await nftService.getTierInfo(tier);
-        const remaining = await nftService.getRemainingSupply(tier);
-        
-        tiers[tier] = {
-          ...tierInfo,
-          remaining
-        };
-      }
+      setState(prev => ({ 
+        ...prev, 
+        tiersInfo,
+        loading: false,
+        initialized: true
+      }));
       
-      setTiersInfo(tiers);
-    } catch (err: any) {
-      console.error('Erreur chargement tiers:', err);
-      setError(err.message || 'Erreur lors du chargement des informations des NFT');
-    } finally {
-      setLoading(false);
+      console.log('✅ Hook useNFT: Tiers chargés:', tiersInfo);
+    } catch (error: any) {
+      console.error('❌ Hook useNFT: Erreur chargement tiers:', error);
+      setState(prev => ({ 
+        ...prev, 
+        error: error.message || 'Erreur chargement des NFT',
+        loading: false 
+      }));
     }
   }, []);
 
   // Charger les NFT de l'utilisateur
-  const loadUserNFTs = useCallback(async (address: string) => {
-    if (!address) {
-      setUserNFTInfo(null);
+  const loadUserNFTs = useCallback(async (userAddress: string) => {
+    if (!userAddress) {
+      setState(prev => ({ ...prev, userNFTInfo: null }));
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      console.log('🔄 Hook useNFT: Chargement NFT utilisateur:', userAddress);
       
-      const nftInfo = await nftService.getUserNFTInfo(address);
-      setUserNFTInfo(nftInfo);
-    } catch (err: any) {
-      console.error('Erreur chargement NFT utilisateur:', err);
-      setError(err.message || 'Erreur lors du chargement des NFT utilisateur');
-      setUserNFTInfo(null);
-    } finally {
-      setLoading(false);
+      const userNFTInfo = await extensibleNFTService.loadUserNFTInfoSafely(userAddress);
+      
+      setState(prev => ({ ...prev, userNFTInfo }));
+      
+      console.log('✅ Hook useNFT: NFT utilisateur chargés:', userNFTInfo);
+    } catch (error: any) {
+      console.error('❌ Hook useNFT: Erreur chargement NFT utilisateur:', error);
+      setState(prev => ({ 
+        ...prev, 
+        error: error.message || 'Erreur chargement NFT utilisateur' 
+      }));
     }
   }, []);
 
   // Acheter un NFT
-  const purchaseNFT = useCallback(async (tier: number): Promise<{ success: boolean; txHash?: string; error?: string }> => {
+  const purchaseNFT = useCallback(async (tier: number) => {
+    setState(prev => ({ ...prev, purchasing: true, error: null }));
+    
     try {
-      setPurchasing(true);
-      setError(null);
+      console.log(`🛒 Hook useNFT: Achat NFT tier ${tier}...`);
       
-      console.log(`🛒 Achat NFT Tier ${tier} en cours...`);
+      const txHash = await extensibleNFTService.purchaseNFT(tier);
       
-      const txHash = await nftService.purchaseNFT(tier);
+      console.log('✅ Hook useNFT: NFT acheté, hash:', txHash);
       
-      console.log('✅ Transaction envoyée:', txHash);
-      
-      // Attendre la confirmation (optionnel)
-      // Vous pouvez ajouter une logique d'attente de confirmation ici
+      setState(prev => ({ ...prev, purchasing: false }));
       
       return { success: true, txHash };
+    } catch (error: any) {
+      console.error('❌ Hook useNFT: Erreur achat NFT:', error);
+      setState(prev => ({ 
+        ...prev, 
+        purchasing: false,
+        error: error.message || 'Erreur lors de l\'achat'
+      }));
       
-    } catch (err: any) {
-      console.error('❌ Erreur achat NFT:', err);
-      const errorMessage = err.message || 'Erreur lors de l\'achat du NFT';
-      setError(errorMessage);
-      
-      return { success: false, error: errorMessage };
-    } finally {
-      setPurchasing(false);
+      return { success: false, error: error.message };
     }
   }, []);
 
-  // Réclamer un NFT de fidélité
-  const claimFidelityNFT = useCallback(async (address: string): Promise<{ success: boolean; txHash?: string; error?: string }> => {
+  // Réclamer NFT de fidélité
+  const claimFidelityNFT = useCallback(async (userAddress: string) => {
+    setState(prev => ({ ...prev, purchasing: true, error: null }));
+    
     try {
-      setPurchasing(true);
-      setError(null);
+      console.log('🎁 Hook useNFT: Réclamation NFT fidélité...');
       
-      console.log(`🎁 Réclamation NFT fidélité pour ${address}...`);
+      const result = await extensibleNFTService.claimFidelityNFT(userAddress);
       
-      const txHash = await nftService.claimFidelityNFT(address);
+      setState(prev => ({ ...prev, purchasing: false }));
       
-      console.log('✅ NFT fidélité réclamé:', txHash);
-      
-      return { success: true, txHash };
-      
-    } catch (err: any) {
-      console.error('❌ Erreur réclamation NFT fidélité:', err);
-      const errorMessage = err.message || 'Erreur lors de la réclamation du NFT de fidélité';
-      setError(errorMessage);
-      
-      return { success: false, error: errorMessage };
-    } finally {
-      setPurchasing(false);
-    }
-  }, []);
-
-  // Vérifier l'accès aux plans
-  const hasAccessToPlans = useCallback((plans: string[]): boolean => {
-    if (!userNFTInfo || userNFTInfo.highestTier === 0) {
-      return false;
-    }
-
-    return plans.every(plan => {
-      switch (plan.toLowerCase()) {
-        case 'starter':
-          return userNFTInfo.hasAccess.starter;
-        case 'standard':
-          return userNFTInfo.hasAccess.standard;
-        case 'premium':
-          return userNFTInfo.hasAccess.premium;
-        case 'privilege':
-          return userNFTInfo.hasAccess.privilege;
-        default:
-          return false;
+      if (result.success) {
+        console.log('✅ Hook useNFT: NFT fidélité réclamé:', result.txHash);
+        return { success: true, txHash: result.txHash, tokenId: result.tokenId };
+      } else {
+        console.error('❌ Hook useNFT: Échec réclamation:', result.error);
+        return { success: false, error: result.error };
       }
-    });
-  }, [userNFTInfo]);
+    } catch (error: any) {
+      console.error('❌ Hook useNFT: Erreur réclamation NFT:', error);
+      setState(prev => ({ 
+        ...prev, 
+        purchasing: false,
+        error: error.message || 'Erreur lors de la réclamation'
+      }));
+      
+      return { success: false, error: error.message };
+    }
+  }, []);
+
+  // Vérifier si l'utilisateur peut acheter un tier
+  const canPurchaseTier = useCallback((tier: number, userBalance: number): boolean => {
+    const tierInfo = state.tiersInfo[tier];
+    if (!tierInfo) return false;
+    
+    const hasBalance = userBalance >= parseFloat(tierInfo.price);
+    const hasSupply = tierInfo.remaining > 0;
+    const isActive = tierInfo.active;
+    
+    return hasBalance && hasSupply && isActive;
+  }, [state.tiersInfo]);
 
   // Obtenir le multiplicateur NFT
   const getNFTMultiplier = useCallback((): number => {
-    if (!userNFTInfo || userNFTInfo.highestTier === 0) {
-      return 1.0; // Pas de bonus
+    if (!state.userNFTInfo || state.userNFTInfo.highestTier === 0) {
+      return 1.0;
     }
+    
+    return state.userNFTInfo.highestMultiplier / 100;
+  }, [state.userNFTInfo]);
 
-    switch (userNFTInfo.highestTier) {
-      case 1: return 1.2;  // Bronze: +20%
-      case 2: return 1.5;  // Argent: +50%
-      case 3: return 2.0;  // Or: +100%
-      case 4: return 2.5;  // Privilège: +150%
-      default: return 1.0;
-    }
-  }, [userNFTInfo]);
-
-  // Vérifier si l'utilisateur peut acheter un tier
-  const canPurchaseTier = useCallback((tierId, balance) => {
-  // Afficher les détails pour le débogage
-  console.log('🔍 DEBUG canPurchaseTier détails:', {
-    tierId,
-    balance,
-    tiersInfo,
-    tierExists: tiersInfo && tiersInfo[tierId] !== undefined,
-    tierActive: tiersInfo && tiersInfo[tierId]?.active,
-    priceUSDC: tiersInfo && tiersInfo[tierId]?.price,
-    remaining: tiersInfo && tiersInfo[tierId]?.remaining
-  });
-
-  // Si les données ne sont pas encore chargées, autoriser temporairement (sera mis à jour)
-  if (!tiersInfo || !tiersInfo[tierId]) {
-    console.log('📣 Tier info not loaded yet, temporarily allowing purchase');
-    return true;
-  }
-
-  const tierInfo = tiersInfo[tierId];
-  
-  // Vérifier si le tier est actif
-  if (!tierInfo.active) {
-    console.log('📣 Tier not active');
-    return false;
-  }
-  
-  // Vérifier s'il reste des NFT disponibles
-  if (tierInfo.remaining <= 0) {
-    console.log('📣 No NFTs remaining');
-    return false;
-  }
-  
-  // Vérifier la balance USDC (avec une marge d'erreur pour les arrondis)
-  const price = parseFloat(tierInfo.price);
-  const hasEnoughBalance = balance >= price - 0.01; // Petite tolérance
-  
-  if (!hasEnoughBalance) {
-    console.log('📣 Insufficient balance', { balance, price });
-  }
-  
-  return hasEnoughBalance;
-}, [tiersInfo]);
-
-  // Suite du useEffect - Écouter les événements de la blockchain
+  // Initialisation et écoute des événements
   useEffect(() => {
-    const handleNFTPurchased = (buyer: string, tokenId: number, tier: number, price: string) => {
-      console.log('🎉 NFT acheté détecté:', { buyer, tokenId, tier, price });
-      
-      // Recharger les infos si c'est l'utilisateur actuel
-      // Note: il faudrait avoir l'adresse de l'utilisateur connecté ici
-      loadTiersInfo(); // Recharger pour mettre à jour les supplies
-    };
-
-    const handleFidelityNFTClaimed = (user: string, tokenId: number) => {
-      console.log('🎁 NFT fidélité réclamé détecté:', { user, tokenId });
-      loadTiersInfo(); // Recharger pour mettre à jour les supplies
-    };
-
-    // Écouter les événements
-    nftService.onNFTPurchased(handleNFTPurchased);
-    nftService.onFidelityNFTClaimed(handleFidelityNFTClaimed);
-
-    // Cleanup
-    return () => {
-      nftService.removeAllListeners();
-    };
-  }, [loadTiersInfo]);
-
-  // Charger les infos des tiers au montage
-  useEffect(() => {
+    console.log('🔄 Hook useNFT: Initialisation...');
+    
+    // Charger les tiers au montage
     loadTiersInfo();
+
+    // Configuration des écouteurs d'événements avec vérification
+    let unsubscribeNFTPurchased: (() => void) | undefined;
+    let unsubscribeFidelityNFTClaimed: (() => void) | undefined;
+    let unsubscribeTierCreated: (() => void) | undefined;
+
+    const setupEventListeners = async () => {
+      try {
+        // Vérifier que les méthodes existent avant de les utiliser
+        if (typeof extensibleNFTService.onNFTPurchased === 'function') {
+          unsubscribeNFTPurchased = extensibleNFTService.onNFTPurchased((buyer, tokenId, tier, price) => {
+            console.log('🎉 NFT acheté:', { buyer, tokenId, tier, price });
+            // Recharger les données après un achat
+            loadTiersInfo();
+          });
+        } else {
+          console.warn('⚠️ Méthode onNFTPurchased non disponible dans le service');
+        }
+
+        if (typeof extensibleNFTService.onFidelityNFTClaimed === 'function') {
+          unsubscribeFidelityNFTClaimed = extensibleNFTService.onFidelityNFTClaimed((user, tokenId) => {
+            console.log('🎁 NFT fidélité réclamé:', { user, tokenId });
+            loadTiersInfo();
+          });
+        } else {
+          console.warn('⚠️ Méthode onFidelityNFTClaimed non disponible dans le service');
+        }
+
+        if (typeof extensibleNFTService.onTierCreated === 'function') {
+          unsubscribeTierCreated = extensibleNFTService.onTierCreated((tier, name, price, supply) => {
+            console.log('🆕 Nouveau tier créé:', { tier, name, price, supply });
+            loadTiersInfo();
+          });
+        } else {
+          console.warn('⚠️ Méthode onTierCreated non disponible dans le service');
+        }
+
+      } catch (error) {
+        console.error('❌ Erreur configuration écouteurs:', error);
+      }
+    };
+
+    // Configuration avec délai pour laisser le service s'initialiser
+    const timeoutId = setTimeout(setupEventListeners, 1000);
+
+    // Nettoyage
+    return () => {
+      clearTimeout(timeoutId);
+      
+      try {
+        if (unsubscribeNFTPurchased) unsubscribeNFTPurchased();
+        if (unsubscribeFidelityNFTClaimed) unsubscribeFidelityNFTClaimed();
+        if (unsubscribeTierCreated) unsubscribeTierCreated();
+      } catch (error) {
+        console.error('❌ Erreur nettoyage écouteurs:', error);
+      }
+    };
   }, [loadTiersInfo]);
+
+  // Test de connectivité périodique
+  useEffect(() => {
+    const testConnectivity = async () => {
+      try {
+        const connectionTest = await extensibleNFTService.testConnection();
+        console.log('🔍 Test connectivité NFT:', connectionTest);
+        
+        if (!connectionTest.contractAccessible && state.initialized) {
+          setState(prev => ({ 
+            ...prev, 
+            error: 'Impossible de se connecter au contrat NFT' 
+          }));
+        }
+      } catch (error) {
+        console.error('❌ Erreur test connectivité:', error);
+      }
+    };
+
+    // Test initial après 2 secondes
+    const testTimeoutId = setTimeout(testConnectivity, 2000);
+    
+    // Test périodique toutes les 30 secondes si il y a une erreur
+    let intervalId: NodeJS.Timeout | undefined;
+    if (state.error) {
+      intervalId = setInterval(testConnectivity, 30000);
+    }
+
+    return () => {
+      clearTimeout(testTimeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [state.error, state.initialized]);
 
   return {
     // État
-    userNFTInfo,
-    tiersInfo,
-    loading,
-    error,
-    purchasing,
+    userNFTInfo: state.userNFTInfo,
+    tiersInfo: state.tiersInfo,
+    loading: state.loading,
+    error: state.error,
+    purchasing: state.purchasing,
+    initialized: state.initialized,
     
     // Actions
     loadUserNFTs,
     loadTiersInfo,
     purchaseNFT,
     claimFidelityNFT,
+    canPurchaseTier,
+    getNFTMultiplier,
     
     // Utilitaires
-    hasAccessToPlans,
-    getNFTMultiplier,
-    canPurchaseTier
-  };
-};
-
-// Hook personnalisé pour les informations de tier spécifique
-export const useNFTTier = (tier: number) => {
-  const { tiersInfo, loading } = useNFT();
-  
-  return {
-    tierInfo: tiersInfo[tier] || null,
-    loading
-  };
-};
-
-// Hook pour les accès utilisateur
-export const useNFTAccess = (userAddress: string | null) => {
-  const { userNFTInfo, loadUserNFTs, loading } = useNFT();
-  
-  useEffect(() => {
-    if (userAddress) {
-      loadUserNFTs(userAddress);
-    }
-  }, [userAddress, loadUserNFTs]);
-
-  return {
-    hasNFT: userNFTInfo?.highestTier > 0,
-    highestTier: userNFTInfo?.highestTier || 0,
-    multiplier: userNFTInfo ? (() => {
-      switch (userNFTInfo.highestTier) {
-        case 1: return 1.2;
-        case 2: return 1.5;
-        case 3: return 2.0;
-        case 4: return 2.5;
-        default: return 1.0;
-      }
-    })() : 1.0,
-    access: {
-      starter: userNFTInfo?.hasAccess.starter || false,
-      standard: userNFTInfo?.hasAccess.standard || false,
-      premium: userNFTInfo?.hasAccess.premium || false,
-      privilege: userNFTInfo?.hasAccess.privilege || false
-    },
-    ownedTiers: userNFTInfo?.ownedTiers || [],
-    loading
+    clearError: () => setState(prev => ({ ...prev, error: null })),
+    retry: () => loadTiersInfo()
   };
 };
 
