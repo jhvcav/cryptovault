@@ -19,7 +19,6 @@ import {
   useToast,
   Flex,
   Divider,
-  useBreakpointValue,
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -45,17 +44,6 @@ const LoginPage: React.FC = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)');
 
-  // Responsive values
-  const containerMaxW = useBreakpointValue({ base: 'sm', md: 'lg' });
-  const cardPadding = useBreakpointValue({ base: 6, md: 10 });
-  const headingSize = useBreakpointValue({ base: 'xl', md: '2xl' });
-  const logoSize = useBreakpointValue({ base: 16, md: 20 });
-  const logoFontSize = useBreakpointValue({ base: '2xl', md: '4xl' });
-  const buttonSize = useBreakpointValue({ base: 'md', md: 'lg' });
-  const metaMaskButtonSize = useBreakpointValue({ base: 'sm', md: 'md' });
-  const metaMaskButtonText = useBreakpointValue({ base: '🦊', md: 'Connect MetaMask' });
-  const showMetaMaskText = useBreakpointValue({ base: false, md: true });
-
   // Rediriger si déjà authentifié
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -69,7 +57,6 @@ const LoginPage: React.FC = () => {
         display="flex"
         alignItems="center"
         justifyContent="center"
-        px={4}
       >
         <VStack spacing={6}>
           <Box
@@ -82,13 +69,7 @@ const LoginPage: React.FC = () => {
           >
             <Spinner size="xl" color="blue.500" thickness="4px" />
           </Box>
-          <Text 
-            color="white" 
-            fontSize={{ base: 'lg', md: 'xl' }} 
-            fontWeight="medium"
-            textAlign="center"
-            px={4}
-          >
+          <Text color="white" fontSize="xl" fontWeight="medium">
             Vérification de l'authentification...
           </Text>
         </VStack>
@@ -188,134 +169,131 @@ const LoginPage: React.FC = () => {
       overflow="hidden"
       background="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
     >
-      {/* Éléments décoratifs de fond - masqués sur mobile pour améliorer les performances */}
+      {/* Éléments décoratifs de fond */}
       <Box
         position="absolute"
         top="10%"
         left="10%"
-        w={{ base: "100px", md: "200px" }}
-        h={{ base: "100px", md: "200px" }}
+        w="200px"
+        h="200px"
         bg="rgba(255, 255, 255, 0.1)"
         rounded="full"
         filter="blur(40px)"
         _hover={{ transform: 'translateY(-5px)' }}
         transition="transform 6s ease-in-out"
-        display={{ base: "none", md: "block" }}
       />
       <Box
         position="absolute"
         bottom="10%"
         right="15%"
-        w={{ base: "150px", md: "300px" }}
-        h={{ base: "150px", md: "300px" }}
+        w="300px"
+        h="300px"
         bg="rgba(255, 255, 255, 0.05)"
         rounded="full"
         filter="blur(60px)"
         _hover={{ transform: 'translateY(5px)' }}
         transition="transform 8s ease-in-out"
-        display={{ base: "none", md: "block" }}
       />
       
       <Flex
         minH="100vh"
         align="center"
         justify="center"
-        p={{ base: 4, md: 4 }}
+        p={4}
         position="relative"
         zIndex={1}
       >
-        <Container maxW={containerMaxW} w="full">
+        <Container maxW="lg">
           {/* Carte principale */}
           <Box
             bg={cardBg}
             backdropFilter="blur(20px)"
             border="1px solid rgba(255, 255, 255, 0.2)"
-            borderRadius={{ base: '2xl', md: '3xl' }}
+            borderRadius="3xl"
             shadow="2xl"
-            p={cardPadding}
+            p={10}
             position="relative"
             overflow="hidden"
-            w="full"
           >
-            {/* Bouton MetaMask flottant - repositionné pour mobile */}
+            {/* Bouton MetaMask flottant */}
             <Button
               position="absolute"
-              top={{ base: 4, md: 6 }}
-              right={{ base: 4, md: 6 }}
-              size={metaMaskButtonSize}
-              bg="linear-gradient(145deg, #ff7a00, #e85d00)"
-              color="white"
-              boxShadow="
-                0 8px 16px rgba(232, 93, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.1)
-              "
-              border="1px solid rgba(0, 0, 0, 0.1)"
-              _hover={{
-                transform: 'translateY(-2px)',
-                boxShadow: `
-                  0 12px 24px rgba(232, 93, 0, 0.4),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.3),
-                  inset 0 -1px 0 rgba(0, 0, 0, 0.1)
-                `,
-                bg: "linear-gradient(145deg, #ff8500, #f06800)",
-              }}
-              _active={{
-                transform: 'translateY(1px)',
-                boxShadow: `
-                  0 4px 8px rgba(232, 93, 0, 0.3),
-                  inset 0 2px 4px rgba(0, 0, 0, 0.2)
-                `,
-                bg: "linear-gradient(145deg, #e85d00, #d15000)",
-              }}
-              onClick={connectMetaMask}
-              isLoading={isConnectingMetaMask}
-              loadingText={showMetaMaskText ? "Connexion..." : "..."}
-              leftIcon={
-                <Text 
-                  fontSize={{ base: "16px", md: "20px" }}
-                  filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
-                >
-                  🦊
-                </Text>
-              }
-              borderRadius="lg"
-              px={{ base: 2, md: 2 }}
-              py={3}
-              fontWeight="700"
-              fontSize={{ base: "xs", md: "md" }}
-              textShadow="0 1px 2px rgba(0,0,0,0.3)"
-              transition="all 0.2s ease"
-              minW={{ base: "60px", md: "110px" }}
-              mb={4}
-            >
-              {showMetaMaskText ? "MetaMask" : ""}
-            </Button>
+              top={6}
+  right={6}
+  size="md"
+  bg="linear-gradient(145deg, #ff7a00, #e85d00)"
+  color="white"
+  boxShadow="
+    0 8px 16px rgba(232, 93, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+  "
+  border="1px solid rgba(0, 0, 0, 0.1)"
+  _hover={{
+    transform: 'translateY(-2px)',
+    boxShadow: `
+      0 12px 24px rgba(232, 93, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+    `,
+    bg: "linear-gradient(145deg, #ff8500, #f06800)",
+  }}
+  _active={{
+    transform: 'translateY(1px)',
+    boxShadow: `
+      0 4px 8px rgba(232, 93, 0, 0.3),
+      inset 0 2px 4px rgba(0, 0, 0, 0.2)
+    `,
+    bg: "linear-gradient(145deg, #e85d00, #d15000)",
+  }}
+  onClick={connectMetaMask}
+  isLoading={isConnectingMetaMask}
+  loadingText="Connexion..."
+  leftIcon={
+    <Text 
+      fontSize="20px"
+      filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
+    >
+      🦊
+    </Text>
+  }
+  borderRadius="lg"
+  px={2}
+  py={3}
+  fontWeight="700"
+  fontSize="md"
+  textShadow="0 1px 2px rgba(0,0,0,0.3)"
+  transition="all 0.2s ease"
+  minW="110px"
+  mb={4}
+>
+  Connect MetaMask
+</Button>
 
-            <VStack spacing={{ base: 6, md: 8 }} align="stretch" pt={4}>
+            <VStack spacing={8} align="stretch" pt={4}>
               {/* En-tête avec logo et titre */}
               <VStack spacing={0}>
                 <Box
-                  mt={{ base: 6, md: 9 }}
-                  p={{ base: 4, md: 6 }}
+                  mt={9}
+                  p={6}
                   bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                   rounded="full"
                   shadow="xl"
                   _hover={{ transform: 'scale(1.05)' }}
                   transition="transform 0.3s ease"
-                  w={logoSize}
-                  h={logoSize}
+                  w={20}
+                  h={20}
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Text fontSize={logoFontSize} fontWeight="bold" color="white">CV</Text>
+                  <Text fontSize="4xl" fontWeight="bold" color="white">CV</Text>
                 </Box>
                 
                 <VStack spacing={1}>
                   <Heading
-                    mt={{ base: 3, md: 4 }}
-                    size={headingSize}
+                    mt="4" // ou mt="8", mt="16", etc.
+                    size="2xl"
                     bgGradient="linear(to-r, #667eea, #764ba2)"
                     bgClip="text"
                     textAlign="center"
@@ -325,13 +303,12 @@ const LoginPage: React.FC = () => {
                     CryptocaVault
                   </Heading>
                   <Text
-                    mt={{ base: 2, md: 3 }}
-                    fontSize={{ base: "sm", md: "lg" }}
+                    mt="3"
+                    size="2xl"
                     bgGradient="linear(to-r, #667eea, #764ba2)"
                     bgClip="text"
                     textAlign="center"
                     fontWeight="500"
-                    px={{ base: 2, md: 0 }}
                   >
                     Plateforme communautaire de récompense sécurisée
                   </Text>
@@ -340,25 +317,18 @@ const LoginPage: React.FC = () => {
 
               {/* Section de sécurité */}
               <HStack
-                spacing={{ base: 3, md: 4 }}
-                p={{ base: 3, md: 4 }}
+                spacing={4}
+                p={4}
                 bg="rgba(102, 126, 234, 0.1)"
                 borderRadius="xl"
                 border="1px solid rgba(102, 126, 234, 0.2)"
               >
-                <Text fontSize={{ base: "20px", md: "24px" }} color="blue.500">🛡️</Text>
+                <Text fontSize="24px" color="blue.500">🛡️</Text>
                 <VStack spacing={0} align="start" flex={1}>
-                  <Text 
-                    fontWeight="600" 
-                    color="blue.700" 
-                    fontSize={{ base: "xs", md: "sm" }}
-                  >
+                  <Text fontWeight="600" color="blue.700" fontSize="sm">
                     Authentification sécurisée
                   </Text>
-                  <Text 
-                    fontSize={{ base: "2xs", md: "xs" }} 
-                    color="gray.600"
-                  >
+                  <Text fontSize="xs" color="gray.600">
                     Seuls les wallets autorisés peuvent accéder
                   </Text>
                 </VStack>
@@ -366,7 +336,7 @@ const LoginPage: React.FC = () => {
 
               {/* Formulaire de connexion */}
               <Box as="form" onSubmit={handleSubmit}>
-                <VStack spacing={{ base: 4, md: 6 }}>
+                <VStack spacing={6}>
                   <FormControl isRequired>
                     <FormLabel
                       color="white"
@@ -374,14 +344,12 @@ const LoginPage: React.FC = () => {
                       display="flex"
                       alignItems="center"
                       gap={2}
-                      fontSize={{ base: "sm", md: "md" }}
                     >
-                      <Text fontSize={{ base: "16px", md: "18px" }} color="blue">💼</Text>
+                      <Text fontSize="18px" color="blue">💼</Text>
                       Adresse de votre Wallet
                     </FormLabel>
                     <Input
-                      type="text" 
-                      color="black"
+                      type="text" color="black"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
                       placeholder="0x742d35Cc6634C0532925a3b8D404dEBC00000000"
@@ -391,7 +359,7 @@ const LoginPage: React.FC = () => {
                       borderRadius="xl"
                       px={4}
                       py={3}
-                      fontSize={{ base: "sm", md: "md" }}
+                      fontSize="md"
                       _hover={{ borderColor: 'blue.300' }}
                       _focus={{ 
                         borderColor: 'blue.500', 
@@ -403,7 +371,7 @@ const LoginPage: React.FC = () => {
 
                   <Button
                     type="submit"
-                    size={buttonSize}
+                    size="lg"
                     width="full"
                     bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                     color="white"
@@ -417,8 +385,8 @@ const LoginPage: React.FC = () => {
                     loadingText="Connexion en cours..."
                     disabled={isSubmitting}
                     borderRadius="xl"
-                    py={{ base: 5, md: 6 }}
-                    fontSize={{ base: "md", md: "lg" }}
+                    py={6}
+                    fontSize="lg"
                     fontWeight="600"
                     transition="all 0.3s ease"
                   >
@@ -435,11 +403,7 @@ const LoginPage: React.FC = () => {
                       borderColor="red.200"
                     >
                       <AlertIcon color="red.500" />
-                      <Text 
-                        color="red.700" 
-                        fontSize={{ base: "xs", md: "sm" }} 
-                        fontWeight="500"
-                      >
+                      <Text color="red.700" fontSize="sm" fontWeight="500">
                         {error}
                       </Text>
                     </Alert>
@@ -452,28 +416,20 @@ const LoginPage: React.FC = () => {
               {/* Instructions et aide */}
               <VStack spacing={4}>
                 <Box
-                  p={{ base: 3, md: 4 }}
+                  p={4}
                   bg="blue.50"
                   borderRadius="xl"
                   border="1px solid"
                   borderColor="blue.200"
                   w="full"
                 >
-                  <HStack spacing={3} align="start">
-                    <Text fontSize={{ base: "lg", md: "2xl" }}>💡</Text>
+                  <HStack spacing={3}>
+                    <Text fontSize="2xl">💡</Text>
                     <VStack spacing={1} align="start" flex={1}>
-                      <Text 
-                        fontSize={{ base: "xs", md: "sm" }} 
-                        fontWeight="600" 
-                        color="blue.800"
-                      >
+                      <Text fontSize="sm" fontWeight="600" color="blue.800">
                         Accès restreint
                       </Text>
-                      <Text 
-                        fontSize={{ base: "2xs", md: "xs" }} 
-                        color="blue.700" 
-                        lineHeight={1.4}
-                      >
+                      <Text fontSize="xs" color="blue.700" lineHeight={1.4}>
                         Seules les adresses wallet préalablement autorisées par l'administrateur peuvent accéder à la plateforme.
                       </Text>
                     </VStack>
@@ -481,28 +437,20 @@ const LoginPage: React.FC = () => {
                 </Box>
 
                 <Box
-                  p={{ base: 3, md: 4 }}
+                  p={4}
                   bg="orange.50"
                   borderRadius="xl"
                   border="1px solid"
                   borderColor="orange.200"
                   w="full"
                 >
-                  <HStack spacing={3} align="start">
-                    <Text fontSize={{ base: "lg", md: "2xl" }}>🦊</Text>
+                  <HStack spacing={3}>
+                    <Text fontSize="2xl">🦊</Text>
                     <VStack spacing={1} align="start" flex={1}>
-                      <Text 
-                        fontSize={{ base: "xs", md: "sm" }} 
-                        fontWeight="600" 
-                        color="orange.800"
-                      >
+                      <Text fontSize="sm" fontWeight="600" color="orange.800">
                         Connexion rapide
                       </Text>
-                      <Text 
-                        fontSize={{ base: "2xs", md: "xs" }} 
-                        color="orange.700" 
-                        lineHeight={1.4}
-                      >
+                      <Text fontSize="xs" color="orange.700" lineHeight={1.4}>
                         Cliquez sur le bouton MetaMask en haut à droite pour récupérer automatiquement votre adresse wallet.
                       </Text>
                     </VStack>
