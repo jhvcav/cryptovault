@@ -322,7 +322,7 @@ const LoginPage: React.FC = () => {
                     fontWeight="800"
                     lineHeight="1.2"
                   >
-                    CryptocaVault
+                    .CryptocaVault
                   </Heading>
                   <Text
                     mt={{ base: 2, md: 3 }}
