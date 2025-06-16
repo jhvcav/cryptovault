@@ -31,6 +31,8 @@ interface WalletContextType {
   switchNetwork: (chainId: number) => Promise<void>;
   refreshBalances: () => Promise<void>;
   checkWalletConnection: () => Promise<void>;
+  requestAccountPermissions: () => Promise<void>;  // Nouvelle fonction
+  changeAccount: () => Promise<void>;               // Nouvelle fonction
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -69,6 +71,26 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return 0;
     }
   };
+
+  // Fonction pour forcer la demande de permissions (résout le problème du globe MetaMask)
+const requestAccountPermissions = useCallback(async () => {
+  if (!window.ethereum) {
+    console.error('MetaMask non détecté');
+    return;
+  }
+
+  try {
+    // Cette méthode force MetaMask à reconnaître le site comme connecté
+    await window.ethereum.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }]
+    });
+    
+    console.log('✅ Permissions MetaMask mises à jour');
+  } catch (error) {
+    console.error('Erreur demande permissions:', error);
+  }
+}, []);
 
   // Fonction pour mettre à jour tous les soldes
   const updateBalances = useCallback(async (userAddress: string) => {
@@ -145,47 +167,86 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Fonction de connexion
   const connectWallet = async () => {
-    if (!window.ethereum) {
-      alert('Veuillez installer MetaMask');
-      return;
-    }
+  if (!window.ethereum) {
+    alert('Veuillez installer MetaMask');
+    return;
+  }
 
-    if (!isAuthenticated) {
-      alert('Vous devez d\'abord vous authentifier sur la plateforme');
-      return;
-    }
+  if (!isAuthenticated) {
+    alert('Vous devez d\'abord vous authentifier sur la plateforme');
+    return;
+  }
 
-    setIsConnecting(true);
-    try {
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
+  setIsConnecting(true);
+  try {
+    // ÉTAPE 1: Demander explicitement les permissions
+    await window.ethereum.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }]
+    });
+    
+    // ÉTAPE 2: Maintenant demander les comptes
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts'
+    });
 
-      if (accounts.length > 0) {
-        const userAddress = accounts[0];
-        
-        // Vérification de sécurité avant de définir l'adresse
-        if (!checkAddressSecurity(userAddress)) {
-          setIsConnecting(false);
-          return;
-        }
-        
-        setAddress(userAddress);
-        setIsConnected(true);
-        localStorage.setItem('walletConnected', 'true');
-        
-        console.log('✅ Wallet connecté avec succès:', userAddress);
-        
-        // Charger les soldes immédiatement
-        await updateBalances(userAddress);
+    if (accounts.length > 0) {
+      const userAddress = accounts[0];
+      
+      // Vérification de sécurité avant de définir l'adresse
+      if (!checkAddressSecurity(userAddress)) {
+        setIsConnecting(false);
+        return;
       }
-    } catch (error) {
-      console.error('Erreur connexion:', error);
-      alert('Erreur de connexion au wallet');
-    } finally {
-      setIsConnecting(false);
+      
+      setAddress(userAddress);
+      setIsConnected(true);
+      localStorage.setItem('walletConnected', 'true');
+      
+      console.log('✅ Wallet connecté avec succès:', userAddress);
+      console.log('✅ Site maintenant reconnu par MetaMask');
+      
+      // Charger les soldes immédiatement
+      await updateBalances(userAddress);
     }
-  };
+  } catch (error) {
+    console.error('Erreur connexion:', error);
+    alert('Erreur de connexion au wallet');
+  } finally {
+    setIsConnecting(false);
+  }
+};
+
+// Fonction pour permettre le changement de compte
+const changeAccount = useCallback(async () => {
+  if (!window.ethereum) {
+    console.error('MetaMask non détecté');
+    return;
+  }
+
+  try {
+    // Force MetaMask à afficher le sélecteur de compte
+    await window.ethereum.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }]
+    });
+    
+    // Récupérer le nouveau compte sélectionné
+    const accounts = await window.ethereum.request({
+      method: 'eth_accounts'
+    });
+    
+    if (accounts.length > 0) {
+      const newAddress = accounts[0];
+      console.log('🔄 Nouveau compte sélectionné:', newAddress);
+      
+      // Note: Votre système de sécurité va détecter ce changement
+      // et décider s'il est autorisé ou non
+    }
+  } catch (error) {
+    console.error('Erreur changement compte:', error);
+  }
+}, []);
 
   // Fonction de déconnexion
   const disconnectWallet = useCallback(() => {
@@ -428,7 +489,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     chainId,
     switchNetwork,
     refreshBalances,
-    checkWalletConnection
+    checkWalletConnection,
+    requestAccountPermissions,
+    changeAccount
   };
 
   return (

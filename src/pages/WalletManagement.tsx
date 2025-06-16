@@ -124,7 +124,7 @@ const WalletManagement: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'green';
+      case 'Active': return 'teal';
       case 'Suspended': return 'orange';
       case 'Inactive': return 'red';
       default: return 'gray';
@@ -148,7 +148,7 @@ const WalletManagement: React.FC = () => {
         {/* En-tête */}
         <HStack justify="space-between" align="center">
           <VStack align="start" spacing={1}>
-            <Heading size="lg" color="blue.600">
+            <Heading size="lg" color="blue.500">
               Gestion des Wallets Autorisés
             </Heading>
             <Badge colorScheme={currentMode === 'supabase' ? 'green' : 'blue'}>

@@ -1,12 +1,12 @@
 // src/components/layout/Navbar.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Wallet, Moon, Sun, LogOut, AlertTriangle, Shield, Zap, ChevronDown, RefreshCw } from 'lucide-react';
 import { useWallet } from '../../contexts/WalletContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOwner } from '../../hooks/useOwner';
 import { useMetaMaskSecurityBSC } from '../../hooks/useMetaMaskSecurityBSC';
+import { Menu, X, Wallet, Moon, Sun, LogOut, AlertTriangle, Shield, Zap, ChevronDown, RefreshCw, Users } from 'lucide-react';
 
 const BSC_CHAIN_ID = 56;
 
@@ -22,7 +22,9 @@ const Navbar = () => {
     chainId, 
     switchNetwork,
     balance,
-    refreshBalances
+    refreshBalances,
+    changeAccount,
+    requestAccountPermissions
   } = useWallet();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -31,6 +33,14 @@ const Navbar = () => {
   const [showSecurityWarning, setShowSecurityWarning] = useState(false);
   const [showBalances, setShowBalances] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleChangeAccount = async () => {
+  try {
+    await changeAccount(); // Nouvelle fonction du WalletContext
+  } catch (error) {
+    console.error('Erreur changement de compte:', error);
+  }
+};
 
   // Hook de sécurité MetaMask pour BSC
   const { getSecurityStatus, forceSecurityCheck } = useMetaMaskSecurityBSC({
@@ -363,6 +373,16 @@ const Navbar = () => {
                         {/* Actions */}
                         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-600">
                           <div className="flex space-x-2">
+                            {/* Nouveau bouton pour changer de compte */}
+                            <button
+                              onClick={handleChangeAccount}
+                              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+                              title="Changer de compte MetaMask"
+                            >
+                              <Users size={14} />
+                              <span>Changer</span>
+                            </button>
+    
                             <button
                               onClick={() => {
                                 handleRefreshBalances();
@@ -370,7 +390,7 @@ const Navbar = () => {
                               }}
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
                             >
-                              Actualiser
+                            Actualiser
                             </button>
                             <button
                               onClick={handleWalletDisconnect}
