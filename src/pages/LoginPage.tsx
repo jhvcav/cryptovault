@@ -22,6 +22,8 @@ import {
   useBreakpointValue,
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
+import { detectMobileAndMetaMask } from '../components/utils/mobileDetection';
+
 
 // Déclaration TypeScript pour window.ethereum
 declare global {
@@ -98,88 +100,178 @@ const LoginPage: React.FC = () => {
 
   // Fonction pour connecter MetaMask et récupérer l'adresse
   const connectMetaMask = async () => {
-    if (!window.ethereum) {
+  const mobileInfo = detectMobileAndMetaMask();
+  
+  console.log('🦊 Tentative MetaMask sur:', mobileInfo);
+  
+  if (!window.ethereum) {
+    if (mobileInfo.isMetaMaskBrowser) {
+      // On est dans MetaMask mais ethereum pas encore injecté
       toast({
-        title: "MetaMask non détecté",
-        description: "Veuillez installer MetaMask pour utiliser cette fonctionnalité.",
-        status: "error",
-        duration: 5000,
+        title: "Chargement...",
+        description: "MetaMask se charge, veuillez patienter quelques secondes.",
+        status: "info",
+        duration: 3000,
         isClosable: true,
       });
+      
+      // Attendre l'injection avec timeout
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      setIsConnectingMetaMask(true);
+      
+      const waitForEthereum = setInterval(() => {
+        attempts++;
+        console.log(`🔄 Tentative ${attempts}/${maxAttempts} pour détecter ethereum...`);
+        
+        if (window.ethereum) {
+          clearInterval(waitForEthereum);
+          console.log('✅ window.ethereum détecté !');
+          // Relancer la fonction maintenant qu'ethereum est disponible
+          connectMetaMask();
+          return;
+        }
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(waitForEthereum);
+          setIsConnectingMetaMask(false);
+          toast({
+            title: "Erreur MetaMask",
+            description: "Impossible de détecter MetaMask. Essayez de rafraîchir la page.",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      }, 500);
+      
       return;
     }
+    
+    toast({
+      title: "MetaMask non détecté",
+      description: "Veuillez installer MetaMask ou utiliser le navigateur MetaMask.",
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+    return;
+  }
 
-    setIsConnectingMetaMask(true);
+  setIsConnectingMetaMask(true);
+  try {
+    // Méthode robuste pour mobile
+    let accounts;
+    
     try {
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
-
-      if (accounts && accounts.length > 0) {
-        const metamaskAddress = accounts[0];
-        console.log('🦊 Adresse MetaMask récupérée:', metamaskAddress);
-        
-        setWalletAddress(metamaskAddress);
-        toast({
-          title: "Wallet connecté",
-          description: "Adresse MetaMask récupérée avec succès !",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
+      // D'abord vérifier les comptes déjà connectés
+      accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      
+      if (!accounts || accounts.length === 0) {
+        // Si pas de comptes, demander la connexion
+        accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       }
     } catch (error: any) {
-      console.error('Erreur lors de la connexion MetaMask:', error);
-      
-      let errorMessage = "Erreur lors de la connexion à MetaMask";
       if (error.code === 4001) {
-        errorMessage = "Connexion refusée par l'utilisateur";
+        throw new Error('Connexion refusée par l\'utilisateur');
       }
+      throw error;
+    }
+
+    if (accounts && accounts.length > 0) {
+      const metamaskAddress = accounts[0];
+      console.log('🦊 Adresse récupérée:', metamaskAddress);
+      
+      setWalletAddress(metamaskAddress);
+      
+      // Stocker pour utilisation future
+      sessionStorage.setItem('lastConnectedWallet', metamaskAddress);
       
       toast({
-        title: "Erreur MetaMask",
-        description: errorMessage,
-        status: "error",
-        duration: 5000,
+        title: "Wallet connecté !",
+        description: `${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
+        status: "success",
+        duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsConnectingMetaMask(false);
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!walletAddress.trim()) {
-      setError('Veuillez saisir votre adresse wallet');
-      return;
-    }
-
-    const trimmedAddress = walletAddress.trim();
+  } catch (error: any) {
+    console.error('Erreur MetaMask:', error);
     
-    if (!trimmedAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
-      setError('Format d\'adresse wallet invalide');
-      return;
+    let errorMessage = "Erreur lors de la connexion à MetaMask";
+    if (error.message) {
+      errorMessage = error.message;
     }
+    
+    toast({
+      title: "Erreur MetaMask",
+      description: errorMessage,
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+  } finally {
+    setIsConnectingMetaMask(false);
+  }
+};
 
-    console.log('🚀 Tentative de connexion avec l\'adresse:', trimmedAddress);
-    setIsSubmitting(true);
+// Fonction pour détecter si on est sur mobile et dans MetaMask
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  const mobileInfo = detectMobileAndMetaMask();
+  console.log('🚀 Soumission formulaire sur:', mobileInfo);
+  
+  setError('');
 
-    try {
-      const success = await login(trimmedAddress);
-      
-      if (!success) {
-        setError('Vous n\'êtes pas autorisé à accéder à cette plateforme. Contactez votre Leader.');
+  if (!walletAddress.trim()) {
+    setError('Veuillez saisir votre adresse wallet');
+    return;
+  }
+
+  const trimmedAddress = walletAddress.trim();
+  
+  if (!trimmedAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
+    setError('Format d\'adresse wallet invalide');
+    return;
+  }
+
+  console.log('✅ Connexion avec adresse:', trimmedAddress);
+  setIsSubmitting(true);
+
+  try {
+    const success = await login(trimmedAddress);
+    console.log('✅ Résultat login:', success);
+    
+    if (!success) {
+      setError('Vous n\'êtes pas autorisé à accéder à cette plateforme. Contactez votre Leader.');
+    } else {
+      console.log('🎉 Connexion réussie ! Redirection vers dashboard...');
+    }
+  } catch (error) {
+    console.error('❌ Erreur login:', error);
+    setError('Erreur de connexion. Veuillez réessayer.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  React.useEffect(() => {
+  const mobileInfo = detectMobileAndMetaMask();
+  
+  if (mobileInfo.isMetaMaskBrowser) {
+    console.log('📱 Dans navigateur MetaMask, tentative auto-connexion...');
+    
+    // Délai pour laisser le temps à window.ethereum de s'injecter
+    setTimeout(() => {
+      if (window.ethereum && !walletAddress) {
+        console.log('🚀 Auto-déclenchement connexion MetaMask...');
+        connectMetaMask();
       }
-    } catch (error) {
-      console.error('Erreur lors de la soumission:', error);
-      setError('Erreur de connexion. Veuillez réessayer.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    }, 1500); // 1.5 seconde de délai
+  }
+}, []);
 
   return (
     <Box
@@ -322,7 +414,7 @@ const LoginPage: React.FC = () => {
                     fontWeight="800"
                     lineHeight="1.2"
                   >
-                    .CryptocaVault
+                    CryptocaVault
                   </Heading>
                   <Text
                     mt={{ base: 2, md: 3 }}

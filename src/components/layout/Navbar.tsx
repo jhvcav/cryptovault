@@ -214,16 +214,6 @@ const openInMetaMask = () => {
                   Investir
                 </Link>
                 <Link 
-                  to="/roadmap" 
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === '/roadmap' 
-                      ? 'bg-slate-900 text-white' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                  }`}
-                >
-                  Roadmap
-                </Link>
-                <Link 
                   to="/dashboard" 
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
                     pathname === '/dashboard' 

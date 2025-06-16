@@ -7,6 +7,7 @@ import { WalletProvider } from './contexts/WalletContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { InvestmentProvider } from './contexts/InvestmentContext';
 import { useMetaMaskSecurityBSC } from './hooks/useMetaMaskSecurityBSC';
+import { detectMobileAndMetaMask, forceMobileBreakpoints } from './components/utils/mobileDetection';
 import Navbar from './components/layout/Navbar';
 import SecurityMonitor from './components/SecurityMonitor';
 import LoginPage from './pages/LoginPage';
@@ -21,6 +22,15 @@ import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
 import Footer from './components/layout/Footer';
 import NFTCards1 from './pages/NFTCards1';
 import YieldCalculatorPage from './pages/YieldCalculatorPage';
+
+// Force les breakpoints pour mobile si nécessaire
+const mobileInfo = detectMobileAndMetaMask();
+console.log('🔍 Mobile détecté:', mobileInfo);
+
+if (mobileInfo.shouldUseMobileMode) {
+  console.log('📱 Forçage du mode mobile...');
+  forceMobileBreakpoints();
+}
 
 // Configuration du thème Chakra UI
 const chakraTheme = extendTheme({
