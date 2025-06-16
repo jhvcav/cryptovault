@@ -933,6 +933,8 @@ React.useEffect(() => {
                     />
                   </FormControl>
 
+                  {/* Bouton de connexion */}
+
                   <Button
                     type="submit"
                     size={buttonSize}
