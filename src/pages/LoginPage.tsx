@@ -99,34 +99,57 @@ const LoginPage: React.FC = () => {
   // Fonction pour connecter MetaMask et récupérer l'adresse
   const connectMetaMask = async () => {
   console.log('🦊 Tentative de connexion MetaMask...');
-  console.log('📱 Appareil mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
+  
+  console.log('📱 Mobile:', isMobile);
+  console.log('🔍 Navigateur MetaMask:', isMetaMaskBrowser);
+  console.log('🌐 window.ethereum:', !!window.ethereum);
 
   setIsConnectingMetaMask(true);
   
   try {
-    // Vérification améliorée pour mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Dans le navigateur MetaMask, ethereum est parfois dans un autre objet
+    let ethereum = window.ethereum;
     
-    // Attendre que MetaMask soit disponible (important pour mobile)
-    let metamaskFound = false;
-    let attempts = 0;
-    const maxAttempts = 30; // 3 secondes
-    
-    while (!metamaskFound && attempts < maxAttempts) {
-      if (window.ethereum?.isMetaMask || 
-          (window.ethereum && isMobile) ||
-          /MetaMask/i.test(navigator.userAgent)) {
-        metamaskFound = true;
-        break;
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
+    // Vérifications spéciales pour le navigateur MetaMask mobile
+    if (isMetaMaskBrowser && !ethereum) {
+      console.log('🔍 Recherche alternative de ethereum...');
+      
+      // Vérifier différentes propriétés possibles
+      ethereum = window.ethereum || 
+                (window as any).web3?.currentProvider || 
+                (window as any).ethereum ||
+                (window as any).metamask?.ethereum;
+      
+      console.log('🔍 Ethereum trouvé:', !!ethereum);
     }
     
-    if (!metamaskFound) {
-      console.log('❌ MetaMask non détecté après attente');
+    // Attendre que ethereum soit disponible
+    if (!ethereum) {
+      console.log('⏳ Attente de ethereum...');
       
-      if (isMobile) {
+      // Attendre jusqu'à 5 secondes
+      for (let i = 0; i < 50; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        ethereum = window.ethereum || 
+                  (window as any).web3?.currentProvider || 
+                  (window as any).ethereum ||
+                  (window as any).metamask?.ethereum;
+        
+        if (ethereum) {
+          console.log(`✅ Ethereum trouvé après ${i * 100}ms`);
+          break;
+        }
+      }
+    }
+    
+    if (!ethereum) {
+      console.log('❌ Ethereum non trouvé après attente');
+      
+      if (isMobile && !isMetaMaskBrowser) {
         const shouldOpenMetaMask = confirm(
           'MetaMask n\'est pas détecté. Voulez-vous ouvrir l\'application MetaMask ?'
         );
@@ -137,8 +160,10 @@ const LoginPage: React.FC = () => {
         }
       } else {
         toast({
-          title: "MetaMask non détecté",
-          description: "Veuillez installer MetaMask pour utiliser cette fonctionnalité.",
+          title: "MetaMask non disponible",
+          description: isMetaMaskBrowser 
+            ? "Veuillez rafraîchir la page et réessayer."
+            : "Veuillez installer MetaMask ou utiliser le navigateur MetaMask.",
           status: "error",
           duration: 5000,
           isClosable: true,
@@ -147,60 +172,180 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    console.log('✅ MetaMask détecté, demande de connexion...');
+    console.log('✅ Ethereum disponible, tentative de connexion...');
 
-    // Demander les permissions d'abord (important pour mobile)
+    // Méthode spéciale pour le navigateur MetaMask mobile
+    if (isMetaMaskBrowser) {
+      console.log('🦊 Utilisation méthode navigateur MetaMask...');
+      
+      try {
+        // D'abord vérifier s'il y a déjà des comptes connectés
+        const existingAccounts = await ethereum.request({ 
+          method: 'eth_accounts' 
+        });
+        
+        console.log('🔍 Comptes existants:', existingAccounts);
+        
+        if (existingAccounts && existingAccounts.length > 0) {
+          // Il y a déjà des comptes connectés
+          const metamaskAddress = existingAccounts[0];
+          console.log('✅ Compte déjà connecté:', metamaskAddress);
+          
+          setWalletAddress(metamaskAddress);
+          setError('');
+          
+          toast({
+            title: "Wallet déjà connecté",
+            description: `Adresse: ${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+          return;
+        }
+      } catch (error) {
+        console.log('⚠️ Erreur vérification comptes existants:', error);
+      }
+    }
+
+    // Demander les permissions si nécessaire
     try {
-      await window.ethereum.request({
+      await ethereum.request({
         method: 'wallet_requestPermissions',
         params: [{ eth_accounts: {} }]
       });
-    } catch (permError) {
-      console.log('⚠️ Permissions déjà accordées:', permError);
+      console.log('✅ Permissions accordées');
+    } catch (permError: any) {
+      console.log('⚠️ Erreur permissions:', permError);
+      // Continuer même si les permissions échouent
+      if (permError.code !== 4001) { // Pas une annulation utilisateur
+        // Continuer sans les permissions
+      }
     }
 
-    // Maintenant demander les comptes
-    const accounts = await window.ethereum.request({
+    // Demander les comptes
+    console.log('🔑 Demande des comptes...');
+    const accounts = await ethereum.request({
       method: 'eth_requestAccounts'
     });
 
+    console.log('📝 Comptes reçus:', accounts);
+
     if (accounts && accounts.length > 0) {
       const metamaskAddress = accounts[0];
-      console.log('🦊 Adresse MetaMask récupérée:', metamaskAddress);
+      console.log('🎉 Adresse MetaMask récupérée:', metamaskAddress);
       
       setWalletAddress(metamaskAddress);
-      setError(''); // Effacer les erreurs précédentes
+      setError('');
       
       toast({
         title: "Wallet connecté",
-        description: `Adresse récupérée: ${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
+        description: `Adresse: ${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
         status: "success",
         duration: 3000,
         isClosable: true,
       });
+    } else {
+      throw new Error('Aucun compte récupéré');
     }
 
   } catch (error: any) {
-    console.error('❌ Erreur connexion MetaMask:', error);
+    console.error('❌ Erreur détaillée:', error);
+    console.error('❌ Code erreur:', error.code);
+    console.error('❌ Message:', error.message);
     
     let errorMessage = "Erreur lors de la connexion à MetaMask";
+    let errorTitle = "Erreur MetaMask";
+    
     if (error.code === 4001) {
       errorMessage = "Connexion refusée par l'utilisateur";
+      errorTitle = "Connexion annulée";
     } else if (error.code === -32002) {
       errorMessage = "Une demande de connexion est déjà en cours dans MetaMask";
+      errorTitle = "Demande en cours";
+    } else if (error.code === -32603) {
+      errorMessage = "Erreur interne MetaMask. Veuillez rafraîchir la page.";
+      errorTitle = "Erreur interne";
+    } else if (error.message) {
+      errorMessage = `${error.message} (Code: ${error.code || 'N/A'})`;
+    }
+    
+    // Message spécial pour le navigateur MetaMask
+    if (isMetaMaskBrowser && error.code !== 4001) {
+      errorMessage += " Essayez de rafraîchir la page.";
     }
     
     toast({
-      title: "Erreur MetaMask",
+      title: errorTitle,
       description: errorMessage,
       status: "error",
-      duration: 5000,
+      duration: 7000,
       isClosable: true,
     });
+    
+    setError(errorMessage);
+    
   } finally {
     setIsConnectingMetaMask(false);
   }
 };
+
+// Fonction de diagnostic dans le composant LoginPage :
+
+const diagnosticMetaMaskBrowser = () => {
+  const info = {
+    userAgent: navigator.userAgent,
+    isMetaMaskBrowser: /MetaMask/i.test(navigator.userAgent),
+    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+    windowEthereum: !!window.ethereum,
+    ethereumIsMetaMask: window.ethereum?.isMetaMask,
+    ethereumChainId: window.ethereum?.chainId,
+    web3CurrentProvider: !!(window as any).web3?.currentProvider,
+    availableProviders: window.ethereum?.providers ? Object.keys(window.ethereum.providers) : [],
+    windowKeys: Object.keys(window).filter(key => 
+      key.toLowerCase().includes('eth') || 
+      key.toLowerCase().includes('web3') || 
+      key.toLowerCase().includes('metamask')
+    ),
+    timestamp: new Date().toISOString()
+  };
+  
+  console.log('🔍 Diagnostic Navigateur MetaMask:', info);
+  
+  // Test de connexion simple
+  if (window.ethereum) {
+    window.ethereum.request({ method: 'eth_accounts' })
+      .then(accounts => {
+        console.log('✅ Test eth_accounts réussi:', accounts);
+      })
+      .catch(error => {
+        console.log('❌ Test eth_accounts échoué:', error);
+      });
+  }
+  
+  return info;
+};
+
+// Fonction de diagnostique automatique dans le navigateur MetaMask :
+
+React.useEffect(() => {
+  const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
+  
+  if (isMetaMaskBrowser) {
+    console.log('🦊 Page chargée dans le navigateur MetaMask');
+    
+    // Diagnostic immédiat
+    setTimeout(() => {
+      diagnosticMetaMaskBrowser();
+    }, 500);
+    
+    // Diagnostic après chargement complet
+    setTimeout(() => {
+      console.log('🔍 Diagnostic après chargement complet:');
+      diagnosticMetaMaskBrowser();
+    }, 2000);
+  }
+}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
