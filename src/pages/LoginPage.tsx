@@ -120,20 +120,40 @@ const LoginPage: React.FC = () => {
   setIsConnectingMetaMask(true);
   
   try {
+    // ÉTAPE 1: Localiser ethereum dans différents emplacements possibles
     let ethereum = window.ethereum;
     
-    // Pour mobile : attendre que ethereum soit disponible
+    if (!ethereum) {
+      console.log('⚠️ Ethereum non trouvé initialement, recherche alternatives...');
+      
+      // Vérifier d'autres emplacements courants
+      ethereum = window.ethereum || 
+                (window.web3 && window.web3.currentProvider) || 
+                (window.web3 && window.web3.givenProvider);
+                
+      // Pour MetaMask Mobile specifiquement
+      if (!ethereum && isMetaMaskBrowser) {
+        console.log('🔍 Dans navigateur MetaMask, recherche provider spécifique...');
+        
+        // Navigateur MetaMask peut avoir un provider à un emplacement différent
+        ethereum = (window.ethereum && window.ethereum.providers && 
+                  window.ethereum.providers.find(p => p.isMetaMask)) || 
+                  window.ethereum;
+      }
+    }
+    
+    // ÉTAPE 2: Attente si nécessaire (uniquement pour mobile)
     if (isMobile && !ethereum) {
       console.log('⏳ Attente de ethereum sur mobile...');
       
-      // Attendre jusqu'à 5 secondes
-      for (let i = 0; i < 50; i++) {
+      // Attendre jusqu'à 3 secondes par intervalle de 100ms
+      for (let i = 0; i < 30; i++) {
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Rechercher ethereum dans différents emplacements
+        // Rechercher ethereum à chaque itération
         ethereum = window.ethereum || 
-                  (window as any).web3?.currentProvider || 
-                  (window as any).ethereum;
+                  (window.web3 && window.web3.currentProvider) || 
+                  (window.web3 && window.web3.givenProvider);
         
         if (ethereum) {
           console.log(`✅ Ethereum trouvé après ${i * 100}ms`);
@@ -142,9 +162,9 @@ const LoginPage: React.FC = () => {
       }
     }
     
-    // Si toujours pas trouvé
+    // ÉTAPE 3: Gestion si ethereum n'est toujours pas disponible
     if (!ethereum) {
-      console.log('❌ Ethereum non trouvé');
+      console.log('❌ Ethereum non trouvé après attente');
       
       if (isMobile && !isMetaMaskBrowser) {
         // Proposer d'ouvrir MetaMask sur mobile
@@ -156,14 +176,18 @@ const LoginPage: React.FC = () => {
           isClosable: true,
         });
         
+        // Ouvrir MetaMask avec deep link après confirmation
         setTimeout(() => {
           const shouldOpenMetaMask = confirm(
             'Voulez-vous ouvrir MetaMask pour vous connecter ?'
           );
           
           if (shouldOpenMetaMask) {
+            // Construire un deep link qui retournera à cette page
+            const currentUrl = encodeURIComponent(`${window.location.href}`);
             const metamaskDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
-            window.open(metamaskDeepLink, '_blank');
+            window.location.href = metamaskDeepLink;
+            return;
           }
         }, 1000);
       } else {
@@ -177,14 +201,16 @@ const LoginPage: React.FC = () => {
           isClosable: true,
         });
       }
+      setIsConnectingMetaMask(false);
       return;
     }
 
     console.log('✅ Ethereum disponible, connexion...');
 
-    // Vérifier d'abord les comptes existants (importante pour mobile)
+    // ÉTAPE 4: Vérifier comptes existants
     let accounts = [];
     try {
+      // Utiliser eth_accounts qui ne déclenche pas de popup
       accounts = await ethereum.request({ method: 'eth_accounts' });
       console.log('🔍 Comptes existants:', accounts);
       
@@ -192,6 +218,7 @@ const LoginPage: React.FC = () => {
         const metamaskAddress = accounts[0];
         console.log('✅ Compte déjà connecté:', metamaskAddress);
         
+        // Définir l'adresse dans le state
         setWalletAddress(metamaskAddress);
         setError('');
         
@@ -202,43 +229,61 @@ const LoginPage: React.FC = () => {
           duration: 3000,
           isClosable: true,
         });
+        setIsConnectingMetaMask(false);
         return;
       }
     } catch (error) {
       console.log('⚠️ Erreur vérification comptes existants:', error);
+      // Continuer même en cas d'erreur ici
     }
 
-    // Si aucun compte connecté, demander la connexion
+    // ÉTAPE 5: Demander la connexion
     console.log('🔑 Demande de connexion...');
     
-    // Sur mobile, demander les permissions en premier
+    // Sur mobile, la gestion des permissions peut être différente
     if (isMobile) {
       try {
-        await ethereum.request({
-          method: 'wallet_requestPermissions',
-          params: [{ eth_accounts: {} }]
-        });
-        console.log('✅ Permissions accordées sur mobile');
-      } catch (permError: any) {
-        console.log('⚠️ Erreur permissions mobile:', permError);
-        // Continuer même si les permissions échouent
-        if (permError.code === 4001) {
-          throw new Error('Connexion annulée par l\'utilisateur');
+        // Essayer d'activer le fournisseur ethereum si disponible
+        if (typeof ethereum.enable === 'function') {
+          console.log('📱 Utilisation de ethereum.enable() sur mobile');
+          accounts = await ethereum.enable();
+        } 
+        // Sinon utiliser la méthode standard
+        else {
+          console.log('📱 Utilisation de eth_requestAccounts sur mobile');
+          accounts = await ethereum.request({
+            method: 'eth_requestAccounts'
+          });
         }
+      } catch (mobileError) {
+        console.error('❌ Erreur connexion mobile:', mobileError);
+        
+        // Si annulé par l'utilisateur, éviter de réessayer
+        if (mobileError.code === 4001) {
+          throw mobileError;
+        }
+        
+        // Dernière tentative - méthode standard
+        accounts = await ethereum.request({
+          method: 'eth_requestAccounts'
+        });
       }
+    } 
+    // Sur desktop, utiliser la méthode standard
+    else {
+      accounts = await ethereum.request({
+        method: 'eth_requestAccounts'
+      });
     }
-
-    // Demander les comptes
-    accounts = await ethereum.request({
-      method: 'eth_requestAccounts'
-    });
 
     console.log('📝 Comptes reçus:', accounts);
 
+    // ÉTAPE 6: Traiter le résultat
     if (accounts && accounts.length > 0) {
       const metamaskAddress = accounts[0];
       console.log('🎉 Connexion réussie:', metamaskAddress);
       
+      // Important: s'assurer que l'adresse est correctement définie dans le state
       setWalletAddress(metamaskAddress);
       setError('');
       
@@ -253,7 +298,7 @@ const LoginPage: React.FC = () => {
       throw new Error('Aucun compte récupéré');
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Erreur connexion:', error);
     console.error('❌ Code:', error.code);
     console.error('❌ Message:', error.message);
@@ -338,8 +383,7 @@ const diagnosticMetaMaskBrowser = () => {
   return info;
 };
 
-// Fonction de diagnostique automatique dans le navigateur MetaMask :
-
+// Hook useEffect amélioré pour la détection mobile
 React.useEffect(() => {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
@@ -351,33 +395,93 @@ React.useEffect(() => {
     userAgent: navigator.userAgent.substring(0, 100)
   });
   
-  if (isMobile) {
-    console.log('📱 Page chargée sur mobile');
-    
-    // Diagnostic initial rapide
-    setTimeout(() => {
-      diagnosticMetaMaskBrowser();
-    }, 500);
-    
-    // Diagnostic après que MetaMask ait eu le temps de se charger
-    setTimeout(() => {
-      console.log('🔍 Diagnostic mobile après 2 secondes:');
-      diagnosticMetaMaskBrowser();
+  // Fonction pour vérifier MetaMask et définir l'adresse si déjà connecté
+  const checkExistingConnection = async () => {
+    try {
+      let ethereum = window.ethereum;
       
-      // Test de disponibilité ethereum
-      if (window.ethereum) {
-        console.log('✅ window.ethereum disponible après 2s');
-      } else {
-        console.log('❌ window.ethereum toujours indisponible après 2s');
-        
-        // Recherche alternative
-        const altEth = (window as any).web3?.currentProvider;
-        if (altEth) {
-          console.log('🔍 Alternative trouvée:', altEth);
+      // Rechercher ethereum à différents emplacements si nécessaire
+      if (!ethereum) {
+        ethereum = window.ethereum || 
+                  (window.web3 && window.web3.currentProvider) || 
+                  (window.web3 && window.web3.givenProvider);
+                  
+        // Pour MetaMask Mobile spécifiquement
+        if (!ethereum && isMetaMaskBrowser) {
+          ethereum = (window.ethereum && window.ethereum.providers && 
+                    window.ethereum.providers.find(p => p.isMetaMask)) || 
+                    window.ethereum;
         }
       }
+      
+      if (ethereum) {
+        console.log('✅ ethereum trouvé, vérification des comptes existants');
+        const accounts = await ethereum.request({ method: 'eth_accounts' });
+        
+        if (accounts && accounts.length > 0) {
+          console.log('✅ Compte déjà connecté détecté:', accounts[0]);
+          setWalletAddress(accounts[0]);
+          
+          // Notification de connexion automatique
+          toast({
+            title: "Wallet connecté automatiquement",
+            description: `Adresse: ${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`,
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        } else {
+          console.log('ℹ️ Aucun compte connecté trouvé');
+        }
+      } else {
+        console.log('ℹ️ ethereum non trouvé dans useEffect');
+      }
+    } catch (error) {
+      console.log('⚠️ Erreur vérification connexion existante:', error);
+    }
+  };
+  
+  // Exécuter immédiatement pour les navigateurs standard
+  if (!isMobile || isMetaMaskBrowser) {
+    checkExistingConnection();
+  }
+  
+  // Pour les mobiles, attendre un peu plus longtemps pour l'initialisation
+  if (isMobile) {
+    console.log('📱 Environnement mobile détecté, attente prolongée');
+    
+    // Attendre 500ms puis réessayer
+    setTimeout(() => {
+      checkExistingConnection();
+    }, 500);
+    
+    // Attendre 2s puis réessayer à nouveau
+    setTimeout(() => {
+      checkExistingConnection();
     }, 2000);
   }
+  
+  // Écouter les changements de compte MetaMask
+  const handleAccountsChanged = (accounts) => {
+    console.log('🔄 Comptes MetaMask modifiés:', accounts);
+    if (accounts && accounts.length > 0) {
+      setWalletAddress(accounts[0]);
+    } else {
+      setWalletAddress('');
+    }
+  };
+  
+  // Ajouter un écouteur d'événement pour les changements de compte
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', handleAccountsChanged);
+  }
+  
+  // Nettoyage à la déconnexion du composant
+  return () => {
+    if (window.ethereum && window.ethereum.removeListener) {
+      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+    }
+  };
 }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
