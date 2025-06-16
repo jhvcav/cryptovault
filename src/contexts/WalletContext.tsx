@@ -37,6 +37,80 @@ interface WalletContextType {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
+// Détection améliorée de MetaMask pour mobile
+const detectMetaMask = (): boolean => {
+  // Vérification standard
+  if (typeof window !== 'undefined' && window.ethereum?.isMetaMask) {
+    return true;
+  }
+
+  // Vérifications spécifiques mobile
+  if (typeof window !== 'undefined') {
+    // Vérifier si on est dans l'app MetaMask
+    const userAgent = navigator.userAgent || navigator.vendor;
+    const isMetaMaskApp = /MetaMask/i.test(userAgent);
+    
+    // Vérifier différentes propriétés ethereum
+    const hasEthereum = !!(
+      window.ethereum || 
+      (window as any).web3?.currentProvider?.isMetaMask ||
+      (window as any).web3?.currentProvider?.selectedAddress
+    );
+    
+    console.log('🔍 Détection MetaMask Mobile:', {
+      windowEthereum: !!window.ethereum,
+      isMetaMask: window.ethereum?.isMetaMask,
+      userAgent: userAgent.substring(0, 100),
+      isMetaMaskApp,
+      hasEthereum
+    });
+    
+    return isMetaMaskApp || hasEthereum;
+  }
+  
+  return false;
+};
+
+const waitForMetaMask = (timeout = 3000): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (detectMetaMask()) {
+      resolve(true);
+      return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = timeout / 100;
+    
+    const checkInterval = setInterval(() => {
+      attempts++;
+      
+      if (detectMetaMask()) {
+        clearInterval(checkInterval);
+        resolve(true);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        resolve(false);
+      }
+    }, 100);
+  });
+};
+
+// Fonction pour ouvrir MetaMask sur mobile si pas détecté
+const openMetaMaskMobile = () => {
+  const currentUrl = window.location.href;
+  const metamaskDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+  
+  console.log('🚀 Ouverture MetaMask Mobile:', metamaskDeepLink);
+  
+  // Tenter d'ouvrir l'app MetaMask
+  window.open(metamaskDeepLink, '_blank');
+};
+
+// Détection du type d'appareil
+const isMobileDevice = (): boolean => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [address, setAddress] = useState<string | null>(null);
   const [balance, setBalance] = useState({ usdt: 0, usdc: 0 });
@@ -167,33 +241,63 @@ const requestAccountPermissions = useCallback(async () => {
 
   // Fonction de connexion
   const connectWallet = async () => {
-  if (!window.ethereum) {
-    alert('Veuillez installer MetaMask');
-    return;
-  }
-
+  console.log('🔌 Tentative de connexion wallet...');
+  console.log('📱 Appareil mobile:', isMobileDevice());
+  
   if (!isAuthenticated) {
     alert('Vous devez d\'abord vous authentifier sur la plateforme');
     return;
   }
 
   setIsConnecting(true);
+  
   try {
-    // ÉTAPE 1: Demander explicitement les permissions
-    await window.ethereum.request({
-      method: 'wallet_requestPermissions',
-      params: [{ eth_accounts: {} }]
-    });
+    // ÉTAPE 1: Attendre que MetaMask soit disponible
+    const isMetaMaskAvailable = await waitForMetaMask(5000);
     
-    // ÉTAPE 2: Maintenant demander les comptes
+    if (!isMetaMaskAvailable) {
+      console.log('❌ MetaMask non détecté après attente');
+      
+      if (isMobileDevice()) {
+        const shouldOpenMetaMask = confirm(
+          'MetaMask n\'est pas détecté. Voulez-vous ouvrir l\'application MetaMask ?'
+        );
+        
+        if (shouldOpenMetaMask) {
+          openMetaMaskMobile();
+        }
+      } else {
+        alert('Veuillez installer MetaMask ou utiliser le navigateur intégré de MetaMask');
+      }
+      
+      setIsConnecting(false);
+      return;
+    }
+
+    console.log('✅ MetaMask détecté, connexion en cours...');
+
+    // ÉTAPE 2: Demander les permissions (important pour mobile)
+    try {
+      await window.ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }]
+      });
+    } catch (permError) {
+      console.log('⚠️ Permissions déjà accordées ou erreur:', permError);
+      // Continuer même si les permissions échouent
+    }
+    
+    // ÉTAPE 3: Demander les comptes
     const accounts = await window.ethereum.request({
       method: 'eth_requestAccounts'
     });
 
-    if (accounts.length > 0) {
+    if (accounts && accounts.length > 0) {
       const userAddress = accounts[0];
       
-      // Vérification de sécurité avant de définir l'adresse
+      console.log('✅ Compte récupéré:', userAddress);
+      
+      // Vérification de sécurité
       if (!checkAddressSecurity(userAddress)) {
         setIsConnecting(false);
         return;
@@ -203,15 +307,25 @@ const requestAccountPermissions = useCallback(async () => {
       setIsConnected(true);
       localStorage.setItem('walletConnected', 'true');
       
-      console.log('✅ Wallet connecté avec succès:', userAddress);
-      console.log('✅ Site maintenant reconnu par MetaMask');
+      console.log('🎉 Connexion réussie sur mobile!');
       
-      // Charger les soldes immédiatement
+      // Charger les soldes
       await updateBalances(userAddress);
+    } else {
+      throw new Error('Aucun compte disponible');
     }
+    
   } catch (error) {
-    console.error('Erreur connexion:', error);
-    alert('Erreur de connexion au wallet');
+    console.error('❌ Erreur connexion mobile:', error);
+    
+    // Messages d'erreur spécifiques
+    if (error.code === 4001) {
+      alert('Connexion refusée par l\'utilisateur');
+    } else if (error.code === -32002) {
+      alert('Une demande de connexion est déjà en cours dans MetaMask');
+    } else {
+      alert(`Erreur de connexion: ${error.message || 'Erreur inconnue'}`);
+    }
   } finally {
     setIsConnecting(false);
   }
@@ -263,34 +377,45 @@ const changeAccount = useCallback(async () => {
 
   // Fonction pour vérifier la connexion wallet
   const checkWalletConnection = useCallback(async () => {
-    if (!window.ethereum || !isAuthenticated) {
+  console.log('🔍 Vérification connexion wallet mobile...');
+  
+  if (!isAuthenticated) {
+    return;
+  }
+
+  try {
+    // Attendre que MetaMask soit disponible
+    const isAvailable = await waitForMetaMask(2000);
+    
+    if (!isAvailable) {
+      console.log('❌ MetaMask non disponible pour la vérification');
       return;
     }
 
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    
+    if (accounts && accounts.length > 0) {
+      const currentAddress = accounts[0];
+      console.log('✅ Compte trouvé lors de la vérification:', currentAddress);
       
-      if (accounts && accounts.length > 0) {
-        const currentAddress = accounts[0];
-        
-        // Vérification de sécurité
-        if (!checkAddressSecurity(currentAddress)) {
-          return;
-        }
-        
-        setAddress(currentAddress);
-        setIsConnected(true);
-        await updateBalances(currentAddress);
-      } else {
-        setAddress(null);
-        setIsConnected(false);
+      if (!checkAddressSecurity(currentAddress)) {
+        return;
       }
-    } catch (error) {
-      console.error('Erreur lors de la vérification de la connexion wallet:', error);
+      
+      setAddress(currentAddress);
+      setIsConnected(true);
+      await updateBalances(currentAddress);
+    } else {
+      console.log('❌ Aucun compte trouvé');
       setAddress(null);
       setIsConnected(false);
     }
-  }, [isAuthenticated, checkAddressSecurity, updateBalances]);
+  } catch (error) {
+    console.error('❌ Erreur vérification connexion mobile:', error);
+    setAddress(null);
+    setIsConnected(false);
+  }
+}, [isAuthenticated, checkAddressSecurity, updateBalances]);
 
   // Fonction pour rafraîchir les soldes
   const refreshBalances = useCallback(async () => {
@@ -333,41 +458,83 @@ const changeAccount = useCallback(async () => {
     }
   };
 
+  // Fonction utilitaire pour diagnostiquer les problèmes mobile
+const diagnosticMetaMaskMobile = () => {
+  const info = {
+    userAgent: navigator.userAgent,
+    isMobile: isMobileDevice(),
+    hasEthereum: !!window.ethereum,
+    isMetaMask: window.ethereum?.isMetaMask,
+    isMetaMaskApp: /MetaMask/i.test(navigator.userAgent),
+    ethereumProviders: Object.keys(window.ethereum?.providers || {}),
+    windowKeys: Object.keys(window).filter(key => key.includes('eth') || key.includes('web3'))
+  };
+  
+  console.log('🔍 Diagnostic MetaMask Mobile:', info);
+  return info;
+};
+
   // Effet pour la reconnexion automatique
   useEffect(() => {
-    const checkInitialConnection = async () => {
-      const wasConnected = localStorage.getItem('walletConnected') === 'true';
-      
-      if (wasConnected && window.ethereum && isAuthenticated) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            const userAddress = accounts[0];
-            
-            // Pour la reconnexion automatique, on considère cette adresse comme autorisée
-            if (!isSecurityInitializedRef.current) {
-              authorizedAddressRef.current = userAddress.toLowerCase();
-              isSecurityInitializedRef.current = true;
-              console.log('🔒 Adresse autorisée lors de la reconnexion:', userAddress);
-            }
-            
-            // Vérification de sécurité
-            if (checkAddressSecurity(userAddress)) {
-              setAddress(userAddress);
-              setIsConnected(true);
-              await updateBalances(userAddress);
-            }
-          }
-        } catch (error) {
-          console.error('Erreur reconnexion:', error);
-        }
-      }
-    };
-
-    if (isAuthenticated) {
-      checkInitialConnection();
+  const checkInitialConnection = async () => {
+    const wasConnected = localStorage.getItem('walletConnected') === 'true';
+    
+    if (!wasConnected || !isAuthenticated) {
+      return;
     }
-  }, [isAuthenticated, checkAddressSecurity, updateBalances]);
+
+    console.log('🔄 Tentative de reconnexion automatique...');
+    
+    try {
+      // Sur mobile, attendre que MetaMask soit disponible
+      const isMetaMaskAvailable = await waitForMetaMask(3000);
+      
+      if (!isMetaMaskAvailable) {
+        console.log('❌ MetaMask non disponible pour la reconnexion');
+        localStorage.removeItem('walletConnected'); // Nettoyer le flag
+        return;
+      }
+
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      
+      if (accounts && accounts.length > 0) {
+        const userAddress = accounts[0];
+        
+        console.log('🔄 Reconnexion trouvée:', userAddress);
+        
+        // Pour la reconnexion automatique, enregistrer comme autorisé
+        if (!isSecurityInitializedRef.current) {
+          authorizedAddressRef.current = userAddress.toLowerCase();
+          isSecurityInitializedRef.current = true;
+          console.log('🔒 Adresse autorisée lors de la reconnexion mobile:', userAddress);
+        }
+        
+        // Vérification de sécurité
+        if (checkAddressSecurity(userAddress)) {
+          setAddress(userAddress);
+          setIsConnected(true);
+          console.log('✅ Reconnexion automatique réussie sur mobile');
+          await updateBalances(userAddress);
+        }
+      } else {
+        console.log('❌ Aucun compte trouvé pour la reconnexion');
+        localStorage.removeItem('walletConnected');
+      }
+    } catch (error) {
+      console.error('❌ Erreur reconnexion mobile:', error);
+      localStorage.removeItem('walletConnected');
+    }
+  };
+
+  if (isAuthenticated) {
+    // Sur mobile, attendre un peu plus longtemps avant de vérifier
+    const delay = isMobileDevice() ? 1000 : 500;
+    
+    setTimeout(() => {
+      checkInitialConnection();
+    }, delay);
+  }
+}, [isAuthenticated, checkAddressSecurity, updateBalances]);
 
   // Effet pour récupérer le chainId initial
   useEffect(() => {

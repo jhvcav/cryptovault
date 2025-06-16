@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useOwner } from '../../hooks/useOwner';
 import { useMetaMaskSecurityBSC } from '../../hooks/useMetaMaskSecurityBSC';
 import { Menu, X, Wallet, Moon, Sun, LogOut, AlertTriangle, Shield, Zap, ChevronDown, RefreshCw, Users } from 'lucide-react';
+import { Smartphone, Download, ExternalLink } from 'lucide-react';
 
 const BSC_CHAIN_ID = 56;
 
@@ -40,6 +41,20 @@ const Navbar = () => {
   } catch (error) {
     console.error('Erreur changement de compte:', error);
   }
+};
+
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+const isInMetaMaskBrowser = () => {
+  return /MetaMask/i.test(navigator.userAgent);
+};
+
+const openInMetaMask = () => {
+  const currentUrl = window.location.href;
+  const metamaskUrl = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+  window.open(metamaskUrl, '_blank');
 };
 
   // Hook de sécurité MetaMask pour BSC
@@ -338,6 +353,29 @@ const Navbar = () => {
                             </div>
                           </div>
 
+                          {isMobileDevice() && !isConnected && !window.ethereum && (
+                            <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 text-center">
+                              <div className="flex items-center justify-center space-x-3">
+                                <Smartphone size={20} />
+                                <div className="text-sm">
+                                  <p className="font-medium">
+                                    {isInMetaMaskBrowser() 
+                                      ? "Utilisez le bouton 'Connecter Wallet' ci-dessus" 
+                                      : "Pour la meilleure expérience mobile"}
+                                  </p>
+                                  {!isInMetaMaskBrowser() && (
+                                    <button
+                                      onClick={openInMetaMask}
+                                      className="underline font-medium hover:text-orange-200 transition-colors"
+                                    >
+                                      Ouvrir dans l'app MetaMask →
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* USDC Balance */}
                           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
                             <div className="flex items-center space-x-3">
@@ -423,7 +461,19 @@ const Navbar = () => {
                   {isConnecting ? 'Connexion...' : 'Connecter Wallet'}
                 </button>
               )}
-              
+
+              {/* Bouton spécial mobile si MetaMask non détecté */}
+              {isMobileDevice() && !window.ethereum && (
+                <button
+                  onClick={openInMetaMask}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-1"
+                  title="Ouvrir dans MetaMask"
+                >
+                  <ExternalLink size={16} />
+                  <span className="hidden sm:inline">MetaMask</span>
+                </button>
+              )}
+            
               {/* Menu mobile toggle */}
               <div className="md:hidden flex items-center">
                 <button
