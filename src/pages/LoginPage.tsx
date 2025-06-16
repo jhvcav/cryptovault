@@ -368,52 +368,6 @@ React.useEffect(() => {
     checkExistingConnection();
   }, 500);
   
-  // Fonction pour vérifier MetaMask et définir l'adresse si déjà connecté
-  const checkExistingConnection = async () => {
-    try {
-      let ethereum = window.ethereum;
-      
-      // Rechercher ethereum à différents emplacements si nécessaire
-      if (!ethereum) {
-        ethereum = window.ethereum || 
-                  (window.web3 && window.web3.currentProvider) || 
-                  (window.web3 && window.web3.givenProvider);
-                  
-        // Pour MetaMask Mobile spécifiquement
-        if (!ethereum && isMetaMaskBrowser) {
-          ethereum = (window.ethereum && window.ethereum.providers && 
-                    window.ethereum.providers.find(p => p.isMetaMask)) || 
-                    window.ethereum;
-        }
-      }
-      
-      if (ethereum) {
-        console.log('✅ ethereum trouvé, vérification des comptes existants');
-        const accounts = await ethereum.request({ method: 'eth_accounts' });
-        
-        if (accounts && accounts.length > 0) {
-          console.log('✅ Compte déjà connecté détecté:', accounts[0]);
-          setWalletAddress(accounts[0]);
-          
-          // Notification de connexion automatique
-          toast({
-            title: "Wallet connecté automatiquement",
-            description: `Adresse: ${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-        } else {
-          console.log('ℹ️ Aucun compte connecté trouvé');
-        }
-      } else {
-        console.log('ℹ️ ethereum non trouvé dans useEffect');
-      }
-    } catch (error) {
-      console.log('⚠️ Erreur vérification connexion existante:', error);
-    }
-  };
-  
   // Exécuter immédiatement pour les navigateurs standard
   if (!isMobile || isMetaMaskBrowser) {
     checkExistingConnection();
