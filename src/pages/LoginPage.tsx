@@ -106,7 +106,7 @@ const LoginPage: React.FC = () => {
     );
   }
 
-  // Fonction connectMetaMask corrigée pour le navigateur MetaMask mobile
+  // Solution robuste pour MetaMask mobile - gère les cas où window.ethereum n'est pas injecté
 const connectMetaMask = async () => {
   console.log('🦊 Tentative de récupération de l\'adresse MetaMask...');
   
@@ -146,57 +146,127 @@ const connectMetaMask = async () => {
       }
     }
     
-    // 2. Approche principale - Multiple tentatives avec différentes méthodes
-    if (window.ethereum) {
-      console.log('✅ window.ethereum disponible');
-      
-      // Méthode 1: Appel direct standard
-      try {
-        console.log('🔄 Tentative 1: eth_requestAccounts standard...');
-        const accounts = await window.ethereum.request({ 
-          method: 'eth_requestAccounts' 
-        });
-        
-        if (accounts && accounts.length > 0) {
-          const address = accounts[0];
-          console.log('✅ Succès méthode 1 - Compte récupéré:', address);
-          
-          sessionStorage.setItem('lastConnectedWallet', address);
-          setWalletAddress(address);
-          
-          toast({
-            title: "Wallet connecté",
-            description: `${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-          
-          setIsConnectingMetaMask(false);
+    // 2. Fonction d'attente pour ethereum avec timeout
+    const waitForEthereum = (maxWaitTime = 5000) => {
+      return new Promise((resolve) => {
+        if (window.ethereum) {
+          console.log('✅ window.ethereum déjà disponible');
+          resolve(window.ethereum);
           return;
         }
-      } catch (error1) {
-        console.log('⚠️ Méthode 1 échouée:', error1);
         
-        // Méthode 2: Attendre un peu et réessayer
+        console.log('⏳ Attente de l\'injection de window.ethereum...');
+        
+        let timeoutId;
+        let intervalId;
+        
+        // Écouteur pour l'événement ethereum#initialized
+        const handleEthereumInitialized = () => {
+          console.log('🎉 Événement ethereum#initialized reçu');
+          clearTimeout(timeoutId);
+          clearInterval(intervalId);
+          resolve(window.ethereum);
+        };
+        
+        window.addEventListener('ethereum#initialized', handleEthereumInitialized, { once: true });
+        
+        // Vérification périodique
+        intervalId = setInterval(() => {
+          if (window.ethereum) {
+            console.log('✅ window.ethereum détecté par polling');
+            clearTimeout(timeoutId);
+            clearInterval(intervalId);
+            window.removeEventListener('ethereum#initialized', handleEthereumInitialized);
+            resolve(window.ethereum);
+          }
+        }, 100);
+        
+        // Timeout
+        timeoutId = setTimeout(() => {
+          console.log('⏰ Timeout atteint pour l\'injection ethereum');
+          clearInterval(intervalId);
+          window.removeEventListener('ethereum#initialized', handleEthereumInitialized);
+          resolve(null);
+        }, maxWaitTime);
+      });
+    };
+    
+    // 3. Attendre l'injection de ethereum
+    const ethereum = await waitForEthereum();
+    
+    if (ethereum) {
+      console.log('✅ Provider ethereum trouvé, tentative de connexion...');
+      
+      // Tentative de connexion avec plusieurs méthodes
+      let accounts = null;
+      
+      try {
+        // Méthode 1: Vérifier d'abord les comptes existants
+        console.log('🔄 Vérification des comptes existants...');
+        accounts = await ethereum.request({ method: 'eth_accounts' });
+        
+        if (!accounts || accounts.length === 0) {
+          // Méthode 2: Demander l'accès aux comptes
+          console.log('🔄 Demande d\'accès aux comptes...');
+          accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        }
+        
+      } catch (error) {
+        console.log('⚠️ Erreur lors de la récupération des comptes:', error);
+        
+        // Méthode 3: Attendre un peu et réessayer
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         try {
-          console.log('🔄 Tentative 2: Attendre et réessayer...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log('🔄 Nouvelle tentative après délai...');
+          accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (retryError) {
+          console.log('⚠️ Échec de la nouvelle tentative:', retryError);
+          throw retryError;
+        }
+      }
+      
+      if (accounts && accounts.length > 0) {
+        const address = accounts[0];
+        console.log('✅ Adresse récupérée avec succès:', address);
+        
+        sessionStorage.setItem('lastConnectedWallet', address);
+        setWalletAddress(address);
+        
+        toast({
+          title: "Wallet connecté",
+          description: `${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        
+        setIsConnectingMetaMask(false);
+        return;
+      } else {
+        throw new Error('Aucun compte trouvé');
+      }
+      
+    } else {
+      // 4. Si ethereum n'est pas disponible après attente
+      console.log('❌ window.ethereum non disponible après attente');
+      
+      if (isMobile && isMetaMaskBrowser) {
+        // Sur navigateur MetaMask mobile, proposer des solutions alternatives
+        console.log('🦊 Navigateur MetaMask mobile - Solutions alternatives');
+        
+        // Option 1: Utiliser l'adresse stockée si disponible
+        if (storedWallet) {
+          const useStored = confirm(
+            `window.ethereum n'est pas disponible. Voulez-vous utiliser l'adresse précédemment connectée: ${storedWallet.substring(0, 6)}...${storedWallet.substring(storedWallet.length - 4)} ?`
+          );
           
-          const accounts = await window.ethereum.request({ 
-            method: 'eth_requestAccounts' 
-          });
-          
-          if (accounts && accounts.length > 0) {
-            const address = accounts[0];
-            console.log('✅ Succès méthode 2 - Compte récupéré:', address);
-            
-            sessionStorage.setItem('lastConnectedWallet', address);
-            setWalletAddress(address);
+          if (useStored) {
+            setWalletAddress(storedWallet);
             
             toast({
-              title: "Wallet connecté",
-              description: `${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
+              title: "Adresse récupérée du cache",
+              description: `${storedWallet.substring(0, 6)}...${storedWallet.substring(storedWallet.length - 4)}`,
               status: "success",
               duration: 3000,
               isClosable: true,
@@ -205,116 +275,75 @@ const connectMetaMask = async () => {
             setIsConnectingMetaMask(false);
             return;
           }
-        } catch (error2) {
-          console.log('⚠️ Méthode 2 échouée:', error2);
+        }
+        
+        // Option 2: Rafraîchissement de la page
+        const shouldRefresh = confirm(
+          "MetaMask ne s'est pas chargé correctement. Voulez-vous rafraîchir la page ? Cela résout souvent le problème."
+        );
+        
+        if (shouldRefresh) {
+          // Marquer qu'on va rafraîchir pour éviter les boucles
+          sessionStorage.setItem('metamaskRefreshAttempt', Date.now().toString());
+          window.location.reload();
+          return;
+        }
+        
+        // Option 3: Saisie manuelle en dernier recours
+        const shouldEnterManually = confirm(
+          "Voulez-vous saisir manuellement votre adresse wallet ?"
+        );
+        
+        if (shouldEnterManually) {
+          const manualAddress = prompt("Veuillez saisir votre adresse Ethereum (commençant par 0x):");
           
-          // Méthode 3: Vérifier les comptes existants d'abord
-          try {
-            console.log('🔄 Tentative 3: Vérifier comptes existants...');
-            const existingAccounts = await window.ethereum.request({ 
-              method: 'eth_accounts' 
+          if (manualAddress && manualAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
+            setWalletAddress(manualAddress);
+            sessionStorage.setItem('lastConnectedWallet', manualAddress);
+            
+            toast({
+              title: "Adresse saisie manuellement",
+              description: `${manualAddress.substring(0, 6)}...${manualAddress.substring(manualAddress.length - 4)}`,
+              status: "success",
+              duration: 3000,
+              isClosable: true,
             });
             
-            if (existingAccounts && existingAccounts.length > 0) {
-              const address = existingAccounts[0];
-              console.log('✅ Succès méthode 3 - Compte existant trouvé:', address);
-              
-              sessionStorage.setItem('lastConnectedWallet', address);
-              setWalletAddress(address);
-              
-              toast({
-                title: "Wallet connecté",
-                description: `${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-              });
-              
-              setIsConnectingMetaMask(false);
-              return;
-            } else {
-              // Si pas de comptes existants, forcer la demande
-              console.log('🔄 Tentative 3b: Forcer nouvelle demande...');
-              const accounts = await window.ethereum.request({ 
-                method: 'eth_requestAccounts' 
-              });
-              
-              if (accounts && accounts.length > 0) {
-                const address = accounts[0];
-                console.log('✅ Succès méthode 3b - Compte récupéré:', address);
-                
-                sessionStorage.setItem('lastConnectedWallet', address);
-                setWalletAddress(address);
-                
-                toast({
-                  title: "Wallet connecté",
-                  description: `${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
-                  status: "success",
-                  duration: 3000,
-                  isClosable: true,
-                });
-                
-                setIsConnectingMetaMask(false);
-                return;
-              }
-            }
-          } catch (error3) {
-            console.log('⚠️ Méthode 3 échouée:', error3);
-            
-            // Toutes les méthodes automatiques ont échoué
-            throw new Error('Impossible de récupérer automatiquement l\'adresse du wallet');
+            setIsConnectingMetaMask(false);
+            return;
+          } else if (manualAddress) {
+            throw new Error("Format d'adresse invalide");
           }
         }
-      }
-    }
-    
-    // 3. Si on arrive ici, les méthodes automatiques ont échoué
-    console.log('⚠️ Toutes les méthodes automatiques ont échoué');
-    
-    // Proposer des solutions alternatives seulement en dernier recours
-    if (isMobile && isMetaMaskBrowser) {
-      console.log('🦊 Navigateur MetaMask mobile - Options de secours');
-      
-      // Option 1: Rafraîchissement
-      const shouldRefresh = confirm(
-        "La connexion automatique a échoué. Voulez-vous rafraîchir la page ? Cela peut résoudre le problème."
-      );
-      
-      if (shouldRefresh) {
-        window.location.reload();
-        return;
-      }
-      
-      // Option 2: Saisie manuelle en dernier recours
-      const shouldEnterManually = confirm(
-        "Voulez-vous saisir manuellement votre adresse wallet ?"
-      );
-      
-      if (shouldEnterManually) {
-        const manualAddress = prompt("Veuillez saisir votre adresse Ethereum (commençant par 0x):");
         
-        if (manualAddress && manualAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
-          setWalletAddress(manualAddress);
-          sessionStorage.setItem('lastConnectedWallet', manualAddress);
-          
-          toast({
-            title: "Adresse saisie manuellement",
-            description: `${manualAddress.substring(0, 6)}...${manualAddress.substring(manualAddress.length - 4)}`,
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-          });
-          
-          setIsConnectingMetaMask(false);
-          return;
-        } else {
-          throw new Error("Format d'adresse invalide");
-        }
+        throw new Error("Opération annulée");
+        
+      } else if (isMobile) {
+        // Sur mobile standard, rediriger vers MetaMask
+        console.log('📱 Mobile standard, redirection vers MetaMask');
+        
+        toast({
+          title: "Redirection vers MetaMask",
+          description: "Ouverture de l'application MetaMask...",
+          status: "info",
+          duration: 3000,
+          isClosable: true,
+        });
+        
+        const dappUrl = `${window.location.host}${window.location.pathname}`;
+        const metamaskAppDeepLink = `https://metamask.app.link/dapp/${dappUrl}`;
+        
+        sessionStorage.setItem('metamaskRedirectPending', 'true');
+        sessionStorage.setItem('metamaskRedirectTime', Date.now().toString());
+        
+        window.location.href = metamaskAppDeepLink;
+        return;
+        
+      } else {
+        // Sur desktop
+        throw new Error("MetaMask n'est pas installé ou n'est pas disponible");
       }
     }
-    
-    // Si on arrive ici, rien n'a fonctionné
-    throw new Error("Impossible de récupérer l'adresse de votre wallet");
     
   } catch (error) {
     console.error('❌ Erreur finale:', error);
@@ -325,6 +354,8 @@ const connectMetaMask = async () => {
       errorMessage = "Connexion refusée par l'utilisateur";
     } else if (error.code === -32002) {
       errorMessage = "Demande de connexion déjà en cours. Veuillez vérifier MetaMask.";
+    } else if (error.code === -32603) {
+      errorMessage = "Erreur interne MetaMask. Essayez de rafraîchir la page.";
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -341,6 +372,82 @@ const connectMetaMask = async () => {
   } finally {
     setIsConnectingMetaMask(false);
   }
+};
+
+// Hook pour vérifier le retour d'un rafraîchissement MetaMask
+React.useEffect(() => {
+  const checkRefreshReturn = () => {
+    const refreshAttempt = sessionStorage.getItem('metamaskRefreshAttempt');
+    
+    if (refreshAttempt) {
+      const timeSinceRefresh = Date.now() - parseInt(refreshAttempt);
+      
+      // Si le rafraîchissement est récent (moins de 30 secondes)
+      if (timeSinceRefresh < 30000) {
+        console.log('🔄 Retour après rafraîchissement MetaMask');
+        
+        // Nettoyer l'indicateur
+        sessionStorage.removeItem('metamaskRefreshAttempt');
+        
+        // Essayer de récupérer automatiquement l'adresse après rafraîchissement
+        setTimeout(() => {
+          if (window.ethereum) {
+            window.ethereum.request({ method: 'eth_accounts' })
+              .then(accounts => {
+                if (accounts && accounts.length > 0) {
+                  console.log('✅ Compte récupéré après rafraîchissement:', accounts[0]);
+                  setWalletAddress(accounts[0]);
+                  sessionStorage.setItem('lastConnectedWallet', accounts[0]);
+                  
+                  toast({
+                    title: "Connexion réussie",
+                    description: `${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`,
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
+                  });
+                }
+              })
+              .catch(error => {
+                console.log('⚠️ Erreur après rafraîchissement:', error);
+              });
+          }
+        }, 1000);
+      } else {
+        // Trop ancien, nettoyer
+        sessionStorage.removeItem('metamaskRefreshAttempt');
+      }
+    }
+  };
+  
+  checkRefreshReturn();
+}, []);
+
+// Fonction utilitaire pour diagnostiquer l'état de MetaMask
+const diagnosticMetaMask = () => {
+  const info = {
+    userAgent: navigator.userAgent,
+    isMetaMaskBrowser: /MetaMask/i.test(navigator.userAgent),
+    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+    windowEthereum: !!window.ethereum,
+    ethereumIsMetaMask: window.ethereum?.isMetaMask,
+    ethereumChainId: window.ethereum?.chainId,
+    ethereumSelectedAddress: window.ethereum?.selectedAddress,
+    timestamp: new Date().toISOString()
+  };
+  
+  console.log('🔍 Diagnostic MetaMask:', JSON.stringify(info, null, 2));
+  
+  // Afficher dans une alerte pour debug mobile
+  if (info.isMobile) {
+    alert(`Debug MetaMask:
+- Navigateur MetaMask: ${info.isMetaMaskBrowser}
+- window.ethereum: ${info.windowEthereum}
+- isMetaMask: ${info.ethereumIsMetaMask}
+- Adresse: ${info.ethereumSelectedAddress || 'Non disponible'}`);
+  }
+  
+  return info;
 };
 
 // Fonction de diagnostic dans le composant LoginPage :
@@ -844,7 +951,7 @@ React.useEffect(() => {
                     fontWeight="800"
                     lineHeight="1.2"
                   >
-                    CryptocaVault
+                    .CryptocaVault.
                   </Heading>
                   <Text
                     mt={{ base: 2, md: 3 }}
