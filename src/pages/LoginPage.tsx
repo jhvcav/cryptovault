@@ -257,19 +257,21 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
 };
 
-  React.useEffect(() => {
-  const mobileInfo = detectMobileAndMetaMask();
+ React.useEffect(() => {
+  const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
   
-  if (mobileInfo.isMetaMaskBrowser) {
-    console.log('📱 Dans navigateur MetaMask, tentative auto-connexion...');
+  if (isMetaMaskBrowser) {
+    console.log('📱 Navigateur MetaMask détecté - Attente initialisation...');
     
-    // Délai pour laisser le temps à window.ethereum de s'injecter
-    setTimeout(() => {
+    // Attendre plus longtemps pour laisser MetaMask s'initialiser
+    const timer = setTimeout(() => {
+      console.log('🔄 Tentative auto-connexion après délai...');
       if (window.ethereum && !walletAddress) {
-        console.log('🚀 Auto-déclenchement connexion MetaMask...');
         connectMetaMask();
       }
-    }, 1500); // 1.5 seconde de délai
+    }, 4000); // 4 secondes au lieu de 2
+    
+    return () => clearTimeout(timer);
   }
 }, []);
 
