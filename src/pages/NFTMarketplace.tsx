@@ -1,4 +1,4 @@
-// NFTMarketplace.tsx - Version complète corrigée
+// NFTMarketplace.tsx - Version corrigée pour NFT Fidélité
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
@@ -140,7 +140,7 @@ const NFTMarketplace: React.FC = () => {
     }
   }, [isConnected, nftLoading, tiersInfo, nftError, loadTiersInfo]);
 
-  // Mise à jour des tiers NFT avec fallback et données du contrat
+  // 🎁 CORRECTION: Mise à jour des tiers NFT avec NFT Fidélité (Tier 5)
   const getNFTTiers = (): NFTTier[] => {
     const baseTiers: NFTTier[] = [
       {
@@ -239,6 +239,31 @@ const NFTMarketplace: React.FC = () => {
         borderColor: 'border-purple-500',
         glowColor: 'shadow-purple-500/30',
         exclusive: true
+      },
+      // 🎁 NOUVEAU: NFT Fidélité (Tier 5)
+      {
+        id: 5,
+        name: 'NFT Fidélité',
+        icon: '🎁',
+        price: 0, // GRATUIT
+        priceUSD: 'GRATUIT',
+        supply: 12,
+        remaining: 12,
+        multiplier: '1.2X',
+        multiplierPercent: '+20%',
+        lockPeriods: ['30 jours'],
+        accessPlans: ['starter'],
+        features: [
+          'Accès aux stratégies de base',
+          'Bonus 20% sur récompenses',
+          'Support communautaire',
+          'Période de blocage : 30 jours',
+          'Récompense de fidélité exclusive'
+        ],
+        bgGradient: 'from-emerald-600 via-teal-600 to-cyan-600',
+        borderColor: 'border-emerald-500',
+        glowColor: 'shadow-emerald-500/30',
+        exclusive: true
       }
     ];
 
@@ -249,7 +274,7 @@ const NFTMarketplace: React.FC = () => {
         return {
           ...tier,
           price: parseFloat(contractData.price || tier.price.toString()),
-          priceUSD: `$${contractData.price || tier.price}`,
+          priceUSD: tier.id === 5 ? 'GRATUIT' : `$${contractData.price || tier.price}`,
           supply: contractData.supply || tier.supply,
           remaining: contractData.remaining !== undefined ? contractData.remaining : tier.remaining
         };
@@ -418,206 +443,174 @@ const NFTMarketplace: React.FC = () => {
     );
   };
 
-  // Composant NFT Card avec logique fidélité et Web3
+  // ✅ COMPOSANT NFT CARD CORRIGÉ - déplacé dans le composant principal
   const NFTCard: React.FC<{ nft: NFTTier }> = ({ nft }) => {
-    const isPrivilegeForFidelUser = nft.name === 'NFT Privilège' && isFidel;
+    // ✅ CORRECTION: SEUL le NFT Fidélité (Tier 5) est gratuit pour les fidèles
+    const isFidelityNFT = nft.id === 5;
+    const isFidelityForFidelUser = isFidelityNFT && isFidel;
     
-    // Nouvelle logique qui priorise la blockchain
-    const reallyOwnsNFT = actuallyOwnsNFT && isPrivilegeForFidelUser;
-    const userOwnsTier = userNFTInfo?.ownedTiers.includes(nft.id) || reallyOwnsNFT;
+    const showFidelityButton = isFidelityForFidelUser && !hasClaimedNFT;
+    const fidelityReserved = isFidelityNFT && !isFidel;
     
-    // Logique pour le bouton fidélité
-    const eligibility = checkEligibility();
-    const showFidelityButton = isPrivilegeForFidelUser && eligibility.canClaim;
-    
-    // Afficher un warning si incohérence détectée
-    const showInconsistencyWarning = inconsistencyDetected && isPrivilegeForFidelUser;
+    const userOwnsTier = userNFTInfo?.ownedTiers.includes(nft.id) || false;
 
     return (
       <div className={`relative bg-gradient-to-br ${nft.bgGradient} p-1 rounded-2xl ${nft.glowColor} hover:shadow-2xl transition-all duration-300`}>
         
-        {/* Warning d'incohérence avec bouton de synchronisation */}
-        {showInconsistencyWarning && (
-          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-white px-3 py-2 rounded text-xs flex items-center space-x-2 whitespace-nowrap">
-            <AlertCircle size={12} />
-            <span>Données incohérentes</span>
-            <button 
-              onClick={async () => {
-                console.log('🔄 Synchronisation manuelle...');
-                const success = await syncStatus();
-                if (success) {
-                  console.log('✅ Synchronisation réussie');
-                }
-              }}
-              className="ml-1 text-yellow-200 hover:text-white bg-yellow-700 px-2 py-1 rounded text-xs"
-              disabled={fidelityLoading}
-            >
-              {fidelityLoading ? '⏳' : '🔄 Sync'}
-            </button>
-          </div>
-        )}
-
-        {/* Badge Fidélité */}
+        {/* ✅ Badge Fidélité SEULEMENT pour le NFT Fidélité (Tier 5) */}
         {showFidelityButton && (
-          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
+          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
             <Crown size={14} />
-            <span>Fidélité</span>
+            <span>Fidélité 🎁</span>
           </div>
         )}
 
-        {/* Badge Déjà Possédé */}
-        {userOwnsTier && (
+        {/* Badge Déjà Réclamé pour NFT Fidélité */}
+        {isFidelityForFidelUser && hasClaimedNFT && (
+          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
+            <Check size={14} />
+            <span>Réclamé</span>
+          </div>
+        )}
+
+        {/* Badge Réservé pour NFT Fidélité si pas fidèle */}
+        {fidelityReserved && (
+          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
+            <Lock size={14} />
+            <span>Réservé Fidèles</span>
+          </div>
+        )}
+
+        {/* Badge Déjà Possédé pour les autres NFT */}
+        {userOwnsTier && !isFidelityNFT && (
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
             <Check size={14} />
             <span>Possédé</span>
           </div>
         )}
 
-        {/* Badge d'erreur */}
-        {fidelityError && isPrivilegeForFidelUser && (
-          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center space-x-1">
-            <AlertCircle size={14} />
-            <span>Erreur</span>
-          </div>
-        )}
-
-        {/* Badge Populaire pour les autres */}
-        {nft.popular && !isPrivilegeForFidelUser && !userOwnsTier && (
+        {/* Badge Populaire pour les autres NFT (pas Fidélité) */}
+        {nft.popular && !isFidelityNFT && !userOwnsTier && (
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
             ⭐ Populaire
           </div>
         )}
 
-        {/* Badge Exclusif */}
-        {nft.exclusive && !isPrivilegeForFidelUser && !userOwnsTier && (
+        {/* Badge Exclusif pour les autres NFT (pas Fidélité) */}
+        {nft.exclusive && !isFidelityNFT && !userOwnsTier && (
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
             💎 Exclusif
           </div>
         )}
 
         <div className="bg-slate-900 rounded-2xl p-6 h-full">
-          {/* Header */}
+          {/* Header avec prix adapté */}
           <div className="text-center mb-6">
             <div className="text-4xl mb-3">{nft.icon}</div>
             <h3 className="text-white font-bold text-xl mb-2">{nft.name}</h3>
             
-            {/* Prix avec condition fidélité */}
+            {/* ✅ Prix : GRATUIT seulement pour NFT Fidélité */}
             <div className="flex items-center justify-center space-x-2">
               {showFidelityButton ? (
                 <div className="text-center">
-                  <span className="text-3xl font-bold text-green-400">GRATUIT</span>
-                  <p className="text-sm text-green-300">Récompense Fidélité</p>
+                  <span className="text-3xl font-bold text-emerald-400">GRATUIT</span>
+                  <p className="text-sm text-emerald-300">Récompense Fidélité</p>
+                </div>
+              ) : fidelityReserved ? (
+                <div className="text-center">
+                  <span className="text-2xl font-bold text-slate-500">RÉSERVÉ</span>
+                  <p className="text-sm text-slate-400">Membres Fidèles</p>
                 </div>
               ) : (
                 <>
                   <span className="text-3xl font-bold text-white">{nft.price}</span>
-                  <span className="text-slate-400">USDC</span>
+                  <span className="text-slate-400">{nft.price > 0 ? 'USDC' : ''}</span>
                 </>
               )}
             </div>
           </div>
 
-          {/* Multiplier Highlight */}
+          {/* Multiplier, Supply, Features... (reste identique) */}
           <div className="bg-slate-800 rounded-lg p-3 mb-4 text-center">
             <p className="text-slate-400 text-sm">Bonus Récompenses</p>
             <p className="text-2xl font-bold text-green-400">{nft.multiplier}</p>
             <p className="text-green-300 text-sm">{nft.multiplierPercent}</p>
           </div>
 
-          {/* Supply Info */}
           <div className="flex justify-between text-sm mb-4">
             <span className="text-slate-400">Supply Total:</span>
-            <span className="text-white">
-              {isPrivilegeForFidelUser ? '10 (Fidélité)' : nft.supply}
-            </span>
+            <span className="text-white">{nft.supply}</span>
           </div>
           <div className="flex justify-between text-sm mb-6">
             <span className="text-slate-400">Disponibles:</span>
             <span className={`font-semibold ${nft.remaining < 100 ? 'text-red-400' : 'text-green-400'}`}>
-              {isPrivilegeForFidelUser ? (hasClaimedNFT ? '0' : '1') : nft.remaining}
+              {isFidelityForFidelUser ? (hasClaimedNFT ? '0' : '1') : nft.remaining}
             </span>
-          </div>
-
-          {/* Access Plans */}
-          <div className="mb-4">
-            <p className="text-slate-400 text-sm mb-2">Accès aux plans :</p>
-            <div className="flex flex-wrap gap-1">
-              {nft.accessPlans.map((plan, index) => (
-                <span 
-                  key={index} 
-                  className="px-2 py-1 bg-blue-900/30 text-blue-300 text-xs rounded-md capitalize"
-                >
-                  {plan}
-                </span>
-              ))}
-            </div>
           </div>
 
           {/* Features */}
           <div className="space-y-2 mb-6">
-            {nft.features.map((feature: string, index: number) => (
+            {nft.features.map((feature, index) => (
               <div key={index} className="flex items-start space-x-2">
                 <Check size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
                 <span className="text-slate-300 text-sm">{feature}</span>
               </div>
             ))}
             
-            {/* Feature spéciale fidélité */}
-            {isPrivilegeForFidelUser && (
+            {/* Feature spéciale SEULEMENT pour NFT Fidélité */}
+            {isFidelityForFidelUser && (
               <div className="flex items-start space-x-2 border-t border-slate-600 pt-2 mt-4">
                 <Crown size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
                 <span className="text-yellow-300 text-sm font-medium">
-                  Récompense de fidélité exclusive
+                  NFT Fidélité - Récompense exclusive
                 </span>
               </div>
             )}
           </div>
 
-          {/* Action Button */}
-          {fidelityLoading || nftLoading ? (
+          {/* ✅ Action Button : SEUL le NFT Fidélité a un bouton de réclamation */}
+          {fidelityLoading ? (
             <button disabled className="w-full py-3 px-4 rounded-lg bg-slate-700 text-slate-400 flex items-center justify-center space-x-2">
               <Loader size={18} className="animate-spin" />
               <span>Vérification...</span>
-            </button>
-          ) : fidelityError && isPrivilegeForFidelUser ? (
-            <div className="space-y-2">
-              <button disabled className="w-full py-3 px-4 rounded-lg bg-red-700 text-red-100 flex items-center justify-center space-x-2">
-                <AlertCircle size={18} />
-                <span>Erreur de vérification</span>
-              </button>
-              <button
-                onClick={reloadStatus}
-                className="w-full py-2 px-4 rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm"
-              >
-                Réessayer
-              </button>
-            </div>
-          ) : userOwnsTier ? (
-            <button disabled className="w-full py-3 px-4 rounded-lg bg-green-700 text-green-100 flex items-center justify-center space-x-2">
-              <Check size={18} />
-              <span>Déjà Possédé</span>
             </button>
           ) : showFidelityButton ? (
             <button
               onClick={() => handleFidelityClaim(nft)}
               disabled={purchasing}
-              className="w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+              className="w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
             >
               {purchasing ? (
                 <Loader size={18} className="animate-spin" />
               ) : (
                 <>
                   <Gift size={18} />
-                  <span>Réclamer Fidélité</span>
+                  <span>Réclamer NFT Fidélité</span>
                 </>
               )}
             </button>
+          ) : hasClaimedNFT && isFidelityForFidelUser ? (
+            <button disabled className="w-full py-3 px-4 rounded-lg bg-green-700 text-green-100 flex items-center justify-center space-x-2">
+              <Check size={18} />
+              <span>NFT Fidélité Réclamé</span>
+            </button>
+          ) : fidelityReserved ? (
+            <button disabled className="w-full py-3 px-4 rounded-lg bg-slate-700 text-slate-400 flex items-center justify-center space-x-2">
+              <Lock size={18} />
+              <span>Réservé Membres Fidèles</span>
+            </button>
+          ) : userOwnsTier ? (
+            <button disabled className="w-full py-3 px-4 rounded-lg bg-green-700 text-green-100 flex items-center justify-center space-x-2">
+              <Check size={18} />
+              <span>Déjà Possédé</span>
+            </button>
           ) : (
+            // ✅ Bouton d'achat normal pour TOUS les autres NFT (y compris Privilège)
             <button
               onClick={() => handlePurchase(nft)}
-              disabled={!isConnected || !isOnBSC || purchasing || !canPurchaseTier(nft.id, balance.usdc)}
+              disabled={!isConnected || !isOnBSC || purchasing || !canPurchaseTier(nft.id, balance?.usdc || 0)}
               className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
-                !isConnected || !isOnBSC || !canPurchaseTier(nft.id, balance.usdc)
+                !isConnected || !isOnBSC || !canPurchaseTier(nft.id, balance?.usdc || 0)
                   ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg'
               }`}
@@ -626,7 +619,7 @@ const NFTMarketplace: React.FC = () => {
                 <Loader size={18} className="animate-spin" />
               ) : !isConnected ? (
                 <>
-                  <Lock size={18} />
+                  <AlertCircle size={18} />
                   <span>Connecter Wallet</span>
                 </>
               ) : !isOnBSC ? (
@@ -634,7 +627,7 @@ const NFTMarketplace: React.FC = () => {
                   <AlertCircle size={18} />
                   <span>Réseau BSC Requis</span>
                 </>
-              ) : balance.usdc < nft.price ? (
+              ) : (balance?.usdc || 0) < nft.price ? (
                 <>
                   <AlertCircle size={18} />
                   <span>Balance Insuffisante</span>
@@ -651,13 +644,6 @@ const NFTMarketplace: React.FC = () => {
                 </>
               )}
             </button>
-          )}
-
-          {/* Message de statut pour debug (optionnel) */}
-          {isDevelopment && isPrivilegeForFidelUser && (
-            <div className="mt-2 text-xs text-slate-500 text-center">
-              {getStatusMessage()}
-            </div>
           )}
         </div>
       </div>
@@ -765,8 +751,8 @@ const NFTMarketplace: React.FC = () => {
               </div>
             )}
             
-            {/* Affichage info utilisateur fidèle */}
-            {isFidel && userInfo && !actuallyOwnsNFT && (
+            {/* Affichage info utilisateur fidèle pour NFT Fidélité */}
+            {isFidel && userInfo && (
               <div className="mt-6 bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-500/30 rounded-lg p-4 max-w-md mx-auto">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Crown className="text-yellow-400" size={20} />
@@ -774,7 +760,7 @@ const NFTMarketplace: React.FC = () => {
                 </div>
                 <p className="text-slate-300 text-sm">
                   Bonjour {userInfo.firstName} ! {checkEligibility().canClaim 
-                    ? 'Vous êtes éligible pour un NFT Privilège gratuit.'
+                    ? 'Vous êtes éligible pour un NFT Fidélité gratuit.'
                     : getStatusMessage()
                   }
                 </p>
@@ -869,26 +855,7 @@ const NFTMarketplace: React.FC = () => {
           {/* Statut de chargement */}
           <LoadingStatus />
 
-          {/* Debug info pour développement */}
-          {isDevelopment && (
-            <div className="mb-8 bg-slate-800 rounded-lg p-4">
-              <h3 className="text-white font-bold mb-2">🔧 Debug Info</h3>
-              <div className="text-sm text-slate-300 space-y-1">
-                <p>Tiers chargés: {Object.keys(tiersInfo).length}</p>
-                <p>Service initialisé: {initialized.toString()}</p>
-                <p>En chargement: {nftLoading.toString()}</p>
-                <p>Erreur: {nftError || 'Aucune'}</p>
-                <p>Wallet connecté: {isConnected.toString()}</p>
-                <p>Réseau correct: {isOnBSC.toString()}</p>
-                <p>Mode: {import.meta.env.MODE}</p>
-                <p>API URL: {import.meta.env.VITE_API_URL}</p>
-                <p>Contract: {import.meta.env.VITE_NFT_CONTRACT_ADDRESS}</p>
-                <p>Tiers disponibles: {Object.keys(tiersInfo).join(', ') || 'Aucun'}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Grille des NFT */}
+          {/* Grille des NFT avec support NFT Fidélité */}
           {!nftLoading && Object.keys(tiersInfo).length === 0 && !nftError ? (
             <div className="text-center py-12">
               <div className="bg-slate-800 rounded-lg p-8 max-w-md mx-auto">
@@ -909,7 +876,7 @@ const NFTMarketplace: React.FC = () => {
               </div>
             </div>
           ) : !nftLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {nftTiers.map((nft) => {
                 console.log(`🔍 Rendu NFT ${nft.name}:`, {
                   id: nft.id,
@@ -924,7 +891,7 @@ const NFTMarketplace: React.FC = () => {
         </div>
       </section>
 
-      {/* Comparaison Table */}
+      {/* Comparaison Table avec NFT Fidélité */}
       <section className="py-16 px-4 bg-slate-900">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-white text-center mb-12">Comparatif des NFT</h2>
@@ -938,6 +905,7 @@ const NFTMarketplace: React.FC = () => {
                   <th className="text-center p-4 text-white font-semibold">🥈 Argent</th>
                   <th className="text-center p-4 text-white font-semibold">🥇 Or</th>
                   <th className="text-center p-4 text-white font-semibold">💎 Privilège</th>
+                  <th className="text-center p-4 text-white font-semibold bg-emerald-800">🎁 Fidélité</th>
                 </tr>
               </thead>
               <tbody className="text-slate-300">
@@ -947,6 +915,7 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center">{nftTiers[1].price} USDC</td>
                   <td className="p-4 text-center">{nftTiers[2].price} USDC</td>
                   <td className="p-4 text-center">{nftTiers[3].price} USDC</td>
+                  <td className="p-4 text-center bg-emerald-900/20 text-emerald-400 font-semibold">GRATUIT</td>
                 </tr>
                 <tr className="border-t border-slate-600 bg-slate-750">
                   <td className="p-4 font-medium">Bonus Récompenses</td>
@@ -954,6 +923,7 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center text-green-400">+50%</td>
                   <td className="p-4 text-center text-green-400">+100%</td>
                   <td className="p-4 text-center text-green-400">+150%</td>
+                  <td className="p-4 text-center bg-emerald-900/20 text-emerald-400 font-semibold">+20%</td>
                 </tr>
                 <tr className="border-t border-slate-600">
                   <td className="p-4 font-medium">Accès Plans</td>
@@ -961,6 +931,7 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center">Starter + Standard</td>
                   <td className="p-4 text-center">Starter + Standard + Premium</td>
                   <td className="p-4 text-center">Tous les plans</td>
+                  <td className="p-4 text-center bg-emerald-900/20">Starter</td>
                 </tr>
                 <tr className="border-t border-slate-600 bg-slate-750">
                   <td className="p-4 font-medium">Périodes de Blocage</td>
@@ -968,6 +939,7 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center">30-90j</td>
                   <td className="p-4 text-center">30-180j</td>
                   <td className="p-4 text-center">30-360j</td>
+                  <td className="p-4 text-center bg-emerald-900/20">30j</td>
                 </tr>
                 <tr className="border-t border-slate-600">
                   <td className="p-4 font-medium">Support</td>
@@ -975,6 +947,7 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center">Prioritaire</td>
                   <td className="p-4 text-center">VIP</td>
                   <td className="p-4 text-center">Dédié</td>
+                  <td className="p-4 text-center bg-emerald-900/20">Communautaire</td>
                 </tr>
                 <tr className="border-t border-slate-600 bg-slate-750">
                   <td className="p-4 font-medium">Sessions 1-on-1</td>
@@ -982,6 +955,7 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center">❌</td>
                   <td className="p-4 text-center">✅</td>
                   <td className="p-4 text-center">✅ Illimité</td>
+                  <td className="p-4 text-center bg-emerald-900/20">❌</td>
                 </tr>
                 <tr className="border-t border-slate-600">
                   <td className="p-4 font-medium">Gouvernance</td>
@@ -989,6 +963,7 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center">❌</td>
                   <td className="p-4 text-center">❌</td>
                   <td className="p-4 text-center">✅</td>
+                  <td className="p-4 text-center bg-emerald-900/20">❌</td>
                 </tr>
                 <tr className="border-t border-slate-600 bg-slate-750">
                   <td className="p-4 font-medium">Supply Restant</td>
@@ -996,14 +971,16 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center text-green-400">{nftTiers[1].remaining}</td>
                   <td className="p-4 text-center text-green-400">{nftTiers[2].remaining}</td>
                   <td className="p-4 text-center text-green-400">{nftTiers[3].remaining}</td>
+                  <td className="p-4 text-center bg-emerald-900/20 text-emerald-400">{nftTiers[4]?.remaining || 12}</td>
                 </tr>
                 <tr className="border-t border-slate-600">
-                  <td className="p-4 font-medium">Fidélité</td>
-                  <td className="p-4 text-center">❌</td>
-                  <td className="p-4 text-center">❌</td>
-                  <td className="p-4 text-center">❌</td>
-                  <td className="p-4 text-center">
-                    <span className="text-yellow-400 font-semibold">🎁 GRATUIT</span>
+                  <td className="p-4 font-medium">Éligibilité</td>
+                  <td className="p-4 text-center">💰 Achat</td>
+                  <td className="p-4 text-center">💰 Achat</td>
+                  <td className="p-4 text-center">💰 Achat</td>
+                  <td className="p-4 text-center">💰 Achat</td>
+                  <td className="p-4 text-center bg-emerald-900/20">
+                    <span className="text-emerald-400 font-semibold">🎁 Fidélité Uniquement</span>
                   </td>
                 </tr>
               </tbody>
@@ -1040,14 +1017,14 @@ const NFTMarketplace: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
-                <Users className="text-white" size={24} />
+            <div className="bg-gradient-to-br from-emerald-800/20 to-teal-800/20 border border-emerald-600/30 rounded-lg p-6">
+              <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center mb-4">
+                <Gift className="text-white" size={24} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Communauté Exclusive</h3>
+              <h3 className="text-xl font-bold text-white mb-3">NFT Fidélité</h3>
               <p className="text-slate-400">
-                Rejoignez une communauté de partage de stratégies privée avec accès à des insights, 
-                des stratégies avancées et un support personnalisé.
+                Réservé aux membres fidèles sélectionnés. Ce NFT gratuit reconnaît votre soutien 
+                au projet et vous donne accès aux stratégies de base avec un bonus de 20%.
               </p>
             </div>
           </div>
@@ -1068,11 +1045,12 @@ const NFTMarketplace: React.FC = () => {
               </p>
             </div>
             
-            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-              <h3 className="text-lg font-medium text-white mb-2">Qu'est-ce que le système de fidélité ?</h3>
+            <div className="bg-gradient-to-r from-emerald-900/20 to-teal-900/20 border border-emerald-600/30 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-white mb-2">Qu'est-ce que le NFT Fidélité ?</h3>
               <p className="text-slate-400">
-                Les membres fidèles pré-sélectionnés peuvent recevoir un NFT Privilège gratuitement. 
-                Cette récompense reconnaît votre soutien au projet depuis ses débuts.
+                Le NFT Fidélité est une récompense gratuite réservée aux membres fidèles pré-sélectionnés. 
+                Il offre un accès aux stratégies de base avec un bonus de 20% et reconnaît votre soutien 
+                depuis les débuts du projet.
               </p>
             </div>
             
@@ -1156,13 +1134,13 @@ const NFTMarketplace: React.FC = () => {
               Tous les accès aux stratégies de récompense comportent des risques. Les performances passées ne garantissent pas les résultats futurs. 
               Les bonus et récompenses dépendent des performances réelles des stratégies de récompenses et ne sont pas garantis.
               Smart contracts déployés sur Binance Smart Chain (BSC). Paiements en USDC uniquement.
-              Veuillez consulter nos conditions d'utilisation et effectuer vos propres recherches avant de vous lancer dans les startégies de récompenses.
+              Veuillez consulter nos conditions d'utilisation et effectuer vos propres recherches avant de vous lancer dans les stratégies de récompenses.
             </p>
           </div>
         </div>
       </footer>
     </div>
   );
-};
+}
 
 export default NFTMarketplace;

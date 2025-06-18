@@ -1,0 +1,32 @@
+{
+  "name": "CryptocaVault Fidilité NFT #5",
+  "description": "Ce NFT donne un acces exlusif pour les membres fidele a la communaute",
+  "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeiatqtaqnxa77z7uhdufmg53w3pkcbxjgzgmos37fpefxrrfscs5ve",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Fidélité"
+    },
+    {
+      "trait_type": "Multiplier",
+      "value": "1.2X"
+    },
+    {
+      "display_type": "boost_percentage",
+      "trait_type": "Bonus",
+      "value": 0
+    },
+    {
+      "trait_type": "Plans d'accès",
+      "value": "Starter"
+    },
+    {
+      "trait_type": "Périodes de blocage",
+      "value": "30 jours"
+    },
+    {
+      "trait_type": "Support",
+      "value": "VIP"
+    }
+  ]
+}

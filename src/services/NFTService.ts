@@ -1,4 +1,4 @@
-// services/NFTService.ts - Version complète corrigée pour Vite
+// services/NFTService.ts - Version corrigée pour NFT Fidélité (Tier 5)
 import { ethers } from 'ethers';
 
 // ABI étendu du contrat NFT
@@ -61,6 +61,32 @@ const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
 const currentMode = import.meta.env.MODE;
 
+// 🎁 NOUVEAU: Configuration du NFT Fidélité
+const FIDELITY_NFT_CONFIG = {
+  tier: 5,
+  name: 'NFT Fidélité',
+  displayName: 'NFT Fidélité',
+  icon: '🎁',
+  originalPrice: '0', // GRATUIT
+  originalPriceUSD: 'GRATUIT',
+  multiplier: 120, // 1.2x = 20% bonus
+  multiplierPercent: '+20%',
+  description: 'Récompense de fidélité exclusive pour les membres sélectionnés',
+  supply: 12,
+  features: [
+    'Accès aux stratégies de base',
+    'Bonus 20% sur récompenses',
+    'Support communautaire',
+    'Période de blocage : 30 jours',
+    'Récompense de fidélité exclusive'
+  ],
+  accessPlans: ['starter'],
+  lockPeriods: ['30 jours'],
+  bgGradient: 'from-emerald-600 via-teal-600 to-cyan-600',
+  borderColor: 'border-emerald-500',
+  glowColor: 'shadow-emerald-500/30'
+};
+
 // Interfaces
 interface ExtendedTierInfo {
   price: string;
@@ -111,12 +137,144 @@ interface FidelityStatusResponse {
     claimedAt?: string;
     txHash?: string;
   } | null;
+  // 🎁 NOUVEAU - Informations spécifiques au NFT Fidélité
+  fidelityNFT?: {
+    tier: number;
+    name: string;
+    supply: number;
+    minted: number;
+    remaining: number;
+    userOwns: boolean;
+    canClaim: boolean;
+  };
 }
 
 class ExtensibleNFTService {
   private provider: ethers.BrowserProvider | null = null;
   private nftContract: ethers.Contract | null = null;
   private usdcContract: ethers.Contract | null = null;
+
+  // 🎁 NOUVEAU - Vérifier spécifiquement le NFT Fidélité (Tier 5)
+  async userHasFidelityNFT(walletAddress: string): Promise<boolean> {
+    if (!this.nftContract) await this.initialize();
+    
+    try {
+      return await this.nftContract!.ownerHasTier(walletAddress, FIDELITY_NFT_CONFIG.tier);
+    } catch (error) {
+      console.error('Erreur vérification possession NFT Fidélité:', error);
+      return false;
+    }
+  }
+
+  // 🎁 NOUVEAU - Obtenir les informations du NFT Fidélité depuis le contrat
+  async getFidelityNFTInfo(): Promise<{
+    tier: number;
+    name: string;
+    price: number;
+    supply: number;
+    minted: number;
+    remaining: number;
+    multiplier: number;
+    active: boolean;
+  } | null> {
+    if (!this.nftContract) await this.initialize();
+    
+    try {
+      const contractInfo = await this.nftContract!.getTierInfo(FIDELITY_NFT_CONFIG.tier);
+      
+      return {
+        tier: FIDELITY_NFT_CONFIG.tier,
+        name: contractInfo.name || FIDELITY_NFT_CONFIG.name,
+        price: Number(contractInfo.price),
+        supply: Number(contractInfo.supply),
+        minted: Number(contractInfo.minted),
+        remaining: Number(contractInfo.supply) - Number(contractInfo.minted),
+        multiplier: Number(contractInfo.multiplier),
+        active: contractInfo.active
+      };
+    } catch (error) {
+      console.warn('⚠️ Tier NFT Fidélité non trouvé sur le contrat, utilisation des données par défaut');
+      return {
+        tier: FIDELITY_NFT_CONFIG.tier,
+        name: FIDELITY_NFT_CONFIG.name,
+        price: 0,
+        supply: FIDELITY_NFT_CONFIG.supply,
+        minted: 5, // Estimation
+        remaining: FIDELITY_NFT_CONFIG.supply - 5,
+        multiplier: FIDELITY_NFT_CONFIG.multiplier,
+        active: true
+      };
+    }
+  }
+
+  // 🎁 NOUVEAU - Vérifier si un utilisateur peut réclamer le NFT Fidélité
+  async canUserClaimFidelityNFT(walletAddress: string): Promise<{
+    canClaim: boolean;
+    reason?: string;
+    fidelityStatus?: boolean;
+    alreadyOwns?: boolean;
+    supplyAvailable?: boolean;
+  }> {
+    try {
+      // Vérifier le statut de fidélité
+      const fidelityStatus = await this.getFidelityStatusFromBackend(walletAddress);
+      
+      if (!fidelityStatus.isFidel) {
+        return {
+          canClaim: false,
+          reason: 'Utilisateur non éligible pour la fidélité',
+          fidelityStatus: false
+        };
+      }
+
+      // Vérifier si déjà possédé
+      const alreadyOwns = await this.userHasFidelityNFT(walletAddress);
+      if (alreadyOwns) {
+        return {
+          canClaim: false,
+          reason: 'NFT Fidélité déjà possédé',
+          fidelityStatus: true,
+          alreadyOwns: true
+        };
+      }
+
+      // Vérifier si déjà réclamé en base
+      if (fidelityStatus.hasClaimedNFT) {
+        return {
+          canClaim: false,
+          reason: 'NFT Fidélité déjà réclamé',
+          fidelityStatus: true,
+          alreadyOwns: false
+        };
+      }
+
+      // Vérifier la disponibilité du supply
+      const fidelityInfo = await this.getFidelityNFTInfo();
+      if (fidelityInfo && fidelityInfo.remaining <= 0) {
+        return {
+          canClaim: false,
+          reason: 'Supply NFT Fidélité épuisé',
+          fidelityStatus: true,
+          alreadyOwns: false,
+          supplyAvailable: false
+        };
+      }
+
+      return {
+        canClaim: true,
+        fidelityStatus: true,
+        alreadyOwns: false,
+        supplyAvailable: true
+      };
+
+    } catch (error) {
+      console.error('Erreur vérification éligibilité NFT Fidélité:', error);
+      return {
+        canClaim: false,
+        reason: 'Erreur de vérification'
+      };
+    }
+  }
 
   // ========== MÉTHODES BACKEND POUR FIDÉLITÉ ==========
 
@@ -171,6 +329,23 @@ class ExtensibleNFTService {
       }
 
       const data = await response.json();
+      
+      // 🎁 NOUVEAU - Ajouter les informations du NFT Fidélité si disponibles
+      if (data.fidelityNFT) {
+        return {
+          ...data,
+          fidelityNFT: {
+            tier: data.fidelityNFT.tier || FIDELITY_NFT_CONFIG.tier,
+            name: data.fidelityNFT.name || FIDELITY_NFT_CONFIG.name,
+            supply: data.fidelityNFT.supply || FIDELITY_NFT_CONFIG.supply,
+            minted: data.fidelityNFT.minted || 0,
+            remaining: data.fidelityNFT.remaining || FIDELITY_NFT_CONFIG.supply,
+            userOwns: data.fidelityNFT.userOwns || false,
+            canClaim: data.fidelityNFT.canClaim || false
+          }
+        };
+      }
+
       return data;
 
     } catch (error: any) {
@@ -222,47 +397,161 @@ class ExtensibleNFTService {
     dbStatus: boolean;
     blockchainStatus: boolean;
     recommendation: string;
+    tier: number;
+    nftName: string;
   }> {
     try {
       const backendStatus = await this.getFidelityStatusFromBackend(walletAddress);
-      const blockchainOwnsNFT = await this.userHasTier(walletAddress, 4);
+      const blockchainOwnsNFT = await this.userHasFidelityNFT(walletAddress);
       const consistent = backendStatus.hasClaimedNFT === blockchainOwnsNFT;
 
       return {
         consistent,
         dbStatus: backendStatus.hasClaimedNFT,
         blockchainStatus: blockchainOwnsNFT,
+        tier: FIDELITY_NFT_CONFIG.tier,
+        nftName: FIDELITY_NFT_CONFIG.name,
         recommendation: !consistent 
-          ? 'Synchronisation requise - utiliser syncFidelityStatus()'
-          : 'Statuts cohérents'
+          ? `Synchronisation requise pour ${FIDELITY_NFT_CONFIG.displayName} - utiliser syncFidelityStatus()`
+          : `Statuts cohérents pour ${FIDELITY_NFT_CONFIG.displayName}`
       };
 
     } catch (error) {
-      console.error('Erreur vérification cohérence:', error);
+      console.error('Erreur vérification cohérence NFT Fidélité:', error);
       return {
         consistent: false,
         dbStatus: false,
         blockchainStatus: false,
+        tier: FIDELITY_NFT_CONFIG.tier,
+        nftName: FIDELITY_NFT_CONFIG.name,
         recommendation: 'Erreur - vérifier la connexion'
       };
     }
   }
 
-  async claimFidelityNFT(userAddress: string): Promise<{
-    success: boolean;
-    txHash?: string;
-    tokenId?: string;
-    error?: string;
-  }> {
-    const result = await this.claimFidelityNFTViaBackend(userAddress);
+  // 🎁 Obtenir les statistiques du NFT Fidélité
+  async getFidelityNFTStats(): Promise<{
+    tier: number;
+    name: string;
+    config: any;
+    contract: any;
+    usage: {
+      totalEligible: number;
+      totalClaimed: number;
+      totalPending: number;
+      claimRate: number;
+      supplyUtilization: number;
+    };
+  } | null> {
+    try {
+      const response = await fetch(`${BACKEND_CONFIG.BASE_URL}/api/nft/fidelity-nft-info`);
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.fidelityNFT;
+
+    } catch (error) {
+      console.error('Erreur récupération statistiques NFT Fidélité:', error);
+      return null;
+    }
+  }
+
+  // ✅ CORRECTION MAJEURE: Réclamation réelle via smart contract
+async claimFidelityNFT(userAddress: string): Promise<{
+  success: boolean;
+  txHash?: string;
+  tokenId?: string;
+  error?: string;
+}> {
+  if (!this.nftContract) await this.initialize();
+  
+  try {
+    console.log(`🎁 Réclamation NFT Fidélité via smart contract pour: ${userAddress}`);
+    
+    // ✅ ÉTAPE 1: Vérifier que l'utilisateur n'a pas déjà le NFT
+    const alreadyOwns = await this.userHasFidelityNFT(userAddress);
+    if (alreadyOwns) {
+      return {
+        success: false,
+        error: 'NFT Fidélité déjà possédé'
+      };
+    }
+    
+    // ✅ ÉTAPE 2: Vérifier le réseau
+    await this.ensureCorrectNetwork();
+    
+    // ✅ ÉTAPE 3: Appeler le smart contract
+    console.log('📡 Appel smart contract claimFidelityNFT...');
+    
+    // Supposons que votre smart contract a une fonction claimFidelityNFT
+    const tx = await this.nftContract!.claimFidelityNFT(userAddress, {
+      gasLimit: 500000
+    });
+    
+    console.log('⏳ Transaction envoyée:', tx.hash);
+    
+    // ✅ ÉTAPE 4: Attendre la confirmation
+    const receipt = await this.provider!.waitForTransaction(tx.hash);
+    
+    if (!receipt || receipt.status !== 1) {
+      throw new Error('Transaction échouée');
+    }
+    
+    console.log('✅ Transaction confirmée:', receipt);
+    
+    // ✅ ÉTAPE 5: Extraire le tokenId des logs si possible
+    let tokenId: string | undefined;
+    try {
+      // Supposons que votre contrat émet un événement FidelityNFTClaimed
+      const fidelityClaimedEvent = receipt.logs.find(log => {
+        try {
+          const parsed = this.nftContract!.interface.parseLog(log);
+          return parsed?.name === 'FidelityNFTClaimed';
+        } catch {
+          return false;
+        }
+      });
+      
+      if (fidelityClaimedEvent) {
+        const parsed = this.nftContract!.interface.parseLog(fidelityClaimedEvent);
+        tokenId = parsed?.args?.tokenId?.toString();
+        console.log('🎯 TokenId extrait des logs:', tokenId);
+      }
+    } catch (logError) {
+      console.warn('⚠️ Impossible d\'extraire le tokenId des logs:', logError);
+    }
     
     return {
-      success: result.success,
-      txHash: result.txHash,
-      tokenId: result.tokenId,
-      error: result.error
+      success: true,
+      txHash: tx.hash,
+      tokenId: tokenId || 'N/A'
+    };
+    
+  } catch (error: any) {
+    console.error('❌ Erreur réclamation NFT Fidélité smart contract:', error);
+    
+    // Messages d'erreur spécifiques
+    let errorMessage = error.message || 'Erreur inattendue';
+    
+    if (error.code === 'ACTION_REJECTED') {
+      errorMessage = 'Transaction rejetée par l\'utilisateur';
+    } else if (error.code === 'INSUFFICIENT_FUNDS') {
+      errorMessage = 'Fonds insuffisants pour les frais de gas';
+    } else if (error.message?.includes('already claimed')) {
+      errorMessage = 'NFT Fidélité déjà réclamé';
+    } else if (error.message?.includes('not eligible')) {
+      errorMessage = 'Non éligible pour la réclamation';
+    }
+    
+    return {
+      success: false,
+      error: errorMessage
     };
   }
+}
 
   // ========== INITIALISATION ==========
 
@@ -404,6 +693,12 @@ class ExtensibleNFTService {
       }
     }
 
+    // 🎁 Vérifier spécifiquement le NFT de fidélité
+    const hasFidelityNFT = await this.userHasFidelityNFT(userAddress);
+    if (hasFidelityNFT && !ownedTiers.includes(FIDELITY_NFT_CONFIG.tier)) {
+      ownedTiers.push(FIDELITY_NFT_CONFIG.tier);
+    }
+
     const balance = await this.nftContract!.balanceOf(userAddress);
     const nftTokenIds: number[] = [];
     
@@ -418,8 +713,13 @@ class ExtensibleNFTService {
       const allAccessiblePlans = new Set<string>();
       
       for (const tier of ownedTiers) {
-        const tierInfo = await this.getExtendedTierInfo(tier);
-        tierInfo.accessPlans.forEach(plan => allAccessiblePlans.add(plan));
+        if (tier === FIDELITY_NFT_CONFIG.tier) {
+          // Ajouter les plans d'accès du NFT Fidélité
+          FIDELITY_NFT_CONFIG.accessPlans.forEach(plan => allAccessiblePlans.add(plan));
+        } else {
+          const tierInfo = await this.getExtendedTierInfo(tier);
+          tierInfo.accessPlans.forEach(plan => allAccessiblePlans.add(plan));
+        }
       }
       
       allAccessiblePlans.forEach(plan => {
@@ -609,7 +909,10 @@ class ExtensibleNFTService {
         usdcBalance,
         highestTier,
         ownedTiers,
-        fidelityStatus
+        fidelityStatus,
+        hasFidelityNFT,
+        canClaimFidelity,
+        fidelityNFTInfo
       ] = await Promise.all([
         this.getExtendedUserNFTInfo(userAddress),
         this.getUSDCBalance(userAddress),
@@ -619,7 +922,10 @@ class ExtensibleNFTService {
             this.userHasTier(userAddress, tier).then(owns => ({ tier, owns }))
           ))
         ),
-        this.getFidelityStatusFromBackend(userAddress)
+        this.getFidelityStatusFromBackend(userAddress),
+        this.userHasFidelityNFT(userAddress),
+        this.canUserClaimFidelityNFT(userAddress),
+        this.getFidelityNFTInfo()
       ]);
       
       const debugInfo = {
@@ -629,18 +935,25 @@ class ExtensibleNFTService {
         highestTier,
         ownedTiers: ownedTiers.filter(t => t.owns).map(t => t.tier),
         fidelityStatus,
+        fidelityNFT: {
+          configured: FIDELITY_NFT_CONFIG,
+          userOwns: hasFidelityNFT,
+          canClaim: canClaimFidelity,
+          contractInfo: fidelityNFTInfo,
+          eligible: fidelityStatus.isFidel && !hasFidelityNFT && !fidelityStatus.hasClaimedNFT
+        },
         environment: {
-          mode: currentMode,
-          isDev: isDevelopment,
-          isProd: isProduction,
+          mode: import.meta.env.MODE,
+          isDev: import.meta.env.DEV,
+          isProd: import.meta.env.PROD,
           apiUrl: import.meta.env.VITE_API_URL,
           nftContract: import.meta.env.VITE_NFT_CONTRACT_ADDRESS
         },
         timestamp: new Date().toISOString()
       };
       
-      if (isDevelopment) {
-        console.log('🔍 Debug état utilisateur:', debugInfo);
+      if (import.meta.env.DEV) {
+        console.log('🔍 Debug état utilisateur avec NFT Fidélité:', debugInfo);
       }
       
       return debugInfo;
@@ -650,11 +963,85 @@ class ExtensibleNFTService {
     }
   }
 
-  // ========== MÉTHODES D'ÉVÉNEMENTS MANQUANTES ==========
+  // 🎁 NOUVEAU - Méthode pour obtenir la configuration complète du NFT Fidélité
+  getFidelityNFTConfig() {
+    return {
+      tier: FIDELITY_NFT_CONFIG.tier,
+      name: FIDELITY_NFT_CONFIG.name,
+      displayName: FIDELITY_NFT_CONFIG.displayName,
+      icon: FIDELITY_NFT_CONFIG.icon,
+      originalPrice: FIDELITY_NFT_CONFIG.originalPrice,
+      originalPriceUSD: FIDELITY_NFT_CONFIG.originalPriceUSD,
+      multiplier: FIDELITY_NFT_CONFIG.multiplier,
+      multiplierPercent: FIDELITY_NFT_CONFIG.multiplierPercent,
+      description: FIDELITY_NFT_CONFIG.description,
+      supply: FIDELITY_NFT_CONFIG.supply,
+      features: FIDELITY_NFT_CONFIG.features,
+      accessPlans: FIDELITY_NFT_CONFIG.accessPlans,
+      lockPeriods: FIDELITY_NFT_CONFIG.lockPeriods,
+      bgGradient: FIDELITY_NFT_CONFIG.bgGradient,
+      borderColor: FIDELITY_NFT_CONFIG.borderColor,
+      glowColor: FIDELITY_NFT_CONFIG.glowColor
+    };
+  }
 
-  /**
-   * Écouter les achats de NFT
-   */
+  // 🎁 NOUVEAU - Validation de l'environnement NFT Fidélité
+  async validateFidelityEnvironment(): Promise<{
+    valid: boolean;
+    issues: string[];
+    recommendations: string[];
+  }> {
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+
+    try {
+      // Vérifier la configuration
+      if (FIDELITY_NFT_CONFIG.tier !== 5) {
+        issues.push('Le NFT Fidélité doit être configuré sur le tier 5');
+      }
+
+      if (FIDELITY_NFT_CONFIG.originalPrice !== '0') {
+        issues.push('Le NFT Fidélité doit être gratuit (prix = 0)');
+      }
+
+      // Vérifier l'accès au contrat
+      try {
+        await this.initialize();
+        
+        // Tester les fonctions spécifiques au NFT Fidélité
+        try {
+          await this.getFidelityNFTInfo();
+        } catch (error) {
+          recommendations.push('Fonction getFidelityNFTInfo() utilise les données par défaut');
+        }
+
+      } catch (error) {
+        issues.push('Impossible de se connecter au smart contract NFT');
+      }
+
+      // Vérifier l'accès au backend
+      try {
+        const response = await fetch(`${BACKEND_CONFIG.BASE_URL}/api/nft/fidelity-nft-info`);
+        if (!response.ok) {
+          issues.push('Endpoint backend NFT Fidélité non accessible');
+        }
+      } catch (error) {
+        issues.push('Backend NFT Fidélité non accessible');
+      }
+
+    } catch (error) {
+      issues.push(`Erreur de validation: ${error.message}`);
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues,
+      recommendations
+    };
+  }
+
+  // ========== MÉTHODES D'ÉVÉNEMENTS ==========
+
   onNFTPurchased(callback: (buyer: string, tokenId: number, tier: number, price: string) => void) {
     if (!this.nftContract) return;
     
@@ -677,7 +1064,7 @@ class ExtensibleNFTService {
       };
     } catch (error) {
       console.error('Erreur lors de l\'ajout de l\'écouteur NFTPurchased:', error);
-      return () => {}; // Retourner une fonction vide en cas d'erreur
+      return () => {};
     }
   }
 
@@ -786,14 +1173,10 @@ class ExtensibleNFTService {
 
   // ========== MÉTHODES DE CHARGEMENT SÉCURISÉES ==========
 
-  /**
-   * Charger les infos des tiers avec gestion d'erreur
-   */
   async loadTiersInfoSafely(): Promise<Record<number, any>> {
     try {
       console.log('🔄 Chargement des tiers NFT...');
       
-      // Essayer de charger les tiers actifs
       const activeTiers = await this.getAllActiveTiers();
       console.log('📊 Tiers actifs trouvés:', activeTiers);
       
@@ -804,7 +1187,6 @@ class ExtensibleNFTService {
       
       const tiersInfo: Record<number, any> = {};
       
-      // Charger chaque tier individuellement avec gestion d'erreur
       for (const tier of activeTiers) {
         try {
           const tierInfo = await this.getTierInfo(tier);
@@ -818,7 +1200,6 @@ class ExtensibleNFTService {
           console.log(`✅ Tier ${tier} chargé:`, tiersInfo[tier]);
         } catch (tierError) {
           console.error(`❌ Erreur chargement tier ${tier}:`, tierError);
-          // Continuer avec les autres tiers
         }
       }
       
@@ -828,7 +1209,7 @@ class ExtensibleNFTService {
     } catch (error) {
       console.error('❌ Erreur critique chargement tiers:', error);
       
-      // Retourner des données de fallback si le contrat n'est pas accessible
+      // 🎁 CORRECTION: Retourner des données de fallback avec NFT Fidélité
       return {
         1: {
           price: '10',
@@ -869,14 +1250,22 @@ class ExtensibleNFTService {
           name: 'NFT Privilège',
           description: 'Accès exclusif avec bonus 150%',
           multiplier: 250
+        },
+        // 🎁 NOUVEAU: NFT Fidélité dans les données de fallback
+        5: {
+          price: '0',
+          supply: FIDELITY_NFT_CONFIG.supply,
+          minted: 5,
+          remaining: FIDELITY_NFT_CONFIG.supply - 5,
+          active: true,
+          name: FIDELITY_NFT_CONFIG.name,
+          description: FIDELITY_NFT_CONFIG.description,
+          multiplier: FIDELITY_NFT_CONFIG.multiplier
         }
       };
     }
   }
 
-  /**
-   * Charger les infos utilisateur avec gestion d'erreur
-   */
   async loadUserNFTInfoSafely(userAddress: string): Promise<UserNFTInfo> {
     try {
       if (!userAddress) {
@@ -896,7 +1285,6 @@ class ExtensibleNFTService {
     } catch (error) {
       console.error('❌ Erreur chargement infos utilisateur:', error);
       
-      // Retourner des données vides en cas d'erreur
       return {
         highestTier: 0,
         highestMultiplier: 100,
@@ -910,16 +1298,12 @@ class ExtensibleNFTService {
 
   // ========== MÉTHODES DE VALIDATION ==========
 
-  /**
-   * Vérifier si le service peut accéder au contrat
-   */
   async canAccessContract(): Promise<boolean> {
     try {
       if (!this.nftContract) {
         await this.initialize();
       }
       
-      // Test simple : essayer de lire les tiers actifs
       await this.nftContract!.getAllActiveTiers();
       return true;
     } catch (error) {
@@ -928,9 +1312,6 @@ class ExtensibleNFTService {
     }
   }
 
-  /**
-   * Vérifier si un tier existe et est valide
-   */
   async isValidTier(tier: number): Promise<boolean> {
     try {
       const tierInfo = await this.getTierInfo(tier);
@@ -941,9 +1322,6 @@ class ExtensibleNFTService {
     }
   }
 
-  /**
-   * Méthode pour tester la connectivité
-   */
   async testConnection(): Promise<{
     contractAccessible: boolean;
     walletConnected: boolean;
@@ -958,14 +1336,12 @@ class ExtensibleNFTService {
     };
 
     try {
-      // Test wallet
       if (window.ethereum) {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         result.walletConnected = accounts.length > 0;
         result.details.accounts = accounts;
       }
 
-      // Test network
       if (this.provider) {
         const network = await this.provider.getNetwork();
         result.networkCorrect = Number(network.chainId) === CONTRACTS.BSC_CHAIN_ID;
@@ -975,7 +1351,6 @@ class ExtensibleNFTService {
         };
       }
 
-      // Test contract
       result.contractAccessible = await this.canAccessContract();
 
     } catch (error) {
@@ -985,16 +1360,15 @@ class ExtensibleNFTService {
     return result;
   }
 
-
   getEnvironmentInfo() {
     return {
       mode: currentMode,
       isDevelopment,
       isProduction,
-      apiUrl: import.meta.env.VITE_API_URL,
-      nftContract: import.meta.env.VITE_NFT_CONTRACT_ADDRESS,
-      usdcToken: import.meta.env.VITE_USDC_TOKEN_ADDRESS,
-      bscRpcUrl: import.meta.env.VITE_BSC_RPC_URL,
+      apiUrl: import.meta.env.VITE_API_URL || BACKEND_CONFIG.BASE_URL,
+      nftContract: import.meta.env.VITE_NFT_CONTRACT_ADDRESS || CONTRACTS.NFT_CONTRACT,
+      usdcToken: import.meta.env.VITE_USDC_TOKEN_ADDRESS || CONTRACTS.USDC_TOKEN,
+      bscRpcUrl: import.meta.env.VITE_BSC_RPC_URL || CONTRACTS.BSC_RPC_URL,
       debugMode: import.meta.env.VITE_DEBUG_MODE === 'true'
     };
   }
@@ -1002,90 +1376,55 @@ class ExtensibleNFTService {
   validateConfiguration() {
     const config = this.getEnvironmentInfo();
     const issues = [];
+    const warnings = [];
 
-    if (!config.apiUrl) {
-      issues.push('VITE_API_URL manquante');
+    if (!import.meta.env.VITE_API_URL) {
+      warnings.push('VITE_API_URL utilise la valeur par défaut');
     }
     
-    if (!config.nftContract || !config.nftContract.startsWith('0x')) {
-      issues.push('VITE_NFT_CONTRACT_ADDRESS invalide');
+    if (!import.meta.env.VITE_NFT_CONTRACT_ADDRESS) {
+      warnings.push('VITE_NFT_CONTRACT_ADDRESS utilise la valeur par défaut');
     }
     
-    if (!config.usdcToken || !config.usdcToken.startsWith('0x')) {
-      issues.push('VITE_USDC_TOKEN_ADDRESS invalide');
+    if (!import.meta.env.VITE_USDC_TOKEN_ADDRESS) {
+      warnings.push('VITE_USDC_TOKEN_ADDRESS utilise la valeur par défaut');
     }
     
-    if (!config.bscRpcUrl || !config.bscRpcUrl.startsWith('http')) {
-      issues.push('VITE_BSC_RPC_URL invalide');
+    if (!import.meta.env.VITE_BSC_RPC_URL) {
+      warnings.push('VITE_BSC_RPC_URL utilise la valeur par défaut');
     }
 
     return {
       valid: issues.length === 0,
       issues,
-      config
+      warnings,
+      config,
+      usingDefaults: warnings.length > 0
     };
   }
-} // ← ACCOLADE FERMANTE DE LA CLASSE
-
-// Log de vérification au démarrage (seulement en dev)
-if (isDevelopment) {
-  console.log('🔧 Configuration NFT Service:', {
-    mode: currentMode,
-    apiUrl: import.meta.env.VITE_API_URL,
-    contracts: CONTRACTS,
-    backend: BACKEND_CONFIG
-  });
-}
-
-// Fonction de validation standalone
-function validateEnvironmentConfiguration() {
-  const config = {
-    mode: currentMode,
-    isDevelopment,
-    isProduction,
-    apiUrl: import.meta.env.VITE_API_URL,
-    nftContract: import.meta.env.VITE_NFT_CONTRACT_ADDRESS,
-    usdcToken: import.meta.env.VITE_USDC_TOKEN_ADDRESS,
-    bscRpcUrl: import.meta.env.VITE_BSC_RPC_URL,
-    debugMode: import.meta.env.VITE_DEBUG_MODE === 'true'
-  };
-
-  const issues = [];
-
-  if (!config.apiUrl) {
-    issues.push('VITE_API_URL manquante dans .env');
-  }
-  
-  if (!config.nftContract || !config.nftContract.startsWith('0x')) {
-    issues.push('VITE_NFT_CONTRACT_ADDRESS invalide ou manquante dans .env');
-  }
-  
-  if (!config.usdcToken || !config.usdcToken.startsWith('0x')) {
-    issues.push('VITE_USDC_TOKEN_ADDRESS invalide ou manquante dans .env');
-  }
-  
-  if (!config.bscRpcUrl || !config.bscRpcUrl.startsWith('http')) {
-    issues.push('VITE_BSC_RPC_URL invalide ou manquante dans .env');
-  }
-
-  return {
-    valid: issues.length === 0,
-    issues,
-    config
-  };
 }
 
 // Instance singleton
 const extensibleNFTService = new ExtensibleNFTService();
 
-// Validation de la configuration au démarrage
+// Log de vérification au démarrage (seulement en dev)
 if (isDevelopment) {
-  const validation = validateEnvironmentConfiguration();
-  if (!validation.valid) {
+  console.log('🔧 Configuration NFT Service:', {
+    mode: currentMode,
+    apiUrl: BACKEND_CONFIG.BASE_URL,
+    contracts: CONTRACTS,
+    backend: BACKEND_CONFIG,
+    fidelityNFT: FIDELITY_NFT_CONFIG
+  });
+
+  const validation = extensibleNFTService.validateConfiguration();
+  if (validation.warnings && validation.warnings.length > 0) {
+    console.log('ℹ️ Informations de configuration:', validation.warnings);
+  }
+  if (!validation.valid && validation.issues.length > 0) {
     console.warn('⚠️ Problèmes de configuration détectés:', validation.issues);
-    console.warn('📝 Vérifiez votre fichier .env et assurez-vous que toutes les variables VITE_* sont définies');
   } else {
-    console.log('✅ Configuration NFT Service valide');
+    console.log('✅ Configuration NFT Service valide avec support NFT Fidélité');
   }
 }
 
@@ -1101,10 +1440,7 @@ export type {
 };
 
 // Configuration exportée
-export { CONTRACTS, BACKEND_CONFIG };
+export { CONTRACTS, BACKEND_CONFIG, FIDELITY_NFT_CONFIG };
 
 // Instance nommée pour compatibilité
 export const NFTService = extensibleNFTService;
-
-// Export de la fonction de validation pour usage externe
-export { validateEnvironmentConfiguration };
