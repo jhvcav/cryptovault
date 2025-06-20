@@ -1,32 +1,48 @@
 {
-  "name": "CryptocaVault Or NFT #3",
-  "description": "Ce NFT donne accès à toutes les stratégies premium de la plateforme CryptocaVault avec un bonus de 100% sur toutes les récompenses.",
-  "image": "https://gateway.pinata.cloud/ipfs/bafybeihdqgktpmsrln2nwrvpgiedi23mutp4atqd7bdcfishti2neh6xoe/or_3.jpg",
+  "name": "Nymeriel de Lune #1", 
+  "description": "Archonte des cycles célestes, Nymeriel de Lune dévoile les secrets des stratégies premium. Sous sa protection lunaire, les récompenses doublent.",
+  "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/gold_nft.png",
   "attributes": [
     {
-      "trait_type": "Tier",
-      "value": "Or"
+      "trait_type": "Nom Artistique", 
+      "value": "Nymeriel de Lune"
+    },
+    {
+      "trait_type": "Tier Technique",
+      "value": "Gold"
+    },
+    {
+      "trait_type": "Élément",
+      "value": "Lune"
     },
     {
       "trait_type": "Multiplier",
-      "value": "2.0X"
+      "value": "2.0x"
     },
     {
-      "display_type": "boost_percentage",
       "trait_type": "Bonus",
-      "value": 100
+      "value": "100%"
     },
     {
-      "trait_type": "Plans d'accès",
-      "value": "Starter, Standard, Premium"
+      "trait_type": "Access Plans",
+      "value": "Starter + Standard + Premium"
     },
     {
-      "trait_type": "Périodes de blocage",
-      "value": "30-180 jours"
+      "trait_type": "Rarity",
+      "value": "Rare"
     },
     {
-      "trait_type": "Support",
-      "value": "VIP"
+      "trait_type": "Price",
+      "value": "500 USDC"
+    },
+    {
+      "trait_type": "Supply",
+      "value": "200"
+    },
+    {
+      "trait_type": "Pouvoir",
+      "value": "Cycle Céleste"
     }
-  ]
+  ],
+  "background_color": "FFD700"
 }

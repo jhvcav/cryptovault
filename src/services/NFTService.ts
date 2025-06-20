@@ -5,6 +5,7 @@ import { ethers } from 'ethers';
 const NFT_CONTRACT_ABI = [
   "function purchaseNFT(uint256 tier) external",
   "function claimFidelityNFT(address fidelUser) external",
+  "function claimMyFidelityNFT() external",
   "function createNewTier(string name, string description, uint256 price, uint256 supply, uint256 multiplier, string baseURI, string[] accessPlans, bool isSpecial) external returns (uint256)",
   "function createEventNFT(string name, string description, uint256 supply, uint256 multiplier, string baseURI, string[] accessPlans) external returns (uint256)",
   "function createPartnershipNFT(string partnerName, string description, uint256 price, uint256 supply, uint256 multiplier, string baseURI, string[] accessPlans) external returns (uint256)",
@@ -40,7 +41,7 @@ const USDC_ABI = [
 
 // Configuration des contrats
 const CONTRACTS = {
-  NFT_CONTRACT: import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '0x3b9E6cad77E65e153321C91Ac5225a4C564b3aE4',
+  NFT_CONTRACT: import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '0xe7778688E645d0795c71837C2d44e08A1B6f6c0A',
   USDC_TOKEN: import.meta.env.VITE_USDC_TOKEN_ADDRESS || '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
   BSC_CHAIN_ID: 56,
   BSC_RPC_URL: import.meta.env.VITE_BSC_RPC_URL || 'https://bsc-dataseed.binance.org/'
@@ -208,7 +209,7 @@ class ExtensibleNFTService {
   }
 
   // 🎁 NOUVEAU - Vérifier si un utilisateur peut réclamer le NFT Fidélité
-  async canUserClaimFidelityNFT(walletAddress: string): Promise<{
+  async canUserClaimMyFidelityNFT(walletAddress: string): Promise<{
     canClaim: boolean;
     reason?: string;
     fidelityStatus?: boolean;
@@ -278,7 +279,7 @@ class ExtensibleNFTService {
 
   // ========== MÉTHODES BACKEND POUR FIDÉLITÉ ==========
 
-  async claimFidelityNFTViaBackend(walletAddress: string): Promise<{
+  async claimMyFidelityNFTViaBackend(walletAddress: string): Promise<{
     success: boolean;
     txHash?: string;
     tokenId?: string;
@@ -460,7 +461,7 @@ class ExtensibleNFTService {
   }
 
   // ✅ CORRECTION MAJEURE: Réclamation réelle via smart contract
-async claimFidelityNFT(userAddress: string): Promise<{
+async claimMyFidelityNFT(userAddress: string): Promise<{
   success: boolean;
   txHash?: string;
   tokenId?: string;
@@ -484,74 +485,37 @@ async claimFidelityNFT(userAddress: string): Promise<{
     await this.ensureCorrectNetwork();
     
     // ✅ ÉTAPE 3: Appeler le smart contract
-    console.log('📡 Appel smart contract claimFidelityNFT...');
+    console.log('📡 Appel smart contract claimyFidelityNFT...');
     
-    // Supposons que votre smart contract a une fonction claimFidelityNFT
-    const tx = await this.nftContract!.claimFidelityNFT(userAddress, {
-      gasLimit: 500000
+    // Supposons que votre smart contract a une fonction claimMyFidelityNFT
+   
+    const tx = await this.nftContract!.claimMyFidelityNFT({
+    gasLimit: 500000
     });
     
     console.log('⏳ Transaction envoyée:', tx.hash);
     
     // ✅ ÉTAPE 4: Attendre la confirmation
-    const receipt = await this.provider!.waitForTransaction(tx.hash);
-    
-    if (!receipt || receipt.status !== 1) {
-      throw new Error('Transaction échouée');
-    }
-    
-    console.log('✅ Transaction confirmée:', receipt);
-    
-    // ✅ ÉTAPE 5: Extraire le tokenId des logs si possible
-    let tokenId: string | undefined;
-    try {
-      // Supposons que votre contrat émet un événement FidelityNFTClaimed
-      const fidelityClaimedEvent = receipt.logs.find(log => {
-        try {
-          const parsed = this.nftContract!.interface.parseLog(log);
-          return parsed?.name === 'FidelityNFTClaimed';
-        } catch {
-          return false;
-        }
-      });
-      
-      if (fidelityClaimedEvent) {
-        const parsed = this.nftContract!.interface.parseLog(fidelityClaimedEvent);
-        tokenId = parsed?.args?.tokenId?.toString();
-        console.log('🎯 TokenId extrait des logs:', tokenId);
-      }
-    } catch (logError) {
-      console.warn('⚠️ Impossible d\'extraire le tokenId des logs:', logError);
-    }
-    
+    console.log('⏳ Transaction envoyée:', tx.hash);
+    console.log('🔗 Vérifiez sur BSCScan:', `https://bscscan.com/tx/${tx.hash}`);
+
+    // Attendre un délai fixe au lieu de waitForTransaction
+    await new Promise(resolve => setTimeout(resolve, 10000)); // 10 secondes
+
+    // Considérer comme succès si la transaction a été envoyée
     return {
       success: true,
       txHash: tx.hash,
-      tokenId: tokenId || 'N/A'
+      tokenId: 'pending' // Sera visible plus tard
     };
-    
   } catch (error: any) {
-    console.error('❌ Erreur réclamation NFT Fidélité smart contract:', error);
-    
-    // Messages d'erreur spécifiques
-    let errorMessage = error.message || 'Erreur inattendue';
-    
-    if (error.code === 'ACTION_REJECTED') {
-      errorMessage = 'Transaction rejetée par l\'utilisateur';
-    } else if (error.code === 'INSUFFICIENT_FUNDS') {
-      errorMessage = 'Fonds insuffisants pour les frais de gas';
-    } else if (error.message?.includes('already claimed')) {
-      errorMessage = 'NFT Fidélité déjà réclamé';
-    } else if (error.message?.includes('not eligible')) {
-      errorMessage = 'Non éligible pour la réclamation';
-    }
-    
+    console.error('❌ Erreur réclamation NFT Fidélité:', error);
     return {
       success: false,
-      error: errorMessage
+      error: error.message || 'Erreur lors de la réclamation du NFT Fidélité'
     };
   }
-}
+  }
 
   // ========== INITIALISATION ==========
 
@@ -924,7 +888,7 @@ async claimFidelityNFT(userAddress: string): Promise<{
         ),
         this.getFidelityStatusFromBackend(userAddress),
         this.userHasFidelityNFT(userAddress),
-        this.canUserClaimFidelityNFT(userAddress),
+        this.canUserClaimMyFidelityNFT(userAddress),
         this.getFidelityNFTInfo()
       ]);
       

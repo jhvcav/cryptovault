@@ -24,6 +24,7 @@ import AdminDashboard from './AdminDashboard';
 import WalletMonitoring from './WalletMonitoring';
 import ContractMonitoring from './ContractMonitoring';
 import PlansManagement from './PlansManagement';
+import NFTManager from '../components/NFTManager'; // Nouveau composant
 
 const AdminPage: React.FC = () => {
   const { isOwner } = useOwner();
@@ -32,6 +33,12 @@ const AdminPage: React.FC = () => {
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = 'transparent';
+
+  // Fonction pour ouvrir le gestionnaire NFT
+  const openNFTManager = () => {
+    const nftPath = './NFT_image/NFT_GestionImages.html';
+    window.open(nftPath, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+  };
 
   // Rediriger si pas authentifié
   if (!isAuthenticated) {
@@ -152,6 +159,17 @@ const AdminPage: React.FC = () => {
               <Tab 
                 fontWeight="medium"
                 _selected={{ 
+                  color: 'orange.600', 
+                  borderColor: 'orange.500',
+                  borderBottomColor: 'white',
+                  bg: 'black'
+                }}
+              >
+                🎨 Gestion NFT
+              </Tab>
+              <Tab 
+                fontWeight="medium"
+                _selected={{ 
                   color: 'white', 
                   borderColor: 'green.500',
                   borderBottomColor: 'white',
@@ -189,12 +207,17 @@ const AdminPage: React.FC = () => {
                 <PlansManagement />
               </TabPanel>
 
-              {/* Onglet 4: Monitoring Wallet */}
+              {/* Onglet 4: Gestion NFT */}
+              <TabPanel p={0}>
+                <NFTManager />
+              </TabPanel>
+
+              {/* Onglet 5: Monitoring Wallet */}
               <TabPanel p={0}>
                 <WalletMonitoring />
               </TabPanel>
 
-              {/* Onglet 5: Monitoring Contrat */}
+              {/* Onglet 6: Monitoring Contrat */}
               <TabPanel p={0}>
                 <ContractMonitoring />
               </TabPanel>
@@ -223,7 +246,7 @@ const AdminPage: React.FC = () => {
           <br />
           • Contrat CryptoVault: 0x719fd9F511DDc561D03801161742D84ECb9445e9
           <br />
-          • Contrat NFT: 0x3b9E6cad77E65e153321C91Ac5225a4C564b3aE4
+          • Contrat NFT: 0xe7778688E645d0795c71837C2d44e08A1B6f6c0A
           <br />
         </Box>
       </VStack>

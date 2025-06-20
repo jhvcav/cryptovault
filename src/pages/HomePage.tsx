@@ -68,7 +68,7 @@ const HomePage = () => {
                       <span className="text-white font-medium flex items-center">
                         🥉 NFT Bronze
                       </span>
-                      <span className="bg-amber-600 rounded-full px-3 py-1 text-xs font-semibold text-white">300 USDC</span>
+                      <span className="bg-amber-600 rounded-full px-3 py-1 text-xs font-semibold text-white">120 USDC</span>
                     </div>
                     <p className="text-slate-300 text-sm">Accès aux stratégies de base avec bonus 1.2X</p>
                   </div>
@@ -78,7 +78,7 @@ const HomePage = () => {
                       <span className="text-white font-medium flex items-center">
                         🥈 NFT Argent
                       </span>
-                      <span className="bg-slate-500 rounded-full px-3 py-1 text-xs font-semibold text-white">750 USDC</span>
+                      <span className="bg-slate-500 rounded-full px-3 py-1 text-xs font-semibold text-white">250 USDC</span>
                     </div>
                     <p className="text-slate-300 text-sm">Accès étendu avec bonus 1.5X sur les récompenses</p>
                   </div>
@@ -88,7 +88,7 @@ const HomePage = () => {
                       <span className="text-white font-medium flex items-center">
                         🥇 NFT Or
                       </span>
-                      <span className="bg-yellow-600 rounded-full px-3 py-1 text-xs font-semibold text-white">1,800 USDC</span>
+                      <span className="bg-yellow-600 rounded-full px-3 py-1 text-xs font-semibold text-white">500 USDC</span>
                     </div>
                     <p className="text-slate-300 text-sm">Accès premium avec bonus 2.0X et stratégies avancées</p>
                   </div>
@@ -98,9 +98,19 @@ const HomePage = () => {
                       <span className="text-white font-medium flex items-center">
                         💎 NFT Privilège
                       </span>
-                      <span className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-full px-3 py-1 text-xs font-semibold text-white">4,500 USDC</span>
+                      <span className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-full px-3 py-1 text-xs font-semibold text-white">1000 USDC</span>
                     </div>
                     <p className="text-slate-300 text-sm">Accès VIP exclusif avec bonus 2.5X et avantages premium</p>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-red-500/20 to-red-400/20 backdrop-blur-sm p-4 rounded-lg border border-yellow-500/30 hover:border-yellow-400 transition-colors">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-white font-medium flex items-center">
+                        🎁 NFT Fidélité
+                      </span>
+                      <span className="bg-yellow-600 rounded-full px-3 py-1 text-xs font-semibold text-white">Cadeaux aux membres fidèles</span>
+                    </div>
+                    <p className="text-slate-300 text-sm">Stratégie de base avec bonus 1.2X et Extras réservés membres</p>
                   </div>
                 </div>
               </div>

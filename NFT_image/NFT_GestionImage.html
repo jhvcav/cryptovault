@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaelith de Sève NFT</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Cinzel', serif;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .upload-area {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed #d4af37;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            color: #d4af37;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #ffd700;
+        }
+
+        .image-display {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .main-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .text-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 25px 30px;
+        }
+
+        .nft-title {
+            font-size: 2.2em;
+            font-weight: 700;
+            text-align: center;
+            color: #fff;
+            text-shadow: 
+                3px 3px 6px rgba(0, 0, 0, 0.9),
+                0 0 15px rgba(255, 215, 0, 0.5),
+                0 0 30px rgba(255, 215, 0, 0.3);
+            letter-spacing: 3px;
+            margin: 0;
+        }
+
+        .nft-subtitle {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            margin-top: 8px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* BOUTON DE TÉLÉCHARGEMENT - TRÈS VISIBLE */
+        .download-section {
+            background: rgba(212, 175, 55, 0.2);
+            border: 2px solid #d4af37;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .download-button {
+            background: linear-gradient(135deg, #d4af37, #ffd700);
+            color: #1a1a2e;
+            border: none;
+            padding: 20px 50px;
+            border-radius: 30px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 1.3em;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .download-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(212, 175, 55, 0.6);
+            background: linear-gradient(135deg, #ffd700, #ffec8b);
+        }
+
+        .status-text {
+            color: #d4af37;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Zone de chargement -->
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <div style="font-size: 2em; margin-bottom: 15px;">📸</div>
+            <div style="font-size: 1.3em; margin-bottom: 10px;">Cliquez pour charger votre image NFT</div>
+            <div style="font-size: 0.9em; opacity: 0.8;">(JPG, PNG, GIF acceptés)</div>
+        </div>
+
+        <!-- CHAMPS DE PERSONNALISATION -->
+        <div style="background: rgba(212, 175, 55, 0.1); border: 2px solid #d4af37; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+            <h3 style="color: #d4af37; margin-top: 0; text-align: center;">✏️ Personnaliser le texte</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="color: #fff; font-weight: bold; display: block; margin-bottom: 5px;">
+                    Nom principal :
+                </label>
+                <input type="text" id="mainText" value="VAELITH DE SÈVE" style="
+                    width: 100%; 
+                    padding: 10px; 
+                    border: 2px solid #d4af37; 
+                    border-radius: 8px; 
+                    background: rgba(255,255,255,0.1); 
+                    color: #fff; 
+                    font-family: 'Cinzel', serif;
+                    font-size: 1.1em;
+                    box-sizing: border-box;
+                ">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="color: #fff; font-weight: bold; display: block; margin-bottom: 5px;">
+                    Sous-titre :
+                </label>
+                <input type="text" id="subText" value="LEGENDARY NFT COLLECTION" style="
+                    width: 100%; 
+                    padding: 10px; 
+                    border: 2px solid #d4af37; 
+                    border-radius: 8px; 
+                    background: rgba(255,255,255,0.1); 
+                    color: #fff; 
+                    font-family: 'Cinzel', serif;
+                    box-sizing: border-box;
+                ">
+            </div>
+            
+            <button onclick="updatePreview()" style="
+                background: linear-gradient(135deg, #8B4513, #CD853F);
+                color: #fff;
+                border: none;
+                padding: 10px 25px;
+                border-radius: 20px;
+                font-family: 'Cinzel', serif;
+                font-weight: 600;
+                cursor: pointer;
+                width: 100%;
+                box-sizing: border-box;
+            ">🔄 Mettre à jour l'aperçu</button>
+        </div>
+
+        <!-- Affichage de l'image -->
+        <div class="image-display" id="imageDisplay">
+            <img id="mainImage" class="main-image" alt="Vaelith de Sève">
+            <div class="text-overlay">
+                <h1 class="nft-title">VAELITH DE SÈVE</h1>
+                <p class="nft-subtitle">Legendary NFT Collection</p>
+            </div>
+        </div>
+
+        <!-- SECTION DE TÉLÉCHARGEMENT - TOUJOURS VISIBLE -->
+        <div class="download-section">
+            <div class="status-text" id="statusText">⬇️ Téléchargement prêt</div>
+            <button class="download-button" onclick="downloadImageWithText()">
+                📥 Télécharger avec le nom
+            </button>
+            <div style="color: rgba(255,255,255,0.6); font-size: 0.9em; margin-top: 10px;">
+                Cliquez pour sauvegarder l'image avec le texte incrusté
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gestion du chargement d'image
+        document.getElementById('fileInput').addEventListener('change', handleImageLoad);
+        
+        // Glisser-déposer
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', handleDrop);
+        
+        // Coller
+        document.addEventListener('paste', handlePaste);
+
+        function handleImageLoad(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                loadImage(files[0]);
+            }
+        }
+
+        function handlePaste(e) {
+            const items = e.clipboardData.items;
+            for (let item of items) {
+                if (item.type.startsWith('image/')) {
+                    loadImage(item.getAsFile());
+                    break;
+                }
+            }
+        }
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('mainImage').src = e.target.result;
+                document.getElementById('imageDisplay').style.display = 'block';
+                updatePreview(); // Mettre à jour l'aperçu avec le texte actuel
+                document.getElementById('statusText').textContent = '✅ Image chargée - Prêt à télécharger';
+                document.getElementById('statusText').style.color = '#4CAF50';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updatePreview() {
+            const previewMainText = document.getElementById('mainText').value;
+            const previewSubText = document.getElementById('subText').value;
+            
+            // Mettre à jour l'aperçu sur l'image
+            document.querySelector('.nft-title').textContent = previewMainText;
+            document.querySelector('.nft-subtitle').textContent = previewSubText;
+        }
+
+        function downloadImageWithText() {
+            const img = document.getElementById('mainImage');
+            
+            if (!img.src || img.src === '' || img.src.includes('data:') === false) {
+                alert('⚠️ Veuillez d\'abord charger une image !');
+                return;
+            }
+
+            // Mettre à jour le statut
+            document.getElementById('statusText').textContent = '⏳ Génération en cours...';
+            document.getElementById('statusText').style.color = '#FFA500';
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const imageObj = new Image();
+            
+            imageObj.onload = function() {
+                try {
+                    // Configurer le canvas
+                    canvas.width = this.naturalWidth || this.width;
+                    canvas.height = this.naturalHeight || this.height;
+                    
+                    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+                    
+                    // Dessiner l'image
+                    ctx.drawImage(this, 0, 0, canvas.width, canvas.height);
+                    
+                    // Configurer le texte
+                    const fontSize = Math.max(canvas.width * 0.06, 40);
+                    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                    ctx.textAlign = 'center';
+                    
+                    // Position du texte
+                    const textX = canvas.width / 2;
+                    const textY = canvas.height - fontSize * 1.5;
+                    
+                    // Ombre du texte
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                    ctx.shadowBlur = 8;
+                    ctx.shadowOffsetX = 3;
+                    ctx.shadowOffsetY = 3;
+                    
+                    // Récupérer le texte personnalisé
+                    const customMainText = document.getElementById('mainText').value || 'VAELITH DE SÈVE';
+                    const customSubText = document.getElementById('subText').value || 'LEGENDARY NFT COLLECTION';
+                    
+                    // Texte principal
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillText(customMainText, textX, textY);
+                    
+                    // Sous-titre
+                    const subtitleSize = fontSize * 0.4;
+                    ctx.font = `${subtitleSize}px Arial, sans-serif`;
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(customSubText, textX, textY + subtitleSize * 1.2);
+                    
+                    console.log('Texte ajouté, création du lien de téléchargement...');
+                    
+                    // MÉTHODE SIMPLE : Créer un lien de téléchargement direct
+                    const dataURL = canvas.toDataURL('image/png', 0.95);
+                    
+                    // Créer un nom de fichier dynamique basé sur le texte principal
+                    const fileMainText = document.getElementById('mainText').value || 'NFT';
+                    const fileName = fileMainText.replace(/[^a-zA-Z0-9]/g, '_') + '_NFT.png';
+                    
+                    // Créer un lien de téléchargement direct
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = fileName;
+                    link.style.display = 'none';
+                    
+                    // Ajouter au DOM et cliquer
+                    document.body.appendChild(link);
+                    
+                    // Essayer plusieurs méthodes
+                    try {
+                        link.click();
+                        console.log('Téléchargement via click() lancé');
+                    } catch (e) {
+                        console.log('Click() échoué, essai avec event');
+                        
+                        // Méthode alternative avec event
+                        const event = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        link.dispatchEvent(event);
+                    }
+                    
+                    // Nettoyer après un délai
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                    }, 1000);
+                    
+                    // Afficher aussi l'image finale dans la page comme backup
+                    showResultImage(dataURL);
+                    
+                    // Mettre à jour le statut
+                    document.getElementById('statusText').textContent = '✅ Image générée ! Vérifiez vos téléchargements ou faites clic droit sur l\'image ci-dessous';
+                    document.getElementById('statusText').style.color = '#4CAF50';
+                    
+                    console.log('Processus terminé !');
+                    
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert('❌ Erreur lors de la génération de l\'image');
+                    document.getElementById('statusText').textContent = '❌ Erreur de génération';
+                    document.getElementById('statusText').style.color = '#FF0000';
+                }
+            };
+            
+            imageObj.onerror = function() {
+                console.error('Erreur de chargement de l\'image');
+                alert('❌ Erreur lors du chargement de l\'image');
+                document.getElementById('statusText').textContent = '❌ Erreur de chargement';
+                document.getElementById('statusText').style.color = '#FF0000';
+            };
+            
+            imageObj.src = img.src;
+        }
+
+        function showResultImage(dataURL) {
+            // Retirer l'ancienne image de résultat si elle existe
+            const oldResult = document.getElementById('resultImage');
+            if (oldResult) {
+                oldResult.remove();
+            }
+            
+            // Créer la section de résultat
+            const resultDiv = document.createElement('div');
+            resultDiv.id = 'resultImage';
+            resultDiv.style.cssText = `
+                margin-top: 30px;
+                padding: 20px;
+                background: rgba(212, 175, 55, 0.1);
+                border: 2px solid #d4af37;
+                border-radius: 15px;
+                text-align: center;
+            `;
+            
+            resultDiv.innerHTML = `
+                <h3 style="color: #d4af37; margin-top: 0;">🎨 Votre NFT final</h3>
+                <p style="color: #fff; margin-bottom: 15px;">
+                    <strong>Clic droit sur l'image → "Enregistrer l'image sous..."</strong>
+                </p>
+                <img src="${dataURL}" style="
+                    max-width: 100%; 
+                    height: auto; 
+                    border: 2px solid #d4af37; 
+                    border-radius: 10px;
+                    cursor: pointer;
+                " alt="Votre NFT Vaelith de Sève" title="Clic droit pour sauvegarder">
+                <br><br>
+                <a href="${dataURL}" download="Vaelith_de_Seve_NFT.png" style="
+                    background: linear-gradient(135deg, #d4af37, #ffd700);
+                    color: #1a1a2e;
+                    padding: 10px 25px;
+                    text-decoration: none;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    display: inline-block;
+                    margin-top: 10px;
+                ">📥 Télécharger</a>
+            `;
+            
+            // Ajouter après la section de téléchargement
+            const downloadSection = document.querySelector('.download-section');
+            downloadSection.parentNode.insertBefore(resultDiv, downloadSection.nextSibling);
+        }
+    </script>
+</body>
+</html>

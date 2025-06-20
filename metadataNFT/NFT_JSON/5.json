@@ -1,32 +1,56 @@
 {
-  "name": "CryptocaVault Fidilité NFT #5",
-  "description": "Ce NFT donne un acces exlusif pour les membres fidele a la communaute",
-  "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeiatqtaqnxa77z7uhdufmg53w3pkcbxjgzgmos37fpefxrrfscs5ve",
+  "name": "Lúmëran de l'Alliance #1",
+  "description": "Gardien éternel des serments sacrés, Lúmëran de l'Alliance honore la fidélité des premiers disciples. Ce don divin amplifie les récompenses de 20% en témoignage de loyauté.",
+  "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/fidelity_nft.png",
   "attributes": [
     {
-      "trait_type": "Tier",
-      "value": "Fidélité"
+      "trait_type": "Nom Artistique",
+      "value": "Lúmëran de l'Alliance"
+    },
+    {
+      "trait_type": "Tier Technique",
+      "value": "Fidelity"
+    },
+    {
+      "trait_type": "Élément", 
+      "value": "Alliance"
     },
     {
       "trait_type": "Multiplier",
-      "value": "1.2X"
+      "value": "1.2x"
     },
     {
-      "display_type": "boost_percentage",
       "trait_type": "Bonus",
-      "value": 0
+      "value": "20%"
     },
     {
-      "trait_type": "Plans d'accès",
+      "trait_type": "Access Plans",
       "value": "Starter"
     },
     {
-      "trait_type": "Périodes de blocage",
-      "value": "30 jours"
+      "trait_type": "Rarity",
+      "value": "Legendary"
     },
     {
-      "trait_type": "Support",
-      "value": "VIP"
+      "trait_type": "Price",
+      "value": "FREE"
+    },
+    {
+      "trait_type": "Supply",
+      "value": "50"
+    },
+    {
+      "trait_type": "Type",
+      "value": "Fidelity Reward"
+    },
+    {
+      "trait_type": "Pouvoir",
+      "value": "Serment Éternel"
+    },
+    {
+      "trait_type": "Origine",
+      "value": "Don de Fidélité"
     }
-  ]
+  ],
+  "background_color": "50C878"
 }

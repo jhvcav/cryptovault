@@ -1,11 +1,8 @@
-//src/hooks/useFidelityStatus.ts
-// Hook pour vérifier le statut de fidélité d'un utilisateur et gérer les NFT associés
+//src/hooks/useFidelityStatus.ts - Version avec votre smart contract existant
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import extensibleNFTService, { FidelityStatusResponse } from '../services/NFTService';
 import { FIDELITY_NFT_CONFIG, getFidelityMessages } from '../config/fidelityConfig';
 
-// ✅ Configuration Supabase directe avec vos variables d'environnement
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -41,6 +38,14 @@ interface FidelityState {
     remaining: number;
     userOwns: boolean;
   };
+  // Nouveaux états pour la blockchain
+  claiming: boolean;
+  lastClaimResult?: {
+    success: boolean;
+    txHash?: string;
+    tokenId?: string;
+    error?: string;
+  };
 }
 
 export const useFidelityStatus = (walletAddress: string | null) => {
@@ -51,15 +56,15 @@ export const useFidelityStatus = (walletAddress: string | null) => {
     highestTier: '0',
     userInfo: null,
     loading: true,
-    inconsistencyDetected: false
+    inconsistencyDetected: false,
+    claiming: false
   });
 
-  // ✅ SOLUTION DIRECTE : Interroger Supabase directement
-  const checkFidelityDirectInSupabase = useCallback(async (address: string): Promise<FidelityStatusResponse> => {
+  // Vérification directe dans Supabase
+  const checkFidelityDirectInSupabase = useCallback(async (address: string) => {
     try {
-      console.log(`🔍 Vérification directe Supabase pour: ${address}`);
+      console.log(`🔍 Vérification Supabase pour: ${address}`);
 
-      // ✅ Requête directe dans votre table users_authorized
       const { data: user, error } = await supabase
         .from('users_authorized')
         .select(`
@@ -77,20 +82,15 @@ export const useFidelityStatus = (walletAddress: string | null) => {
         .eq('status', 'Active')
         .single();
 
-      // Pas d'utilisateur trouvé = pas fidèle
       if (error && error.code === 'PGRST116') {
-        console.log('ℹ️ Utilisateur non trouvé dans users_authorized');
         return {
           isFidel: false,
           hasClaimedNFT: false,
-          actuallyOwnsNFT: false,
-          highestTier: '0',
           userInfo: null
         };
       }
 
       if (error) {
-        console.error('❌ Erreur Supabase:', error);
         throw new Error(error.message);
       }
 
@@ -98,56 +98,31 @@ export const useFidelityStatus = (walletAddress: string | null) => {
         return {
           isFidel: false,
           hasClaimedNFT: false,
-          actuallyOwnsNFT: false,
-          highestTier: '0',
           userInfo: null
         };
       }
 
-      // ✅ Analyser votre structure de données
       const isFidel = user.fidelity_status === 'OUI';
       const hasClaimedNFT = user.fidelity_nft_claimed === 'true' || user.fidelity_nft_claimed === true;
 
-      console.log('📊 Utilisateur trouvé:', {
-        id: user.id,
-        wallet: user.wallet_address,
-        name: `${user.first_name} ${user.last_name}`,
-        fidelity_status: user.fidelity_status,
-        fidelity_nft_claimed: user.fidelity_nft_claimed,
-        isFidel,
-        hasClaimedNFT
-      });
-
-      // ✅ Construire la réponse
       return {
         isFidel,
         hasClaimedNFT,
-        actuallyOwnsNFT: false, // Sera vérifié côté blockchain
-        highestTier: isFidel ? (hasClaimedNFT ? '5' : '0') : '0',
         userInfo: isFidel ? {
           firstName: user.first_name || 'Utilisateur',
           lastName: user.last_name || '',
           email: `${user.first_name?.toLowerCase() || 'user'}@exemple.com`,
           claimedAt: user.fidelity_nft_claimed_date || null
-        } : null,
-        fidelityNFT: isFidel ? {
-          tier: FIDELITY_NFT_CONFIG.tier,
-          name: FIDELITY_NFT_CONFIG.name,
-          supply: FIDELITY_NFT_CONFIG.supply,
-          minted: hasClaimedNFT ? 1 : 0,
-          remaining: hasClaimedNFT ? FIDELITY_NFT_CONFIG.supply - 1 : FIDELITY_NFT_CONFIG.supply,
-          userOwns: hasClaimedNFT,
-          canClaim: isFidel && !hasClaimedNFT
-        } : undefined
+        } : null
       };
 
     } catch (error: any) {
-      console.error('❌ Erreur vérification Supabase directe:', error);
+      console.error('❌ Erreur Supabase:', error);
       throw error;
     }
   }, []);
 
-  // ✅ Fonction principale de vérification
+  // Fonction principale de vérification avec blockchain
   const checkFidelity = useCallback(async () => {
     if (!walletAddress) {
       setFidelityData(prev => ({ 
@@ -173,40 +148,50 @@ export const useFidelityStatus = (walletAddress: string | null) => {
     try {
       setFidelityData(prev => ({ ...prev, loading: true, error: undefined }));
       
-      console.log(`🔍 Vérification fidélité ${FIDELITY_NFT_CONFIG.displayName} pour:`, walletAddress);
+      console.log(`🔍 Vérification fidélité complète pour:`, walletAddress);
       
-      // ✅ Vérification directe dans Supabase
+      // 1. Vérification Supabase
       const supabaseStatus = await checkFidelityDirectInSupabase(walletAddress);
       
-      // Vérifier la possession réelle du NFT sur la blockchain
-      let actuallyOwnsNFT = false;
+      // 2. Vérification blockchain
+      let blockchainOwnership = {
+        hasNFT: false,
+        highestTier: 0,
+        balance: 0
+      };
+
       try {
-        actuallyOwnsNFT = await extensibleNFTService.userHasFidelityNFT(walletAddress);
-        console.log('🔗 Vérification blockchain:', { actuallyOwnsNFT });
+        // ✅ UTILISER VOTRE NFTService EXISTANT
+        const extensibleNFTService = (await import('../services/NFTService')).default;
+        const hasFidelityNFT = await extensibleNFTService.userHasFidelityNFT(walletAddress);
+        const highestTier = await extensibleNFTService.getUserHighestTier(walletAddress);
+        
+        blockchainOwnership = {
+          hasNFT: hasFidelityNFT,
+          highestTier: highestTier,
+          balance: hasFidelityNFT ? 1 : 0
+        };
+        
+        console.log('🔗 Vérification blockchain:', blockchainOwnership);
       } catch (blockchainError) {
         console.warn('⚠️ Erreur vérification blockchain:', blockchainError);
       }
       
-      // Vérifier la cohérence
+      // 3. Analyser les résultats
+      const actuallyOwnsNFT = blockchainOwnership.hasNFT && blockchainOwnership.highestTier >= 5;
       const inconsistency = supabaseStatus.hasClaimedNFT && !actuallyOwnsNFT;
       
       setFidelityData({
         isFidel: supabaseStatus.isFidel,
         hasClaimedNFT: supabaseStatus.hasClaimedNFT,
         actuallyOwnsNFT,
-        highestTier: supabaseStatus.highestTier,
+        highestTier: Math.max(blockchainOwnership.highestTier, supabaseStatus.hasClaimedNFT ? 5 : 0).toString(),
         userInfo: supabaseStatus.userInfo,
         loading: false,
         inconsistencyDetected: inconsistency,
         error: undefined,
-        fidelityNFT: supabaseStatus.fidelityNFT ? {
-          tier: supabaseStatus.fidelityNFT.tier,
-          name: supabaseStatus.fidelityNFT.name,
-          canClaim: supabaseStatus.fidelityNFT.canClaim,
-          supply: supabaseStatus.fidelityNFT.supply,
-          remaining: supabaseStatus.fidelityNFT.remaining,
-          userOwns: supabaseStatus.fidelityNFT.userOwns
-        } : {
+        claiming: false,
+        fidelityNFT: {
           tier: FIDELITY_NFT_CONFIG.tier,
           name: FIDELITY_NFT_CONFIG.name,
           canClaim: supabaseStatus.isFidel && !supabaseStatus.hasClaimedNFT && !actuallyOwnsNFT,
@@ -216,29 +201,16 @@ export const useFidelityStatus = (walletAddress: string | null) => {
         }
       });
 
-      // Debug spécifique pour votre cas
-      if (walletAddress.toLowerCase() === '0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd') {
-        console.log('🎁 DEBUG pour votre wallet:', {
-          walletAddress,
-          isFidel: supabaseStatus.isFidel,
-          hasClaimedNFT: supabaseStatus.hasClaimedNFT,
-          canClaim: supabaseStatus.isFidel && !supabaseStatus.hasClaimedNFT,
-          userInfo: supabaseStatus.userInfo,
-          fidelityNFT: supabaseStatus.fidelityNFT
-        });
-      }
-
       if (inconsistency) {
-        console.warn(`🔄 Incohérence détectée pour ${FIDELITY_NFT_CONFIG.displayName}:`, {
+        console.warn(`🔄 Incohérence détectée:`, {
           hasClaimedNFT: supabaseStatus.hasClaimedNFT,
           actuallyOwnsNFT,
-          walletAddress,
-          tier: FIDELITY_NFT_CONFIG.tier
+          walletAddress
         });
       }
 
     } catch (error: any) {
-      console.error(`❌ Erreur vérification fidélité ${FIDELITY_NFT_CONFIG.displayName}:`, error);
+      console.error(`❌ Erreur vérification fidélité:`, error);
       setFidelityData({
         isFidel: false,
         hasClaimedNFT: false,
@@ -247,6 +219,7 @@ export const useFidelityStatus = (walletAddress: string | null) => {
         userInfo: null,
         loading: false,
         inconsistencyDetected: false,
+        claiming: false,
         error: error.message || 'Erreur de vérification',
         fidelityNFT: undefined
       });
@@ -257,21 +230,120 @@ export const useFidelityStatus = (walletAddress: string | null) => {
     checkFidelity();
   }, [checkFidelity]);
 
-  // ✅ Fonction de synchronisation (met à jour Supabase directement)
+  // ✅ FONCTION DE RÉCLAMATION AVEC VOTRE SMART CONTRACT
+  const claimMyFidelityNFT = useCallback(async (): Promise<FidelityNFTResult> => {
+    if (!walletAddress) {
+      return { success: false, error: 'Adresse wallet manquante' };
+    }
+
+    try {
+      setFidelityData(prev => ({ ...prev, claiming: true, error: undefined }));
+      
+      console.log(`🎁 Début réclamation NFT Fidélité sur blockchain...`);
+      
+      // Vérifications préliminaires
+      if (!fidelityData.isFidel) {
+        throw new Error('Non éligible pour la réclamation');
+      }
+
+      if (fidelityData.hasClaimedNFT && !fidelityData.inconsistencyDetected) {
+        throw new Error('NFT Fidélité déjà réclamé');
+      }
+
+      if (fidelityData.actuallyOwnsNFT) {
+        throw new Error('NFT Fidélité déjà possédé');
+      }
+
+      // ✅ UTILISER VOTRE NFTService EXISTANT
+      const extensibleNFTService = (await import('../services/NFTService')).default;
+      const result = await extensibleNFTService.claimMyFidelityNFT(walletAddress);
+      
+      setFidelityData(prev => ({ 
+        ...prev, 
+        claiming: false,
+        lastClaimResult: result
+      }));
+
+      if (result.success) {
+        console.log('✅ NFT Fidélité réclamé avec succès:', result);
+        
+        // Mettre à jour la base de données via Supabase
+        try {
+          const { error: updateError } = await supabase
+            .from('users_authorized')
+            .update({
+              fidelity_nft_claimed: 'true',
+              fidelity_nft_claimed_date: new Date().toISOString()
+            })
+            .eq('wallet_address', walletAddress.toLowerCase())
+            .eq('fidelity_status', 'OUI');
+
+          if (updateError) {
+            console.warn('⚠️ Erreur mise à jour base de données:', updateError);
+          } else {
+            console.log('✅ Base de données mise à jour');
+          }
+        } catch (dbError) {
+          console.warn('⚠️ Erreur synchronisation base de données:', dbError);
+        }
+        
+        // Recharger le statut après succès
+        setTimeout(() => {
+          checkFidelity();
+        }, 2000);
+        
+        return result;
+      } else {
+        console.error('❌ Erreur réclamation:', result.error);
+        setFidelityData(prev => ({ 
+          ...prev, 
+          error: result.error 
+        }));
+        return result;
+      }
+      
+    } catch (error: any) {
+      console.error(`❌ Erreur réclamation NFT Fidélité:`, error);
+      
+      let errorMessage = error.message || 'Erreur inattendue';
+      
+      // Messages d'erreur spécifiques
+      if (error.code === 'ACTION_REJECTED') {
+        errorMessage = 'Transaction rejetée par l\'utilisateur';
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        errorMessage = 'Fonds insuffisants pour les frais de gas';
+      } else if (error.message?.includes('already claimed')) {
+        errorMessage = 'NFT Fidélité déjà réclamé';
+      } else if (error.message?.includes('not eligible')) {
+        errorMessage = 'Non éligible pour la réclamation';
+      }
+      
+      const errorResult: FidelityNFTResult = {
+        success: false,
+        error: errorMessage
+      };
+
+      setFidelityData(prev => ({ 
+        ...prev, 
+        claiming: false,
+        error: errorResult.error,
+        lastClaimResult: errorResult
+      }));
+      
+      return errorResult;
+    }
+  }, [walletAddress, fidelityData.isFidel, fidelityData.hasClaimedNFT, fidelityData.actuallyOwnsNFT, fidelityData.inconsistencyDetected, checkFidelity]);
+
+  // Fonction de synchronisation
   const syncStatus = useCallback(async (): Promise<boolean> => {
     if (!walletAddress) return false;
     
     try {
       setFidelityData(prev => ({ ...prev, loading: true }));
-      
-      console.log('🔄 Synchronisation du statut NFT Fidélité...');
-      
-      // Recharger depuis Supabase
       await checkFidelity();
-      
       return true;
     } catch (error: any) {
-      console.error('❌ Erreur synchronisation NFT Fidélité:', error);
+      console.error('❌ Erreur synchronisation:', error);
       setFidelityData(prev => ({ 
         ...prev, 
         loading: false,
@@ -286,90 +358,7 @@ export const useFidelityStatus = (walletAddress: string | null) => {
     await checkFidelity();
   }, [checkFidelity]);
 
-  // ✅ Fonction de réclamation NFT Fidélité (met à jour Supabase directement)
-  const claimFidelityNFT = useCallback(async (): Promise<{
-    success: boolean;
-    txHash?: string;
-    tokenId?: string;
-    error?: string;
-  }> => {
-    if (!walletAddress) {
-      return { success: false, error: 'Adresse wallet manquante' };
-    }
-
-    try {
-      console.log(`🎁 Début réclamation ${FIDELITY_NFT_CONFIG.displayName}...`);
-      
-      // Vérifier l'éligibilité
-      if (!fidelityData.isFidel) {
-        return {
-          success: false,
-          error: 'Non éligible pour la réclamation'
-        };
-      }
-
-      if (fidelityData.hasClaimedNFT) {
-        return {
-          success: false,
-          error: 'NFT Fidélité déjà réclamé'
-        };
-      }
-      
-      // ✅ Simuler la transaction blockchain (à remplacer par vraie transaction)
-      const simulatedTxHash = `0x${Math.random().toString(16).substr(2, 40)}`;
-      const simulatedTokenId = Math.floor(Math.random() * 1000).toString();
-
-      // ✅ Mettre à jour Supabase directement
-      const { data: updatedUser, error: updateError } = await supabase
-        .from('users_authorized')
-        .update({
-          fidelity_nft_claimed: 'true',
-          fidelity_nft_claimed_date: new Date().toISOString()
-        })
-        .eq('wallet_address', walletAddress.toLowerCase())
-        .eq('fidelity_status', 'OUI')
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('❌ Erreur mise à jour Supabase:', updateError);
-        throw new Error('Erreur mise à jour du statut de réclamation');
-      }
-
-      console.log(`✅ ${FIDELITY_NFT_CONFIG.displayName} réclamé avec succès:`, {
-        wallet: walletAddress,
-        txHash: simulatedTxHash,
-        tokenId: simulatedTokenId,
-        updatedUser
-      });
-      
-      // Mettre à jour le statut local
-      setFidelityData(prev => ({
-        ...prev,
-        hasClaimedNFT: true,
-        actuallyOwnsNFT: true,
-        userInfo: prev.userInfo ? {
-          ...prev.userInfo,
-          claimedAt: new Date().toISOString()
-        } : null
-      }));
-      
-      return {
-        success: true,
-        txHash: simulatedTxHash,
-        tokenId: simulatedTokenId
-      };
-      
-    } catch (error: any) {
-      console.error(`❌ Erreur réclamation ${FIDELITY_NFT_CONFIG.displayName}:`, error);
-      return {
-        success: false,
-        error: error.message || 'Erreur inattendue'
-      };
-    }
-  }, [walletAddress, fidelityData.isFidel, fidelityData.hasClaimedNFT]);
-
-  // Fonction pour vérifier l'éligibilité NFT Fidélité
+  // Fonction pour vérifier l'éligibilité
   const checkEligibility = useCallback((): {
     canClaim: boolean;
     reason?: string;
@@ -384,40 +373,33 @@ export const useFidelityStatus = (walletAddress: string | null) => {
     if (fidelityData.actuallyOwnsNFT) {
       return { 
         canClaim: false, 
-        reason: `${FIDELITY_NFT_CONFIG.displayName} déjà possédé` 
+        reason: 'NFT Fidélité déjà possédé sur la blockchain' 
       };
     }
 
     if (fidelityData.hasClaimedNFT && !fidelityData.inconsistencyDetected) {
       return { 
         canClaim: false, 
-        reason: `${FIDELITY_NFT_CONFIG.displayName} déjà réclamé` 
+        reason: 'NFT Fidélité déjà réclamé' 
       };
     }
 
-    if (fidelityData.inconsistencyDetected) {
-      return { 
-        canClaim: false, 
-        reason: 'Synchronisation requise - données incohérentes' 
-      };
-    }
-
-    // Vérifier le supply disponible
     if (fidelityData.fidelityNFT && fidelityData.fidelityNFT.remaining <= 0) {
       return { 
         canClaim: false, 
-        reason: `Stock de ${FIDELITY_NFT_CONFIG.displayName} épuisé` 
+        reason: 'Stock NFT Fidélité épuisé' 
       };
     }
 
     return { canClaim: true };
   }, [fidelityData.isFidel, fidelityData.actuallyOwnsNFT, fidelityData.hasClaimedNFT, fidelityData.inconsistencyDetected, fidelityData.fidelityNFT]);
 
-  // Messages de statut pour NFT Fidélité
+  // Messages de statut
   const getStatusMessage = useCallback((): string => {
     const messages = getFidelityMessages();
     
     if (fidelityData.loading) return 'Vérification en cours...';
+    if (fidelityData.claiming) return 'Réclamation en cours sur la blockchain...';
     if (fidelityData.error) return `Erreur: ${fidelityData.error}`;
     
     if (!fidelityData.isFidel) return messages.notEligible;
@@ -431,98 +413,28 @@ export const useFidelityStatus = (walletAddress: string | null) => {
     if (fidelityData.hasClaimedNFT) return messages.claimed;
     
     if (fidelityData.fidelityNFT && fidelityData.fidelityNFT.remaining <= 0) {
-      return `Stock de ${FIDELITY_NFT_CONFIG.displayName} épuisé`;
+      return 'Stock NFT Fidélité épuisé';
     }
     
     return messages.eligible;
-  }, [fidelityData.loading, fidelityData.error, fidelityData.isFidel, fidelityData.inconsistencyDetected, fidelityData.actuallyOwnsNFT, fidelityData.hasClaimedNFT, fidelityData.fidelityNFT]);
+  }, [fidelityData.loading, fidelityData.claiming, fidelityData.error, fidelityData.isFidel, fidelityData.inconsistencyDetected, fidelityData.actuallyOwnsNFT, fidelityData.hasClaimedNFT, fidelityData.fidelityNFT]);
 
-  // Fonction pour obtenir des statistiques détaillées
-  const getFidelityStats = useCallback(async () => {
+  // Validation de l'environnement blockchain
+  const validateBlockchainEnvironment = useCallback(async () => {
     try {
-      // ✅ Statistiques directes depuis Supabase
-      const { count: totalEligible, error: eligibleError } = await supabase
-        .from('users_authorized')
-        .select('*', { count: 'exact', head: true })
-        .eq('fidelity_status', 'OUI')
-        .eq('status', 'Active');
-
-      const { count: totalClaimed, error: claimedError } = await supabase
-        .from('users_authorized')
-        .select('*', { count: 'exact', head: true })
-        .eq('fidelity_status', 'OUI')
-        .eq('fidelity_nft_claimed', 'true')
-        .eq('status', 'Active');
-
-      if (eligibleError || claimedError) {
-        throw new Error('Erreur récupération statistiques');
-      }
-
+      const extensibleNFTService = (await import('../services/NFTService')).default;
+      const validation = extensibleNFTService.validateConfiguration();
+      
       return {
-        tier: FIDELITY_NFT_CONFIG.tier,
-        name: FIDELITY_NFT_CONFIG.name,
-        config: FIDELITY_NFT_CONFIG,
-        usage: {
-          totalEligible: totalEligible || 0,
-          totalClaimed: totalClaimed || 0,
-          totalPending: (totalEligible || 0) - (totalClaimed || 0),
-          claimRate: totalEligible > 0 ? Math.round(((totalClaimed || 0) / totalEligible) * 100) : 0,
-          supplyUtilization: Math.round(((totalClaimed || 0) / FIDELITY_NFT_CONFIG.supply) * 100)
-        }
+        valid: validation.valid,
+        issues: validation.issues || [],
+        recommendations: validation.warnings || []
       };
     } catch (error) {
-      console.error('Erreur récupération statistiques NFT Fidélité:', error);
-      return {
-        tier: FIDELITY_NFT_CONFIG.tier,
-        name: FIDELITY_NFT_CONFIG.name,
-        config: FIDELITY_NFT_CONFIG,
-        usage: {
-          totalEligible: 1,
-          totalClaimed: 0,
-          totalPending: 1,
-          claimRate: 0,
-          supplyUtilization: 0
-        }
-      };
-    }
-  }, []);
-
-  // Fonction de validation de l'environnement
-  const validateEnvironment = useCallback(async () => {
-    try {
-      if (!supabaseUrl || !supabaseAnonKey) {
-        return {
-          valid: false,
-          issues: ['Variables Supabase manquantes'],
-          recommendations: ['Ajouter VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans .env']
-        };
-      }
-
-      // Test de connexion à Supabase
-      const { count, error } = await supabase
-        .from('users_authorized')
-        .select('*', { count: 'exact', head: true })
-        .limit(1);
-
-      if (error) {
-        return {
-          valid: false,
-          issues: ['Connexion Supabase échouée'],
-          recommendations: ['Vérifier les clés Supabase', 'Vérifier les permissions RLS']
-        };
-      }
-
-      return {
-        valid: true,
-        issues: [],
-        recommendations: ['Configuration Supabase directe OK']
-      };
-    } catch (error) {
-      console.error('Erreur validation environnement NFT Fidélité:', error);
       return {
         valid: false,
-        issues: ['Erreur de validation'],
-        recommendations: ['Vérifier la configuration Supabase']
+        issues: ['Impossible de charger NFTService'],
+        recommendations: ['Vérifier la configuration NFTService']
       };
     }
   }, []);
@@ -531,11 +443,10 @@ export const useFidelityStatus = (walletAddress: string | null) => {
     ...fidelityData, 
     syncStatus,
     reloadStatus,
-    claimFidelityNFT,
+    claimMyFidelityNFT,
     checkEligibility,
     getStatusMessage,
-    getFidelityStats,
-    validateEnvironment,
+    validateBlockchainEnvironment,
     fidelityNFTConfig: FIDELITY_NFT_CONFIG
   };
 };

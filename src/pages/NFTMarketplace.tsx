@@ -77,7 +77,7 @@ const NFTMarketplace: React.FC = () => {
     error: fidelityError,
     syncStatus,
     reloadStatus,
-    claimFidelityNFT: claimFromHook,
+    claimMyFidelityNFT: claimFromHook,
     checkEligibility,
     getStatusMessage
   } = useFidelityStatus(address);
@@ -92,7 +92,7 @@ const NFTMarketplace: React.FC = () => {
     loadUserNFTs,
     loadTiersInfo,
     purchaseNFT,
-    claimFidelityNFT,
+    claimMyFidelityNFT,
     canPurchaseTier,
     getNFTMultiplier,
     initialized,
@@ -258,7 +258,10 @@ const NFTMarketplace: React.FC = () => {
           'Bonus 20% sur récompenses',
           'Support communautaire',
           'Période de blocage : 30 jours',
-          'Récompense de fidélité exclusive'
+          'Récompense de fidélité exclusive',
+          'Accès anticipé nouveaux produits',
+          'Participation gouvernance plateforme',
+          'Insights mensuels'
         ],
         bgGradient: 'from-emerald-600 via-teal-600 to-cyan-600',
         borderColor: 'border-emerald-500',
@@ -302,7 +305,7 @@ const NFTMarketplace: React.FC = () => {
     try {
       console.log('🎁 Début réclamation NFT fidélité...');
       
-      // Utiliser la fonction du hook qui gère tout
+      // ✅ UTILISER VOTRE HOOK QUI UTILISE LE SMART CONTRACT
       const result = await claimFromHook();
       
       if (result.success) {

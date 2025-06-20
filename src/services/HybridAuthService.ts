@@ -72,35 +72,45 @@ class HybridAuthService {
       const normalizedAddress = walletAddress.toLowerCase();
       console.log('🔍 Recherche utilisateur pour:', normalizedAddress);
 
-      const { data, error } = await supabase
+      // ✅ CHANGEMENT: Utiliser .select() au lieu de .single() pour gérer les doublons
+      const { data: users, error } = await supabase
         .from('users_authorized')
         .select(`
+          id,
           wallet_address,
           first_name,
           last_name,
           status,
           fidelity_status,
-          fidelity_nft_claimed
+          fidelity_nft_claimed,
+          created_at
         `)
-        .eq('wallet_address', normalizedAddress)
-        .single();
+        .eq('wallet_address', normalizedAddress);
 
       if (error) {
-        console.log('❌ Erreur Supabase ou utilisateur non trouvé:', error.message);
+        console.log('❌ Erreur Supabase:', error.message);
         return { isAuthorized: false };
       }
 
-      if (!data) {
+      if (!users || users.length === 0) {
         console.log('❌ Aucun utilisateur trouvé pour:', normalizedAddress);
         return { isAuthorized: false };
       }
 
-      console.log('✅ Utilisateur trouvé:', {
+      // ✅ GESTION DES DOUBLONS: Prendre le plus récent (plus grand ID)
+      if (users.length > 1) {
+        console.warn(`⚠️ ${users.length} utilisateurs trouvés pour ${normalizedAddress}`);
+        console.log('🔧 Doublons détectés:', users.map(u => ({ id: u.id, created_at: u.created_at })));
+      }
+
+      // Trier par ID décroissant et prendre le premier (plus récent)
+      const data = users.sort((a, b) => b.id - a.id)[0];
+      console.log('✅ Utilisateur sélectionné (ID le plus récent):', {
+        id: data.id,
         firstName: data.first_name,
         lastName: data.last_name,
         status: data.status,
-        fidelityStatus: data.fidelity_status,
-        fidelityNftClaimed: data.fidelity_nft_claimed
+        fidelityStatus: data.fidelity_status
       });
 
       return {
@@ -117,7 +127,6 @@ class HybridAuthService {
       return { isAuthorized: false };
     }
   }
-
   /**
    * Récupère tous les utilisateurs autorisés (fonction admin)
    */
@@ -624,26 +633,44 @@ async updateUserComplete(
       const normalizedAddress = walletAddress.toLowerCase();
       console.log('🔍 Vérification fidélité pour:', normalizedAddress);
 
-      const { data, error } = await supabase
+      // ✅ CHANGEMENT: Utiliser .select() au lieu de .single()
+      const { data: users, error } = await supabase
         .from('users_authorized')
         .select(`
+          id,
           first_name,
           last_name,
           status,
           fidelity_status,
-          fidelity_nft_claimed
+          fidelity_nft_claimed,
+          created_at
         `)
         .eq('wallet_address', normalizedAddress)
-        .eq('status', 'Active')
-        .single();
+        .eq('status', 'Active');
 
-      if (error || !data) {
+      if (error) {
+        console.log('❌ Erreur Supabase fidélité:', error.message);
+        return {
+          isFidel: false,
+          hasClaimedNFT: false,
+          userInfo: null
+        };
+      }
+
+      if (!users || users.length === 0) {
         console.log('❌ Utilisateur non trouvé ou inactif');
         return {
           isFidel: false,
           hasClaimedNFT: false,
           userInfo: null
         };
+      }
+
+      // Prendre le plus récent en cas de doublons
+      const data = users.sort((a, b) => b.id - a.id)[0];
+
+      if (users.length > 1) {
+        console.warn(`⚠️ ${users.length} utilisateurs actifs trouvés, utilisation du plus récent (ID: ${data.id})`);
       }
 
       const result = {
@@ -666,6 +693,103 @@ async updateUserComplete(
         hasClaimedNFT: false,
         userInfo: null
       };
+    }
+  }
+
+  // ✅ NOUVELLE FONCTION: Nettoyer les doublons
+  async cleanupDuplicateUsers(walletAddress: string): Promise<{
+    success: boolean;
+    removed: number;
+    message: string;
+  }> {
+    try {
+      const normalizedAddress = walletAddress.toLowerCase();
+      console.log('🧹 Nettoyage des doublons pour:', normalizedAddress);
+
+      // Récupérer tous les utilisateurs avec cette adresse
+      const { data: users, error: fetchError } = await supabase
+        .from('users_authorized')
+        .select('id, created_at, wallet_address')
+        .eq('wallet_address', normalizedAddress)
+        .order('id', { ascending: false });
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!users || users.length <= 1) {
+        return {
+          success: true,
+          removed: 0,
+          message: 'Aucun doublon trouvé'
+        };
+      }
+
+      // Garder le plus récent (premier dans la liste triée par ID desc)
+      const toKeep = users[0];
+      const toRemove = users.slice(1);
+
+      console.log('👍 À garder:', toKeep);
+      console.log('🗑️ À supprimer:', toRemove.map(u => ({ id: u.id, created_at: u.created_at })));
+
+      // Supprimer les doublons
+      const idsToRemove = toRemove.map(user => user.id);
+      
+      const { error: deleteError } = await supabase
+        .from('users_authorized')
+        .delete()
+        .in('id', idsToRemove);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      console.log(`✅ ${toRemove.length} doublon(s) supprimé(s) pour ${normalizedAddress}`);
+
+      return {
+        success: true,
+        removed: toRemove.length,
+        message: `${toRemove.length} doublon(s) supprimé(s) avec succès`
+      };
+
+    } catch (error: any) {
+      console.error('❌ Erreur nettoyage doublons:', error);
+      return {
+        success: false,
+        removed: 0,
+        message: 'Erreur lors du nettoyage: ' + error.message
+      };
+    }
+  }
+
+  // ✅ FONCTION DE DIAGNOSTIC
+  async diagnoseDuplicates(): Promise<any> {
+    try {
+      console.log('🔍 Diagnostic des doublons...');
+
+      const { data: duplicates, error } = await supabase
+        .from('users_authorized')
+        .select('wallet_address, count(*)')
+        .group('wallet_address')
+        .having('count(*) > 1');
+
+      if (error) {
+        console.error('❌ Erreur diagnostic:', error);
+        return { error: error.message };
+      }
+
+      console.log('📊 Doublons détectés:', duplicates);
+
+      return {
+        totalDuplicates: duplicates?.length || 0,
+        duplicateAddresses: duplicates || [],
+        recommendation: duplicates && duplicates.length > 0 
+          ? 'Utilisez cleanupDuplicateUsers(address) pour chaque adresse en doublon'
+          : 'Aucun doublon détecté'
+      };
+
+    } catch (error: any) {
+      return { error: error.message };
     }
   }
 

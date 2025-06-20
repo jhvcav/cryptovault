@@ -1,28 +1,48 @@
 {
-  "name": "CryptocaVault Argent NFT #2",
-  "description": "Ce NFT donne accès aux stratégies étendues de la plateforme CryptocaVault avec un bonus de 50% sur toutes les récompenses.",
-  "image": "https://gateway.pinata.cloud/ipfs/bafybeihdqgktpmsrln2nwrvpgiedi23mutp4atqd7bdcfishti2neh6xoe/argent_2.jpg",
+  "name": "Sylwen des Brumes #1",
+  "description": "Maître des voiles éthérés, Sylwen des Brumes guide les initiés vers des stratégies plus raffinées. Sa magie des brumes multiplie les récompenses par 1.5.",
+  "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/silver_nft.png",
   "attributes": [
     {
-      "trait_type": "Tier",
-      "value": "Argent"
+      "trait_type": "Nom Artistique",
+      "value": "Sylwen des Brumes"
+    },
+    {
+      "trait_type": "Tier Technique",
+      "value": "Silver"
+    },
+    {
+      "trait_type": "Élément",
+      "value": "Brumes"
     },
     {
       "trait_type": "Multiplier",
-      "value": "1.5X"
+      "value": "1.5x"
     },
     {
-      "display_type": "boost_percentage",
       "trait_type": "Bonus",
-      "value": 50
+      "value": "50%"
     },
     {
-      "trait_type": "Plans d'accès",
-      "value": "Starter, Standard"
+      "trait_type": "Access Plans",
+      "value": "Starter + Standard"
     },
     {
-      "trait_type": "Périodes de blocage",
-      "value": "30-90 jours"
+      "trait_type": "Rarity",
+      "value": "Uncommon"
+    },
+    {
+      "trait_type": "Price",
+      "value": "250 USDC"
+    },
+    {
+      "trait_type": "Supply",
+      "value": "500"
+    },
+    {
+      "trait_type": "Pouvoir",
+      "value": "Voile Éthéré"
     }
-  ]
+  ],
+  "background_color": "C0C0C0"
 }

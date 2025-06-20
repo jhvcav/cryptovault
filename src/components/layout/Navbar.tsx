@@ -211,7 +211,7 @@ const openInMetaMask = () => {
                       : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
                   }`}
                 >
-                  Investir
+                  Déposer des fonds
                 </Link>
                 <Link 
                   to="/dashboard" 

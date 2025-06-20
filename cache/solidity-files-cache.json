@@ -1,48 +1,6 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/workspaces/cryptovault/contracts/CryptoVaultNFT.sol": {
-      "lastModificationDate": 1749672485368,
-      "contentHash": "952dfa32b2ac88b5f2ca8f0b18e6c0d2",
-      "sourceName": "contracts/CryptoVaultNFT.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@openzeppelin/contracts/token/ERC721/ERC721.sol",
-        "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
-        "@openzeppelin/contracts/access/Ownable.sol",
-        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
-        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.19"
-      ],
-      "artifacts": [
-        "CryptoVaultNFT"
-      ]
-    },
     "/workspaces/cryptovault/node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol": {
       "lastModificationDate": 1749671360817,
       "contentHash": "1535f8c0c68463f8c1b5239f7584e71f",
@@ -786,6 +744,49 @@
       ],
       "artifacts": [
         "ReentrancyGuard"
+      ]
+    },
+    "/workspaces/cryptovault/contracts/CryptocaVaultNFT.sol": {
+      "lastModificationDate": 1750420903555,
+      "contentHash": "90b8709de160fb70ff58c9b162448a88",
+      "sourceName": "contracts/CryptocaVaultNFT.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC721/ERC721.sol",
+        "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/utils/Strings.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "CryptocaVaultNFT"
       ]
     }
   }

@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const hre = require("hardhat");
 
 async function main() {
-  console.log("🚀 Début du déploiement du contrat CryptoVault NFT...\n");
+  console.log("🚀 Début du déploiement du contrat CryptocaVault NFT...\n");
 
   // Configuration des adresses sur BSC Mainnet
   const USDC_BSC_MAINNET = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
@@ -43,10 +43,10 @@ async function main() {
   // Compiler et déployer le contrat
   console.log("\n🔨 Compilation et déploiement...");
   
-  const CryptoVaultNFT = await ethers.getContractFactory("CryptoVaultNFT");
+  const CryptocaVaultNFT = await ethers.getContractFactory("CryptocaVaultNFT");
   
   // Estimer le gas requis (ethers v6)
-  const estimatedGas = await CryptoVaultNFT.getDeployTransaction(USDC_BSC_MAINNET).then(tx => 
+  const estimatedGas = await CryptocaVaultNFT.getDeployTransaction(USDC_BSC_MAINNET).then(tx => 
     ethers.provider.estimateGas(tx)
   );
   const gasPrice = (await ethers.provider.getFeeData()).gasPrice;
@@ -58,7 +58,7 @@ async function main() {
   console.log("   - Coût estimé:", ethers.formatEther(estimatedCost), "BNB");
 
   // Déployer avec gas limit augmenté pour la sécurité
-  const contract = await CryptoVaultNFT.deploy(
+  const contract = await CryptocaVaultNFT.deploy(
     USDC_BSC_MAINNET,
     {
       gasLimit: estimatedGas * 120n / 100n // +20% de marge

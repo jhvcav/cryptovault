@@ -451,7 +451,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </Text>
                   <Text 
                     fontSize={{ base: "2xs", md: "xs" }} 
-                    color="gray.600"
+                    color="white.600"
                   >
                     Seuls les wallets autorisés peuvent accéder
                   </Text>

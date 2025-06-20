@@ -1,36 +1,48 @@
 {
-  "name": "CryptocaVault Privilège NFT #4",
-  "description": "Ce NFT donne accès exclusif à toutes les fonctionnalités de la plateforme CryptocaVault avec un bonus de 150% sur toutes les récompenses et un accès à la gouvernance.",
-  "image": "https://gateway.pinata.cloud/ipfs/bafybeihdqgktpmsrln2nwrvpgiedi23mutp4atqd7bdcfishti2neh6xoe/privilege_4.jpg",
+  "name": "Faeloria la Radieuse #1",
+  "description": "Souveraine des lumières transcendantes, Faeloria la Radieuse octroie l'accès aux mystères ultimes de CryptoVault. Sa radiance divine amplifie les récompenses de 150%.",
+  "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/privilege_nft.png",
   "attributes": [
     {
-      "trait_type": "Tier",
-      "value": "Privilège"
+      "trait_type": "Nom Artistique",
+      "value": "Faeloria la Radieuse"
+    },
+    {
+      "trait_type": "Tier Technique", 
+      "value": "Privilege"
+    },
+    {
+      "trait_type": "Élément",
+      "value": "Radiance"
     },
     {
       "trait_type": "Multiplier",
-      "value": "2.5X"
+      "value": "2.5x"
     },
     {
-      "display_type": "boost_percentage",
       "trait_type": "Bonus",
-      "value": 150
+      "value": "150%"
     },
     {
-      "trait_type": "Plans d'accès",
-      "value": "Starter, Standard, Premium, Privilège"
+      "trait_type": "Access Plans",
+      "value": "All Plans"
     },
     {
-      "trait_type": "Périodes de blocage",
-      "value": "30-360 jours"
+      "trait_type": "Rarity",
+      "value": "Epic"
     },
     {
-      "trait_type": "Support",
-      "value": "Gestionnaire de compte dédié"
+      "trait_type": "Price",
+      "value": "1000 USDC"
     },
     {
-      "trait_type": "Gouvernance",
-      "value": "Oui"
+      "trait_type": "Supply",
+      "value": "50"
+    },
+    {
+      "trait_type": "Pouvoir",
+      "value": "Transcendance Divine"
     }
-  ]
+  ],
+  "background_color": "8A2BE2"
 }
