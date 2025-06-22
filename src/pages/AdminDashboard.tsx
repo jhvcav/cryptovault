@@ -681,15 +681,15 @@ try {
     <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
       {/* Solde contrat */}
       <Box p={4} bg="blue.100" borderRadius="lg" textAlign="center">
-        <Text fontSize="sm" color="gray.600" mb={1}>Solde Contrat</Text>
-        <Text fontSize="xl" fontWeight="bold" color="black.600">
+        <Text fontSize="sm" color="gray.800" mb={1}>Solde Contrat</Text>
+        <Text fontSize="xl" fontWeight="bold" color="black">
           {stats.contractBalance}
         </Text>
       </Box>
       
       {/* Total gains disponibles */}
       <Box p={4} bg="orange.100" borderRadius="lg" textAlign="center">
-        <Text fontSize="sm" color="gray.600" mb={1}>Gains Disponibles (Actifs)</Text>
+        <Text fontSize="sm" color="gray.800" mb={1}>Gains Disponibles (Actifs)</Text>
         <Text fontSize="xl" fontWeight="bold" color="orange.600">
           {stakes
             .filter(stake => stake.active)
@@ -698,7 +698,7 @@ try {
               return total + rewards;
             }, 0).toFixed(2)} USDC
         </Text>
-        <Text fontSize="xs" color="gray.500">
+        <Text fontSize="xs" color="gray.800">
           {stakes.filter(stake => stake.active && parseFloat(stake.availableRewards || '0') >= 0.4).length} prêts à retirer (≥0.4)
         </Text>
       </Box>
@@ -725,7 +725,7 @@ try {
         borderRadius="lg" 
         textAlign="center"
       >
-        <Text fontSize="sm" color="gray.600" mb={1}>Marge de Sécurité</Text>
+        <Text fontSize="sm" color="gray.800" mb={1}>Marge de Sécurité</Text>
         <Text 
           fontSize="xl" 
           fontWeight="bold" 
@@ -760,7 +760,7 @@ try {
             return `${liquidityGap >= 0 ? '+' : ''}${liquidityGap.toFixed(2)} USDC`;
           })()}
         </Text>
-        <Text fontSize="xs" color="gray.500">
+        <Text fontSize="xs" color="gray.800">
           {(() => {
             const totalAvailableRewards = stakes
               .filter(stake => stake.active)
@@ -954,7 +954,7 @@ const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) 
                   {/* Statut */}
                   <Td minW="80px">
                     <Badge 
-                      colorScheme={stake.active ? "green" : "gray"} 
+                      colorScheme={stake.active ? "green" : "red"} 
                       fontSize="xs"
                     >
                       {stake.active ? "Actif" : "Terminé"}
@@ -1010,14 +1010,14 @@ const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) 
             <Table variant="simple" size="sm" minW="900px">
               <Thead bg="orange.50">
                 <Tr>
-                  {isOwnerView && <Th minW="100px">Utilisateur</Th>}
-                  <Th minW="80px">Plan</Th>
-                  <Th minW="120px">Montant</Th>
-                  <Th minW="110px">Date de début</Th>
-                  <Th minW="110px">Date de fin</Th>
-                  <Th minW="70px">Token</Th>
-                  <Th minW="100px">Jours restants</Th>  {/* ← Colonne bonus */}
-                  <Th minW="80px">Statut</Th>
+                  {isOwnerView && <Th minW="100px" color="black">Utilisateur</Th>}
+                  <Th minW="80px" color="black">Plan</Th>
+                  <Th minW="120px" color="black">Montant</Th>
+                  <Th minW="110px" color="black">Date de début</Th>
+                  <Th minW="110px" color="black">Date de fin</Th>
+                  <Th minW="70px" color="black">Token</Th>
+                  <Th minW="100px" color="black">Jours restants</Th>  {/* ← Colonne bonus */}
+                  <Th minW="80px" color="black">Statut</Th>
                 </Tr>
               </Thead>
               <Tbody>
@@ -1035,23 +1035,23 @@ const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) 
                                       daysRemaining <= 3 ? "orange.500" : "yellow.500";
                   
                   return (
-                    <Tr key={index} bg={daysRemaining <= 1 ? "red.50" : daysRemaining <= 3 ? "orange.50" : "yellow.50"}>
+                    <Tr key={index} bg={daysRemaining <= 1 ? "red.100" : daysRemaining <= 3 ? "orange.100" : "blue.100"}>
                       {isOwnerView && (
-                        <Td minW="100px" fontSize="sm">
+                        <Td minW="100px" fontSize="sm" color="black">
                           {stake.userAddress ? 
                             `${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}` : 
                             'N/A'}
                         </Td>
                       )}
-                      <Td minW="80px" fontSize="sm">Plan {plan ? plan.name : stake.planId}</Td>
+                      <Td minW="80px" fontSize="sm" color="black">Plan {plan ? plan.name : stake.planId}</Td>
                       <Td minW="120px" fontSize="sm" fontWeight="bold" color="orange.600">
                         {stake.amount} {stake.token}
                       </Td>
-                      <Td minW="110px" fontSize="xs">{stake.startTime.toLocaleDateString()}</Td>
-                      <Td minW="110px" fontSize="xs" fontWeight="bold">
+                      <Td minW="110px" fontSize="xs" color="black">{stake.startTime.toLocaleDateString()}</Td>
+                      <Td minW="110px" fontSize="xs" fontWeight="bold" color="red">
                         {stake.endTime.toLocaleDateString()}
                       </Td>
-                      <Td minW="70px" fontSize="sm">{stake.token}</Td>
+                      <Td minW="70px" fontSize="sm" color="black">{stake.token}</Td>
                       
                       {/* Jours restants avec couleur d'urgence */}
                       <Td minW="100px">
@@ -1059,6 +1059,8 @@ const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) 
                           colorScheme={daysRemaining <= 1 ? "red" : daysRemaining <= 3 ? "orange" : "yellow"}
                           fontSize="xs"
                           fontWeight="bold"
+                          variant="solid"
+                          color="black"
                         >
                           {daysRemaining <= 0 ? "ÉCHÉANCE !" : `${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}`}
                         </Badge>
@@ -1068,7 +1070,10 @@ const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) 
                       <Td minW="80px">
                         <Badge 
                           colorScheme="orange" 
-                          fontSize="xs"
+                          fontSize="sm"
+                          fontWeight="bold"
+                          variant="solid"
+                          color="black"
                         >
                           À préparer
                         </Badge>

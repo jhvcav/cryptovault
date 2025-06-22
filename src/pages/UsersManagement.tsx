@@ -597,7 +597,7 @@ const handleWalletAddressChange = (newAddress: string) => {
           >
             <CardBody p={0}>
               <Box overflowX="auto">
-                <Table variant="simple" bg={tableBgColor}>
+                <Table variant="simple" bg="white">
                   <Thead bg={tableHeaderBg} borderBottom="2px solid" borderColor={borderColor}>
                     <Tr>
                       <Th color="gray.700" fontWeight="bold" fontSize="sm">Adresse Wallet</Th>
@@ -625,8 +625,8 @@ const handleWalletAddressChange = (newAddress: string) => {
                         <Td fontFamily="mono" fontSize="sm" color="gray.800" fontWeight="medium">
                           {user.walletAddress.substring(0, 10)}...{user.walletAddress.substring(user.walletAddress.length - 8)}
                         </Td>
-                        <Td fontWeight="bold" color="gray.800">{user.lastName}</Td>
-                        <Td color="gray.700" fontWeight="medium">{user.firstName}</Td>
+                        <Td fontWeight="bold" color="black">{user.lastName}</Td>
+                        <Td color="black" fontWeight="medium">{user.firstName}</Td>
                         <Td>
                           <HStack spacing={2}>
                             <Text fontSize="lg">{getUserTypeBadge(user.userType)}</Text>
@@ -638,6 +638,7 @@ const handleWalletAddressChange = (newAddress: string) => {
                               py={1}
                               fontWeight="bold"
                               fontSize="xs"
+                              color="black"
                             >
                               {user.userType}
                             </Badge>
@@ -646,11 +647,12 @@ const handleWalletAddressChange = (newAddress: string) => {
                         <Td>
                           <Badge 
                             colorScheme={getStatusColor(user.status)} 
-                            variant="subtle"
+                            variant="simple"
                             borderRadius="full"
                             px={3}
                             py={1}
                             fontWeight="bold"
+                            color="black"
                           >
                             {user.status}
                           </Badge>
@@ -664,6 +666,7 @@ const handleWalletAddressChange = (newAddress: string) => {
                             px={3}
                             py={1}
                             fontWeight="bold"
+                            color="black"
                           >
                             {user.fidelityStatus}
                           </Badge>
@@ -674,7 +677,7 @@ const handleWalletAddressChange = (newAddress: string) => {
                               aria-label="Modifier"
                               icon={<Text>✏️</Text>}
                               size="sm"
-                              bg="rgba(102, 126, 234, 0.1)"
+                              bg="rgba(3, 12, 54, 0.1)"
                               color="#667eea"
                               borderRadius="lg"
                               _hover={{
@@ -689,8 +692,8 @@ const handleWalletAddressChange = (newAddress: string) => {
                               aria-label="Supprimer"
                               icon={<Text>🗑️</Text>}
                               size="sm"
-                              bg="rgba(245, 101, 101, 0.1)"
-                              color="red.500"
+                              bg="rgba(199, 20, 20, 0.1)"
+                              color="red"
                               borderRadius="lg"
                               _hover={{
                                 bg: "red.500",

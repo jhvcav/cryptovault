@@ -24,21 +24,17 @@ import AdminDashboard from './AdminDashboard';
 import WalletMonitoring from './WalletMonitoring';
 import ContractMonitoring from './ContractMonitoring';
 import PlansManagement from './PlansManagement';
-import NFTManager from '../components/NFTManager'; // Nouveau composant
+import NFTImageManager from '../components/NFTImageManager'; // Renommé
+import NFTContractManager from '../components/NFTContractManager'; // Nouveau composant
 
 const AdminPage: React.FC = () => {
   const { isOwner } = useOwner();
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+  const [nftSubTab, setNftSubTab] = useState(0);
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = 'transparent';
-
-  // Fonction pour ouvrir le gestionnaire NFT
-  const openNFTManager = () => {
-    const nftPath = './NFT_image/NFT_GestionImages.html';
-    window.open(nftPath, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-  };
 
   // Rediriger si pas authentifié
   if (!isAuthenticated) {
@@ -47,68 +43,66 @@ const AdminPage: React.FC = () => {
 
   // Afficher une erreur si pas owner
   if (!isOwner) {
-  return (
-    <Box p={6} maxW="800px" mx="auto">
-      <VStack spacing={6}>
-        {/* Alert principal - Modifier les couleurs ici */}
-        <Alert 
-          status="error" 
-          borderRadius="lg"
-          bg="red.50"              // 🎨 Couleur de fond de l'alert
-          borderColor="red.300"    // 🎨 Couleur de bordure
-          border="2px solid"
-        >
-          <AlertIcon color="red.500" />  {/* 🎨 Couleur de l'icône */}
-          <Box>
-            <Text fontWeight="bold" color="red.700">  {/* 🎨 Couleur du titre */}
-              Accès refusé
-            </Text>
-            <Text color="red.600" mt={1}>  {/* 🎨 Couleur du texte descriptif */}
-              Seul le propriétaire de la plateforme peut accéder à cette section.
+    return (
+      <Box p={6} maxW="800px" mx="auto">
+        <VStack spacing={6}>
+          <Alert 
+            status="error" 
+            borderRadius="lg"
+            bg="red.50"
+            borderColor="red.300"
+            border="2px solid"
+          >
+            <AlertIcon color="red.500" />
+            <Box>
+              <Text fontWeight="bold" color="red.700">
+                Accès refusé
+              </Text>
+              <Text color="red.600" mt={1}>
+                Seul le propriétaire de la plateforme peut accéder à cette section.
+              </Text>
+            </Box>
+          </Alert>
+          
+          <Box 
+            textAlign="center" 
+            p={6} 
+            bg="gray.100"
+            borderRadius="lg"
+            border="2px solid"
+            borderColor="gray.300"
+          >
+            <Heading size="md" color="gray.700" mb={2}>
+              🔒 Zone Administrateur
+            </Heading>
+            <Text color="gray.600">
+              Cette section est réservée au propriétaire de la plateforme.
             </Text>
           </Box>
-        </Alert>
-        
-        {/* Box informative - Modifier les couleurs ici */}
-        <Box 
-          textAlign="center" 
-          p={6} 
-          bg="gray.100"           // 🎨 Couleur de fond de la box
-          borderRadius="lg"
-          border="2px solid"
-          borderColor="gray.300"  // 🎨 Couleur de bordure de la box
-        >
-          <Heading size="md" color="gray.700" mb={2}>  {/* 🎨 Couleur du titre */}
-            🔒 Zone Administrateur
-          </Heading>
-          <Text color="gray.600">  {/* 🎨 Couleur du texte */}
-            Cette section est réservée au propriétaire de la plateforme.
-          </Text>
-        </Box>
-      </VStack>
-    </Box>
-  );
-}
+        </VStack>
+      </Box>
+    );
+  }
 
   return (
-  <Box p={6} maxW="1600px" mx="auto">
-    <VStack spacing={6} align="stretch">
-      {/* En-tête Admin */}
-      <Box>
-        <HStack spacing={4} align="center" mb={2}>
-          <Heading size="xl" color="blue.500">
-            🛠️ Administration
-          </Heading>
-          <Badge colorScheme="yellow" variant="solid" px={3} py={1}>
-            👑 OWNER
-          </Badge>
-        </HStack>
-        <Text color="white">  {/* Utiliser Text au lieu de <p> */}
-          Bienvenue {user?.firstName} ! Vous avez accès à toutes les fonctionnalités d'administration.
-        </Text>
-      </Box>
+    <Box p={6} maxW="1600px" mx="auto">
+      <VStack spacing={6} align="stretch">
+        {/* En-tête Admin */}
+        <Box>
+          <HStack spacing={4} align="center" mb={2}>
+            <Heading size="xl" color="blue.500">
+              🛠️ Administration
+            </Heading>
+            <Badge colorScheme="yellow" variant="solid" px={3} py={1}>
+              👑 OWNER
+            </Badge>
+          </HStack>
+          <Text color="white">
+            Bienvenue {user?.firstName} ! Vous avez accès à toutes les fonctionnalités d'administration.
+          </Text>
+        </Box>
 
-        {/* Onglets Admin */}
+        {/* Onglets Admin principaux */}
         <Box
           bg={bgColor}
           borderRadius="lg"
@@ -207,9 +201,50 @@ const AdminPage: React.FC = () => {
                 <PlansManagement />
               </TabPanel>
 
-              {/* Onglet 4: Gestion NFT */}
+              {/* Onglet 4: Gestion NFT avec sous-onglets */}
               <TabPanel p={0}>
-                <NFTManager />
+                <Box>
+                  <Tabs
+                    index={nftSubTab}
+                    onChange={setNftSubTab}
+                    variant="soft-rounded"
+                    colorScheme="orange"
+                  >
+                    <TabList bg="orange.50" p={4} borderRadius="lg" mb={4}>
+                      <Tab
+                        mr={2}
+                        _selected={{
+                          color: 'white',
+                          bg: 'orange.500',
+                          shadow: 'md'
+                        }}
+                      >
+                        🖼️ Création d'Images NFT
+                      </Tab>
+                      <Tab
+                        _selected={{
+                          color: 'white',
+                          bg: 'orange.500',
+                          shadow: 'md'
+                        }}
+                      >
+                        ⚙️ Gestion Smart Contract
+                      </Tab>
+                    </TabList>
+
+                    <TabPanels>
+                      {/* Sous-onglet 1: Création d'images */}
+                      <TabPanel p={0}>
+                        <NFTImageManager />
+                      </TabPanel>
+
+                      {/* Sous-onglet 2: Gestion du contrat */}
+                      <TabPanel p={0}>
+                        <NFTContractManager />
+                      </TabPanel>
+                    </TabPanels>
+                  </Tabs>
+                </Box>
               </TabPanel>
 
               {/* Onglet 5: Monitoring Wallet */}
@@ -227,14 +262,14 @@ const AdminPage: React.FC = () => {
 
         {/* Informations de debug */}
         <Box 
-         bgGradient="linear(135deg, gray.800 0%, gray.900 100%)"
+          bgGradient="linear(135deg, gray.800 0%, gray.900 100%)"
           p={4} 
           borderRadius="lg" 
           border="1px solid" 
           borderColor="gray.600"
           fontSize="sm"
           color="white"
-          shadow="lg"                // Ajouter une ombre
+          shadow="lg"
         >
           <strong>ℹ️ Informations:</strong>
           <br />

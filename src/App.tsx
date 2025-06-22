@@ -22,6 +22,7 @@ import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
 import Footer from './components/layout/Footer';
 import NFTCards1 from './pages/NFTCards1';
 import YieldCalculatorPage from './pages/YieldCalculatorPage';
+import { pinataService } from './services/pinataService';
 
 // Force les breakpoints pour mobile si nécessaire
 const mobileInfo = detectMobileAndMetaMask();
@@ -64,6 +65,44 @@ const chakraTheme = extendTheme({
     },
   },
 });
+
+// ========================================
+// 🔧 CONFIGURATION DEBUG PINATA (VERSION MINIMALE)
+// ========================================
+
+const setupPinataDebug = () => {
+  // Seulement en mode développement
+  if (import.meta.env.DEV) {
+    // Fonction de test rapide
+    (window as any).testPinata = async () => {
+      console.log('🔍 Test connexion Pinata...');
+      try {
+        const isAuth = await pinataService.testAuthentication();
+        if (isAuth) {
+          console.log('✅ Pinata connecté !');
+          const files = await pinataService.getAllPinnedFiles();
+          console.log('📁 Fichiers épinglés:', files.count);
+        } else {
+          console.log('❌ Échec connexion Pinata');
+        }
+      } catch (error) {
+        console.error('💥 Erreur:', error);
+      }
+    };
+
+    // Exposer le service pour debug
+    (window as any).pinataService = pinataService;
+    
+    console.log('🔧 Debug Pinata: testPinata() disponible');
+  }
+};
+
+// Initialiser le debug
+setupPinataDebug();
+
+// ========================================
+// 🔒 COMPOSANTS DE SÉCURITÉ ET ROUTES
+// ========================================
 
 // Composant pour les routes protégées avec sécurité MetaMask
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
