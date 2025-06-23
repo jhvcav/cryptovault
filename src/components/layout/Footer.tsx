@@ -32,7 +32,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4 text-white">Produits</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/nft-cards" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/nft-page" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   NFT
                 </Link>
               </li>
@@ -112,7 +112,7 @@ const Footer = () => {
         
         <div className="mt-8 pt-6 border-t border-slate-800">
           <p className="text-center text-slate-500 text-sm">
-            © {new Date().getFullYear()} CryptoVault. Tous droits réservés.
+            © {new Date().getFullYear()} CryptocaVault. Tous droits réservés.
           </p>
         </div>
       </div>

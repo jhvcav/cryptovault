@@ -1,4 +1,4 @@
-// src/App.tsx - Intégration système communauté (VERSION PROGRESSIVE)
+// src/App.tsx - Redirection vers HomePage après connexion
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ChakraProvider, extendTheme } from '@chakra-ui/react';
@@ -8,8 +8,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { InvestmentProvider } from './contexts/InvestmentContext';
 import { useMetaMaskSecurityBSC } from './hooks/useMetaMaskSecurityBSC';
 import { detectMobileAndMetaMask, forceMobileBreakpoints } from './components/utils/mobileDetection';
-
-// Vos composants existants
 import Navbar from './components/layout/Navbar';
 import SecurityMonitor from './components/SecurityMonitor';
 import LoginPage from './pages/LoginPage';
@@ -24,14 +22,8 @@ import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
 import Footer from './components/layout/Footer';
 import NFTCards1 from './pages/NFTCards1';
 import YieldCalculatorPage from './pages/YieldCalculatorPage';
-import NFTPage from './pages/NFTPage';
-
-// NOUVEAUX COMPOSANTS COMMUNAUTÉ
-import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
-import PlatformAccessPage from './pages/PlatformAccessPage';
-import EnhancedAuthService from './services/EnhancedAuthService';
-
 import { pinataService } from './services/pinataService';
+import NFTPage from './pages/NFTPage';
 
 // Force les breakpoints pour mobile si nécessaire
 const mobileInfo = detectMobileAndMetaMask();
@@ -42,7 +34,7 @@ if (mobileInfo.shouldUseMobileMode) {
   forceMobileBreakpoints();
 }
 
-// Configuration du thème Chakra UI (INCHANGÉ)
+// Configuration du thème Chakra UI
 const chakraTheme = extendTheme({
   config: {
     initialColorMode: 'dark',
@@ -76,11 +68,13 @@ const chakraTheme = extendTheme({
 });
 
 // ========================================
-// 🔧 CONFIGURATION DEBUG PINATA (INCHANGÉ)
+// 🔧 CONFIGURATION DEBUG PINATA (VERSION MINIMALE)
 // ========================================
 
 const setupPinataDebug = () => {
+  // Seulement en mode développement
   if (import.meta.env.DEV) {
+    // Fonction de test rapide
     (window as any).testPinata = async () => {
       console.log('🔍 Test connexion Pinata...');
       try {
@@ -97,77 +91,26 @@ const setupPinataDebug = () => {
       }
     };
 
+    // Exposer le service pour debug
     (window as any).pinataService = pinataService;
+    
     console.log('🔧 Debug Pinata: testPinata() disponible');
   }
 };
 
+// Initialiser le debug
 setupPinataDebug();
 
 // ========================================
-// 🆕 NOUVEAU: Route de Protection Communauté
+// 🔒 COMPOSANTS DE SÉCURITÉ ET ROUTES
 // ========================================
 
-const CommunityProtectedRoute: React.FC<{ 
-  children: React.ReactNode;
-  requiresCommunity?: boolean;
-  requiresPlatform?: boolean;
-  requiresLegalAcceptance?: boolean;
-}> = ({ 
-  children, 
-  requiresCommunity = false, 
-  requiresPlatform = false, 
-  requiresLegalAcceptance = false 
-}) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (!isAuthenticated || !user?.walletAddress) return;
-
-      try {
-        // Vérifier le statut complet uniquement si nécessaire
-        if (requiresCommunity || requiresPlatform || requiresLegalAcceptance) {
-          const status = await EnhancedAuthService.getCompleteUserAccessStatus(user.walletAddress);
-          
-          // Rediriger selon les besoins
-          if (requiresCommunity && !status.isCommunityMember) {
-            navigate('/community-registration');
-            return;
-          }
-          
-          if (requiresPlatform && !status.isPlatformAuthorized) {
-            // Utilisateur membre mais pas autorisé plateforme - rester sur la page actuelle
-            return;
-          }
-          
-          if (requiresLegalAcceptance && !status.hasRecentLegalAcceptance) {
-            navigate('/platform-access');
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Erreur vérification statut communauté:', error);
-      }
-    };
-
-    if (!isLoading) {
-      checkAccess();
-    }
-  }, [isAuthenticated, user?.walletAddress, isLoading, requiresCommunity, requiresPlatform, requiresLegalAcceptance, navigate]);
-
-  return <>{children}</>;
-};
-
-// ========================================
-// 🔒 COMPOSANTS DE SÉCURITÉ (INCHANGÉS)
-// ========================================
-
+// Composant pour les routes protégées avec sécurité MetaMask
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // Hook de sécurité MetaMask pour toutes les routes protégées
   const { getSecurityStatus } = useMetaMaskSecurityBSC({
     onUnauthorizedChange: (oldAddr, newAddr) => {
       console.log('🚨 [ProtectedRoute] Changement d\'adresse non autorisé:', { oldAddr, newAddr });
@@ -180,12 +123,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     enableLogging: true
   });
 
+  // Redirection automatique si non authentifié
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/login', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  // Écran de chargement pendant la vérification d'authentification
   if (isLoading) {
     return (
       <LoadingSpinner 
@@ -196,6 +141,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
   }
 
+  // Redirection si non authentifié
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -208,14 +154,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   );
 };
 
+// Composant pour les routes publiques (uniquement login)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // INCHANGÉ: Redirection vers HomePage après connexion
+  // Redirection si déjà authentifié - VERS HOMEPAGE
   if (!isLoading && isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
+  // Écran de chargement
   if (isLoading) {
     return (
       <LoadingSpinner 
@@ -229,16 +177,13 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-// ========================================
-// 🆕 CONTENU PRINCIPAL AVEC NOUVELLES ROUTES
-// ========================================
-
+// Composant principal de contenu de l'application
 const AppContent: React.FC = () => {
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
         <Routes>
-          {/* Route publique - Page de connexion (INCHANGÉE) */}
+          {/* Route publique - Page de connexion */}
           <Route
             path="/login"
             element={
@@ -248,22 +193,7 @@ const AppContent: React.FC = () => {
             }
           />
 
-          {/* 🆕 NOUVELLES ROUTES COMMUNAUTÉ (sans protection, accessibles directement) */}
-          <Route 
-            path="/community-registration" 
-            element={<CommunityRegistrationPage />} 
-          />
-          
-          <Route 
-            path="/platform-access" 
-            element={
-              <CommunityProtectedRoute requiresCommunity={true}>
-                <PlatformAccessPage />
-              </CommunityProtectedRoute>
-            } 
-          />
-
-          {/* Routes protégées EXISTANTES */}
+          {/* Routes protégées */}
           <Route
             path="/*"
             element={
@@ -271,38 +201,41 @@ const AppContent: React.FC = () => {
                 <Navbar />
                 <main className="relative">
                   <Routes>
-                    {/* HomePage - INCHANGÉE */}
+                    {/* HomePage - Page d'accueil principale après connexion */}
                     <Route path="/" element={<HomePage />} />
                     
-                    {/* 🔄 Dashboard avec protection communauté OPTIONNELLE */}
-                    <Route 
-                      path="/dashboard" 
-                      element={
-                        <CommunityProtectedRoute 
-                          requiresCommunity={false}     // ← Mise à false pour ne pas forcer
-                          requiresPlatform={false}      // ← Vos utilisateurs existants continuent
-                          requiresLegalAcceptance={false} // ← à fonctionner normalement
-                        >
-                          <Dashboard />
-                        </CommunityProtectedRoute>
-                      } 
-                    />
+                    {/* Dashboard */}
+                    <Route path="/dashboard" element={<Dashboard />} />
                     
-                    {/* Toutes vos autres routes INCHANGÉES */}
+                    {/* Page d'investissement */}
                     <Route path="/invest" element={<InvestPage />} />
+                    
+                    {/* Roadmap */}
                     <Route path="/roadmap" element={<RoadmapPage />} />
+                    
+                    {/* Pages d'administration */}
                     <Route path="/admin/*" element={<AdminPage />} />
+
+                    {/* NFT Market */}
                     <Route path="/nft-collection" element={<NFTMarketplace />} />
+
+                    {/* NFT Cards - Page de cartes NFT */}
                     <Route path="/nft-cards" element={<NFTCards1 />} />
+
+                    {/* Page de détails NFT */}
                     <Route path="/nft-page" element={<NFTPage />} />
+
+                    {/* Historique des transactions */}
                     <Route path="/history" element={<TransactionHistoryUsers />} />
+
+                    {/* Calculateur de rendement */}
                     <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
                     
-                    {/* Redirection INCHANGÉE */}
+                    {/* Redirection de toutes les autres routes vers HomePage */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </main>
-                <Footer />
+                 <Footer />
               </ProtectedRoute>
             }
           />
@@ -312,10 +245,7 @@ const AppContent: React.FC = () => {
   );
 };
 
-// ========================================
-// 🔧 GESTION D'ERREURS (INCHANGÉE)
-// ========================================
-
+// Composant de gestion des erreurs globales
 const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
@@ -347,15 +277,11 @@ const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return <>{children}</>;
 };
 
-// ========================================
-// 🚀 COMPOSANT RACINE (INCHANGÉ)
-// ========================================
-
+// Composant racine de l'application
 const App: React.FC = () => {
   useEffect(() => {
     console.log('🚀 CryptoVault Application démarrée');
     console.log('🏠 Redirection après connexion : HomePage (/)');
-    console.log('🆕 Nouvelles routes communauté disponibles');
     
     if (typeof window !== 'undefined') {
       if (window.ethereum) {

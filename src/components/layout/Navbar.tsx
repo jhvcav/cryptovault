@@ -187,7 +187,7 @@ const openInMetaMask = () => {
               <Link to="/" className="flex-shrink-0 flex items-center">
                 <Wallet className="h-8 w-8 text-blue-400" />
                 <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-                  CryptoVault
+                  CryptocaVault
                 </span>
               </Link>
               

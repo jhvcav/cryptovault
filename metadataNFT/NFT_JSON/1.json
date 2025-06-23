@@ -1,48 +1,49 @@
 {
-  "name": "Vaelith de Sève #1",
-  "description": "Gardien des premières essences, Vaelith de Sève offre un passage vers les stratégies fondamentales de CryptoVault. Son pouvoir réside dans sa capacité à amplifier les récompenses de 20%.",
-  "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/bronze_nft.png",
-  "attributes": [
-    {
-      "trait_type": "Nom Artistique",
-      "value": "Vaelith de Sève"
-    },
-    {
-      "trait_type": "Tier Technique",
-      "value": "Bronze"
-    },
-    {
-      "trait_type": "Élément",
-      "value": "Sève"
-    },
-    {
-      "trait_type": "Multiplier",
-      "value": "1.2x"
-    },
-    {
-      "trait_type": "Bonus",
-      "value": "20%"
-    },
-    {
-      "trait_type": "Access Plans",
-      "value": "Starter"
-    },
-    {
-      "trait_type": "Rarity",
-      "value": "Common"
-    },
-    {
-      "trait_type": "Price",
-      "value": "120 USDC"
-    },
-    {
-      "trait_type": "Supply",
-      "value": "1000"
-    },
-    {
-      "trait_type": "Pouvoir",
-      "value": "Essence Primitive"
-    }
-  ],
-  "background_color": "8B4513"
+    "name": "Vaelith de Sève #1",
+      "description": "Gardien des premières essences, Vaelith de Sève offre un passage vers les stratégies fondamentales de CryptoVault. Son pouvoir réside dans sa capacité à amplifier les récompenses de 20%.",
+        "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/bronze_nft.png",
+          "attributes": [
+              {
+                    "trait_type": "Nom Artistique",
+                          "value": "Vaelith de Sève"
+                              },
+                                  {
+                                        "trait_type": "Tier Technique",
+                                              "value": "Bronze"
+                                                  },
+                                                      {
+                                                            "trait_type": "Élément",
+                                                                  "value": "Sève"
+                                                                      },
+                                                                          {
+                                                                                "trait_type": "Multiplier",
+                                                                                      "value": "1.2x"
+                                                                                          },
+                                                                                              {
+                                                                                                    "trait_type": "Bonus",
+                                                                                                          "value": "20%"
+                                                                                                              },
+                                                                                                                  {
+                                                                                                                        "trait_type": "Access Plans",
+                                                                                                                              "value": "Starter"
+                                                                                                                                  },
+                                                                                                                                      {
+                                                                                                                                            "trait_type": "Rarity",
+                                                                                                                                                  "value": "Commun"
+                                                                                                                                                      },
+                                                                                                                                                          {
+                                                                                                                                                                "trait_type": "Price",
+                                                                                                                                                                      "value": "120 USDC"
+                                                                                                                                                                          },
+                                                                                                                                                                              {
+                                                                                                                                                                                    "trait_type": "Supply",
+                                                                                                                                                                                          "value": "1000"
+                                                                                                                                                                                              },
+                                                                                                                                                                                                  {
+                                                                                                                                                                                                        "trait_type": "Pouvoir",
+                                                                                                                                                                                                              "value": "Essence Primitive"
+                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                    ],
+                                                                                                                                                                                                                      "background_color": "8B4513"
+                                                                                                                                                                                                                      }
 }
