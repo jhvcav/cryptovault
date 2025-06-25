@@ -335,7 +335,7 @@ const sendAdminNotification = async (memberData: any) => {
                   lineHeight="1.2"
                   mb={2}
                 >
-                  Rejoindre la Communauté
+                  Rejoindre la Communauté RMR-M
                 </Heading>
                 
                 <Text

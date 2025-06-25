@@ -15,23 +15,18 @@ export default defineConfig({
     hmr: {
       origin: 'http://localhost:5173'
     },
-    // Proxy pour rediriger les appels API vers le serveur Node.js
+    // Proxy pour les Netlify Functions en développement
     proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
+      '/.netlify/functions': {
+        target: 'http://localhost:8888', // Port par défaut de Netlify Dev
         changeOrigin: true,
         secure: false,
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('❌ Erreur proxy:', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('🔄 Proxying:', req.method, req.url, '-> target:', proxyReq.path);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('✅ Received:', proxyRes.statusCode, req.url);
-          });
-        },
+      },
+      '/api': {
+        target: 'http://localhost:8888/.netlify/functions',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   },

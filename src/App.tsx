@@ -268,7 +268,7 @@ const AppContent: React.FC = () => {
 
           {/* 🆕 AUTRES ROUTES COMMUNAUTÉ */}
           <Route 
-            path="/community-registration" 
+            path="/community-registrations" 
             element={<CommunityRegistrationPage />} 
           />
           
