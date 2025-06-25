@@ -174,88 +174,87 @@ const sendAdminNotification = async (memberData: any) => {
   };
 
   // Enregistrer l'inscription
-  const registerCommunityMember = async () => {
-    try {
-      setIsLoading(true);
-      setError('');
+  // Fonction d'inscription simplifiée (remplace registerCommunityMember)
+const registerCommunityMember = async () => {
+  try {
+    setIsLoading(true);
+    setError('');
 
-      const userIP = await getUserIP();
-      
-      // Vérifier si l'email n'est pas déjà utilisé
-      const { data: existingEmailData, error: checkEmailError } = await supabase
+    // Vérifier si l'email n'est pas déjà utilisé
+    const { data: existingEmailData, error: checkEmailError } = await supabase
+      .from('community_members')
+      .select('email')
+      .eq('email', formData.email.trim().toLowerCase());
+
+    if (checkEmailError && checkEmailError.code !== 'PGRST116') {
+      console.error('Erreur vérification email:', checkEmailError);
+      setError('Erreur lors de la vérification de l\'email.');
+      return;
+    }
+
+    if (existingEmailData && existingEmailData.length > 0) {
+      setError('Cette adresse email est déjà utilisée pour une inscription.');
+      return;
+    }
+
+    // Vérifier si le téléphone n'est pas déjà utilisé (si renseigné)
+    if (formData.phone.trim()) {
+      const { data: existingPhoneData, error: checkPhoneError } = await supabase
         .from('community_members')
-        .select('email')
-        .eq('email', formData.email.trim().toLowerCase());
+        .select('phone')
+        .eq('phone', formData.phone.trim());
 
-      if (checkEmailError && checkEmailError.code !== 'PGRST116') {
-        console.error('Erreur vérification email:', checkEmailError);
-        setError('Erreur lors de la vérification de l\'email.');
+      if (checkPhoneError && checkPhoneError.code !== 'PGRST116') {
+        console.error('Erreur vérification téléphone:', checkPhoneError);
+        setError('Erreur lors de la vérification du téléphone.');
         return;
       }
 
-      if (existingEmailData && existingEmailData.length > 0) {
-        setError('Cette adresse email est déjà utilisée pour une inscription.');
+      if (existingPhoneData && existingPhoneData.length > 0) {
+        setError('Ce numéro de téléphone est déjà utilisé pour une inscription.');
         return;
       }
+    }
 
-      // Vérifier si le téléphone n'est pas déjà utilisé (si renseigné)
-      if (formData.phone.trim()) {
-        const { data: existingPhoneData, error: checkPhoneError } = await supabase
-          .from('community_members')
-          .select('phone')
-          .eq('phone', formData.phone.trim());
+    // Créer l'inscription SANS récupérer l'IP côté client
+    const { data, error: insertError } = await supabase
+      .from('community_members')
+      .insert([{
+        username: formData.username.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim() || null,
+        acceptance_ip: null, // L'IP sera gérée côté serveur dans l'email
+        charter_accepted: true,
+        charter_version: '1.0',
+        acceptance_timestamp: new Date().toISOString(),
+        status: 'pending',
+        registration_method: 'public'
+      }])
+      .select()
+      .single();
 
-        if (checkPhoneError && checkPhoneError.code !== 'PGRST116') {
-          console.error('Erreur vérification téléphone:', checkPhoneError);
-          setError('Erreur lors de la vérification du téléphone.');
-          return;
-        }
-
-        if (existingPhoneData && existingPhoneData.length > 0) {
-          setError('Ce numéro de téléphone est déjà utilisé pour une inscription.');
-          return;
-        }
-      }
-
-      // Créer l'inscription
-      const { data, error: insertError } = await supabase
-        .from('community_members')
-        .insert([{
-          username: formData.username.trim(),
-          email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim() || null,
-          acceptance_ip: userIP,
-          charter_accepted: true,
-          charter_version: '1.0',
-          acceptance_timestamp: new Date().toISOString(),
-          status: 'pending',
-          registration_method: 'public'
-        }])
-        .select()
-        .single();
-
-      if (insertError) {
-        throw new Error('Erreur lors de l\'enregistrement: ' + insertError.message);
-      }
+    if (insertError) {
+      throw new Error('Erreur lors de l\'enregistrement: ' + insertError.message);
+    }
 
     // Envoyer un email de notification à l'administrateur
-        try {
-            await sendAdminNotification(data);
-        } catch (emailError) {
-            console.error('Erreur envoi email admin:', emailError);
-    // Ne pas faire échouer l'inscription si l'email échoue
-      }
-
-      setSuccess('Inscription réussie ! Vous recevrez bientôt les informations pour rejoindre notre groupe et formations.');
-      setCurrentStep(3);
-
-    } catch (error: any) {
-      console.error('Erreur inscription:', error);
-      setError('Erreur lors de l\'inscription: ' + (error.message || 'Erreur inconnue'));
-    } finally {
-      setIsLoading(false);
+    try {
+      await sendAdminNotification(data);
+    } catch (emailError) {
+      console.error('Erreur envoi email admin:', emailError);
+      // Ne pas faire échouer l'inscription si l'email échoue
     }
-  };
+
+    setSuccess('Inscription réussie ! Vous recevrez bientôt les informations pour rejoindre notre groupe et formations.');
+    setCurrentStep(3);
+
+  } catch (error: any) {
+    console.error('Erreur inscription:', error);
+    setError('Erreur lors de l\'inscription: ' + (error.message || 'Erreur inconnue'));
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Gestion de la soumission
   const handleSubmit = async (e: React.FormEvent) => {
