@@ -1,21 +1,30 @@
+# netlify.toml
 [build]
+  # Dossier à déployer (Vite génère dans 'dist')
   publish = "dist"
+  
+  # Commande de build
   command = "npm run build"
 
+# Configuration des Netlify Functions
 [functions]
   directory = "netlify/functions"
+  # Spécifier explicitement l'extension pour les fonctions
+  included_files = ["netlify/functions/**/*.cjs"]
 
-# Redirections - ordre important !
+# Redirections - IMPORTANT: l'ordre compte !
+# Les API routes en premier
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# SPA routing - doit être en dernier
+# Redirection pour SPA (Single Page Application) - doit être en dernier
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# Variables d'environnement pour Netlify
 [build.environment]
   NODE_VERSION = "18"
