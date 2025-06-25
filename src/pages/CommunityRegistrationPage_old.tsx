@@ -1,5 +1,6 @@
 // src/pages/CommunityRegistrationPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -12,6 +13,7 @@ import {
   Text,
   Alert,
   AlertIcon,
+  Spinner,
   Container,
   useColorModeValue,
   useToast,
@@ -20,6 +22,7 @@ import {
   useBreakpointValue,
   Checkbox,
   Link,
+  Badge,
   Progress,
   Modal,
   ModalOverlay,
@@ -29,10 +32,12 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  IconButton,
   Icon,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon } from '@chakra-ui/icons';
-import { supabase } from '../lib/supabase';
+import { ChevronDownIcon, ChevronUpIcon, ExternalLinkIcon } from '@chakra-ui/icons';
+import { CryptocaVaultDB } from '../lib/supabase';
+import { detectMobileAndMetaMask } from '../components/utils/mobileDetection';
 
 // Types
 interface CommunityRegistrationForm {
@@ -45,7 +50,22 @@ interface CommunityRegistrationForm {
   respectConfirmed: boolean;
 }
 
+// Déclaration TypeScript pour window.ethereum
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: any[] }) => Promise<any>;
+      isMetaMask?: boolean;
+    };
+  }
+}
+
 const CommunityRegistrationPage: React.FC = () => {
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [isPreApproved, setIsPreApproved] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isConnectingMetaMask, setIsConnectingMetaMask] = useState<boolean>(false);
   const [formData, setFormData] = useState<CommunityRegistrationForm>({
     username: '',
     email: '',
@@ -55,7 +75,6 @@ const CommunityRegistrationPage: React.FC = () => {
     responsibilityAccepted: false,
     respectConfirmed: false
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -64,77 +83,14 @@ const CommunityRegistrationPage: React.FC = () => {
   const { isOpen: isCharterOpen, onOpen: onCharterOpen, onClose: onCharterClose } = useDisclosure();
 
   // Styles Chakra UI
+  const bgColor = useColorModeValue('white', 'gray.800');
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
 
   // Responsive values
   const containerMaxW = useBreakpointValue({ base: 'sm', md: 'lg', lg: 'xl' });
   const cardPadding = useBreakpointValue({ base: 6, md: 10 });
   const headingSize = useBreakpointValue({ base: 'xl', md: '2xl' });
-
-  // Fonction pour envoyer une notification email à l'administrateur
-  // Fonction temporaire pour envoyer une notification email à l'administrateur
-// Fonction finale pour envoyer une notification email à l'administrateur
-const sendAdminNotification = async (memberData: any) => {
-  try {
-    console.log('📧 Envoi notification admin pour:', memberData.username);
-    
-    const response = await fetch('/api/send-admin-notification', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        memberData: {
-          username: memberData.username,
-          email: memberData.email,
-          phone: memberData.phone,
-          registrationDate: memberData.acceptance_timestamp,
-          registrationIP: memberData.acceptance_ip
-        }
-      })
-    });
-
-    // Vérifier si la réponse est OK
-    if (!response.ok) {
-      let errorMessage = `Erreur HTTP ${response.status}`;
-      
-      // Essayer de parser la réponse d'erreur
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
-        console.error('❌ Erreur API:', errorData);
-      } catch (parseError) {
-        console.warn('Impossible de parser la réponse d\'erreur');
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    // Parser la réponse de succès
-    const result = await response.json();
-    
-    if (result.fallback) {
-      console.warn('⚠️ Email envoyé en mode fallback:', result.message);
-    } else {
-      console.log('✅ Email admin envoyé avec succès:', result.message);
-    }
-    
-    return result;
-
-  } catch (error) {
-    console.error('❌ Erreur notification admin:', error);
-    
-    // Informations de debug
-    if (error.message.includes('fetch')) {
-      console.error('🔍 Vérifiez que les deux serveurs tournent:');
-      console.error('   - Backend: http://localhost:3001/health');
-      console.error('   - Frontend: http://localhost:5173');
-    }
-    
-    // Ne pas faire échouer l'inscription
-    throw error;
-  }
-};
 
   // Fonction pour obtenir l'IP utilisateur
   const getUserIP = async (): Promise<string> => {
@@ -148,9 +104,135 @@ const sendAdminNotification = async (memberData: any) => {
     }
   };
 
-  // Démarrer l'inscription
-  const startRegistration = () => {
-    setCurrentStep(2);
+  // Fonction pour connecter MetaMask (adaptée de votre LoginPage)
+  const connectMetaMask = async () => {
+    const mobileInfo = detectMobileAndMetaMask();
+    
+    if (!window.ethereum) {
+      if (mobileInfo.isMetaMaskBrowser) {
+        toast({
+          title: "Chargement...",
+          description: "MetaMask se charge, veuillez patienter quelques secondes.",
+          status: "info",
+          duration: 3000,
+          isClosable: true,
+        });
+        
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        setIsConnectingMetaMask(true);
+        
+        const waitForEthereum = setInterval(() => {
+          attempts++;
+          
+          if (window.ethereum) {
+            clearInterval(waitForEthereum);
+            connectMetaMask();
+            return;
+          }
+          
+          if (attempts >= maxAttempts) {
+            clearInterval(waitForEthereum);
+            setIsConnectingMetaMask(false);
+            toast({
+              title: "Erreur MetaMask",
+              description: "Impossible de détecter MetaMask. Essayez de rafraîchir la page.",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        }, 500);
+        
+        return;
+      }
+      
+      toast({
+        title: "MetaMask non détecté",
+        description: "Veuillez installer MetaMask ou utiliser le navigateur MetaMask.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsConnectingMetaMask(true);
+    try {
+      let accounts;
+      
+      try {
+        accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        
+        if (!accounts || accounts.length === 0) {
+          accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        }
+      } catch (error: any) {
+        if (error.code === 4001) {
+          throw new Error('Connexion refusée par l\'utilisateur');
+        }
+        throw error;
+      }
+
+      if (accounts && accounts.length > 0) {
+        const metamaskAddress = accounts[0];
+        setWalletAddress(metamaskAddress);
+        setIsConnected(true);
+        setCurrentStep(2);
+        
+        await checkPreApproval(metamaskAddress);
+        
+        toast({
+          title: "Wallet connecté !",
+          description: `${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur MetaMask",
+        description: error.message || "Erreur lors de la connexion à MetaMask",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsConnectingMetaMask(false);
+    }
+  };
+
+  // Vérifier si l'utilisateur est pré-approuvé
+  const checkPreApproval = async (address: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Vérifier d'abord s'il n'est pas déjà membre
+      const existingMember = await CryptocaVaultDB.getCommunityMember(address);
+
+      if (existingMember) {
+        setError('Vous êtes déjà membre de la communauté CryptocaVault.');
+        return;
+      }
+
+      // Vérifier la pré-approbation
+      const preApprovalData = await CryptocaVaultDB.checkPreApproval(address);
+
+      if (preApprovalData) {
+        setIsPreApproved(true);
+        setCurrentStep(3);
+      } else {
+        setError('Wallet non pré-approuvé. Veuillez contacter l\'administrateur pour obtenir l\'accès.');
+      }
+
+    } catch (error: any) {
+      console.error('Erreur vérification pré-approbation:', error);
+      setError('Erreur lors de la vérification. Contactez le support.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Gestion des changements de formulaire
@@ -173,89 +255,45 @@ const sendAdminNotification = async (memberData: any) => {
     );
   };
 
-  // Enregistrer l'inscription
-  const registerCommunityMember = async () => {
-    try {
-      setIsLoading(true);
-      setError('');
+  // Enregistrer l'acceptation de la charte
+  const registerCommunityAcceptance = async () => {
+  try {
+    setIsLoading(true);
+    setError('');
 
-      const userIP = await getUserIP();
-      
-      // Vérifier si l'email n'est pas déjà utilisé
-      const { data: existingEmailData, error: checkEmailError } = await supabase
-        .from('community_members')
-        .select('email')
-        .eq('email', formData.email.trim().toLowerCase());
+    const userIP = await getUserIP();
+    
+    const acceptance = {
+      wallet_address: walletAddress,  // ← GARDER (obligatoire)
+      username: formData.username.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim() || null,
+      acceptance_ip: userIP,
+      registration_method: 'public'  // ← AJOUTER
+    };
 
-      if (checkEmailError && checkEmailError.code !== 'PGRST116') {
-        console.error('Erreur vérification email:', checkEmailError);
-        setError('Erreur lors de la vérification de l\'email.');
-        return;
-      }
+    const insertedData = await CryptocaVaultDB.createCommunityMember(acceptance);
 
-      if (existingEmailData && existingEmailData.length > 0) {
-        setError('Cette adresse email est déjà utilisée pour une inscription.');
-        return;
-      }
+    // Marquer la pré-approbation comme utilisée
+    await CryptocaVaultDB.markPreApprovalUsed(walletAddress);
 
-      // Vérifier si le téléphone n'est pas déjà utilisé (si renseigné)
-      if (formData.phone.trim()) {
-        const { data: existingPhoneData, error: checkPhoneError } = await supabase
-          .from('community_members')
-          .select('phone')
-          .eq('phone', formData.phone.trim());
+    // Log d'audit
+    await CryptocaVaultDB.createAuditLog({
+      action: 'community_registration',
+      wallet_address: walletAddress,
+      details: { username: formData.username },
+      ip_address: userIP
+    });
 
-        if (checkPhoneError && checkPhoneError.code !== 'PGRST116') {
-          console.error('Erreur vérification téléphone:', checkPhoneError);
-          setError('Erreur lors de la vérification du téléphone.');
-          return;
-        }
+    setSuccess('Inscription réussie ! Vous recevrez bientôt les informations pour rejoindre notre groupe et formations.');
+    setCurrentStep(4);
 
-        if (existingPhoneData && existingPhoneData.length > 0) {
-          setError('Ce numéro de téléphone est déjà utilisé pour une inscription.');
-          return;
-        }
-      }
-
-      // Créer l'inscription
-      const { data, error: insertError } = await supabase
-        .from('community_members')
-        .insert([{
-          username: formData.username.trim(),
-          email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim() || null,
-          acceptance_ip: userIP,
-          charter_accepted: true,
-          charter_version: '1.0',
-          acceptance_timestamp: new Date().toISOString(),
-          status: 'pending',
-          registration_method: 'public'
-        }])
-        .select()
-        .single();
-
-      if (insertError) {
-        throw new Error('Erreur lors de l\'enregistrement: ' + insertError.message);
-      }
-
-    // Envoyer un email de notification à l'administrateur
-        try {
-            await sendAdminNotification(data);
-        } catch (emailError) {
-            console.error('Erreur envoi email admin:', emailError);
-    // Ne pas faire échouer l'inscription si l'email échoue
-      }
-
-      setSuccess('Inscription réussie ! Vous recevrez bientôt les informations pour rejoindre notre groupe et formations.');
-      setCurrentStep(3);
-
-    } catch (error: any) {
-      console.error('Erreur inscription:', error);
-      setError('Erreur lors de l\'inscription: ' + (error.message || 'Erreur inconnue'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (error: any) {
+    setError('Erreur lors de l\'inscription: ' + error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Gestion de la soumission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -264,8 +302,23 @@ const sendAdminNotification = async (memberData: any) => {
       setError('Veuillez remplir tous les champs obligatoires et accepter toutes les conditions.');
       return;
     }
-    await registerCommunityMember();
+    await registerCommunityAcceptance();
   };
+
+  // Auto-connexion pour MetaMask mobile
+  useEffect(() => {
+    const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
+    
+    if (isMetaMaskBrowser) {
+      const timer = setTimeout(() => {
+        if (window.ethereum && !walletAddress) {
+          connectMetaMask();
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <Box
@@ -351,10 +404,10 @@ const sendAdminNotification = async (memberData: any) => {
               {/* Barre de progression */}
               <Box>
                 <Text fontSize="sm" color="orange.600" mb={2}>
-                  Étape {currentStep} sur 3
+                  Étape {currentStep} sur 4
                 </Text>
                 <Progress 
-                  value={(currentStep / 3) * 100} 
+                  value={(currentStep / 4) * 100} 
                   colorScheme="purple" 
                   size="sm" 
                   borderRadius="full"
@@ -377,7 +430,7 @@ const sendAdminNotification = async (memberData: any) => {
               )}
 
               {/* Étape 1: Présentation Charte */}
-              {currentStep === 1 && !success && (
+              {currentStep >= 1 && !success && (
                 <Box>
                   <Heading size="lg" mb={4} color="orange.600">
                     📋 Charte de la Communauté
@@ -420,34 +473,62 @@ const sendAdminNotification = async (memberData: any) => {
                     colorScheme="blue"
                     variant="outline"
                     onClick={onCharterOpen}
-                    mb={6}
+                    mb={4}
                   >
                     Lire la Charte Complète
-                  </Button>
-
-                  <Button
-                    onClick={startRegistration}
-                    bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                    color="white"
-                    size="lg"
-                    width="full"
-                    _hover={{
-                      bg: "linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%)",
-                      transform: 'translateY(-2px)',
-                    }}
-                    borderRadius="xl"
-                    py={6}
-                    fontSize="lg"
-                    fontWeight="600"
-                    leftIcon={<Text fontSize="xl">📝</Text>}
-                  >
-                    M'inscrire à la Communauté
                   </Button>
                 </Box>
               )}
 
-              {/* Étape 2: Formulaire d'inscription */}
-              {currentStep === 2 && !success && (
+              {/* Étape 2: Connexion Wallet */}
+              {currentStep >= 1 && !success && (
+                <Box>
+                  <Heading size="lg" mb={4} color="orange.600">
+                    🔗 Connexion Wallet
+                  </Heading>
+                  
+                  {!isConnected ? (
+                    <Button
+                      leftIcon={<Text fontSize="xl">🦊</Text>}
+                      onClick={connectMetaMask}
+                      isLoading={isConnectingMetaMask}
+                      loadingText="Connexion..."
+                      bg="linear-gradient(145deg, #ff7a00, #e85d00)"
+                      color="white"
+                      size="lg"
+                      _hover={{
+                        bg: "linear-gradient(145deg, #ff8500, #f06800)",
+                        transform: 'translateY(-2px)',
+                      }}
+                      borderRadius="xl"
+                    >
+                      Connecter MetaMask
+                    </Button>
+                  ) : (
+                    <Box bg="black" p={4} borderRadius="xl">
+                      <HStack>
+                        <Text fontSize="xl">✅</Text>
+                        <VStack align="start" spacing={1}>
+                          <Text fontWeight="semibold" color="green.500">
+                            Wallet connecté avec succès
+                          </Text>
+                          <Text fontSize="sm" color="green.700">
+                            {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}
+                          </Text>
+                          {isPreApproved && (
+                            <Badge colorScheme="orange" variant="subtle">
+                              ✅ Pré-approuvé pour la communauté
+                            </Badge>
+                          )}
+                        </VStack>
+                      </HStack>
+                    </Box>
+                  )}
+                </Box>
+              )}
+
+              {/* Étape 3: Formulaire d'inscription */}
+              {isConnected && isPreApproved && !success && (
                 <Box as="form" onSubmit={handleSubmit}>
                   <Heading size="lg" mb={6} color="orange.600">
                     📝 Inscription à la Communauté
@@ -518,9 +599,9 @@ const sendAdminNotification = async (memberData: any) => {
                           colorScheme="purple"
                           size="md"
                         >
-                          <Text fontSize="sm" color="white">
+                          <Text fontSize="sm">
                             J'ai lu et j'accepte intégralement la{' '}
-                            <Link color="purple.300" onClick={onCharterOpen} textDecoration="underline">
+                            <Link color="purple.600" onClick={onCharterOpen} textDecoration="underline">
                               Charte de la Communauté RMR
                             </Link>
                           </Text>
@@ -532,7 +613,7 @@ const sendAdminNotification = async (memberData: any) => {
                           colorScheme="purple"
                           size="md"
                         >
-                          <Text fontSize="sm" color="white">
+                          <Text fontSize="sm">
                             Je m'engage à participer aux formations quotidiennes (21h30 GMT+3) 
                             et à respecter la règle des absences (max 4/6 sessions)
                           </Text>
@@ -556,7 +637,7 @@ const sendAdminNotification = async (memberData: any) => {
                           colorScheme="purple"
                           size="md"
                         >
-                          <Text fontSize="sm" color="white">
+                          <Text fontSize="sm">
                             Je m'engage à maintenir un comportement respectueux en toutes 
                             circonstances au sein de la communauté
                           </Text>
@@ -581,49 +662,35 @@ const sendAdminNotification = async (memberData: any) => {
                       </HStack>
                     </Box>
 
-                    {/* Boutons d'action */}
-                    <HStack spacing={4} w="full">
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={() => setCurrentStep(1)}
-                        borderColor="white"
-                        color="white"
-                        _hover={{ bg: "rgba(255,255,255,0.1)" }}
-                        borderRadius="xl"
-                        flex={1}
-                      >
-                        Retour
-                      </Button>
-
-                      <Button
-                        type="submit"
-                        size="lg"
-                        bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                        color="white"
-                        _hover={{
-                          transform: 'translateY(-2px)',
-                          shadow: 'xl',
-                          bg: 'linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%)',
-                        }}
-                        isLoading={isLoading}
-                        loadingText="Inscription en cours..."
-                        disabled={!isFormValid() || isLoading}
-                        borderRadius="xl"
-                        fontSize="lg"
-                        fontWeight="600"
-                        leftIcon={<Text fontSize="xl">🌟</Text>}
-                        flex={2}
-                      >
-                        Confirmer mon Inscription
-                      </Button>
-                    </HStack>
+                    {/* Bouton de soumission */}
+                    <Button
+                      type="submit"
+                      size="lg"
+                      width="full"
+                      bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                      color="white"
+                      _hover={{
+                        transform: 'translateY(-2px)',
+                        shadow: 'xl',
+                        bg: 'linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%)',
+                      }}
+                      isLoading={isLoading}
+                      loadingText="Inscription en cours..."
+                      disabled={!isFormValid() || isLoading}
+                      borderRadius="xl"
+                      py={6}
+                      fontSize="lg"
+                      fontWeight="600"
+                      leftIcon={<Text fontSize="xl">🌟</Text>}
+                    >
+                      Rejoindre la Communauté RMR
+                    </Button>
                   </VStack>
                 </Box>
               )}
 
-              {/* Étape 3: Message de succès */}
-              {success && currentStep === 3 && (
+              {/* Étape 4: Message de succès */}
+              {success && (
                 <Box textAlign="center">
                   <Box bg="green.50" borderRadius="xl" p={8}>
                     <Text fontSize="5xl" mb={4}>🎉</Text>
@@ -740,6 +807,19 @@ const sendAdminNotification = async (memberData: any) => {
                   • Partage d'expériences encouragé<br/>
                   • Questions bienvenues pendant les sessions
                 </Text>
+              </Box>
+
+              <Box>
+                <Heading size="md" mb={2}>7. Progression vers la Plateforme</Heading>
+                <Text fontSize="sm" color="gray.600">
+                  Après avoir démontré votre engagement dans la communauté, vous pourrez :
+                </Text>
+                <VStack spacing={1} align="start" fontSize="sm" color="gray.600" mt={2}>
+                  <Text>• Demander l'accès à la plateforme de trading</Text>
+                  <Text>• Accéder aux stratégies premium</Text>
+                  <Text>• Participer aux pools de récompenses</Text>
+                  <Text>• Bénéficier d'un accompagnement personnalisé</Text>
+                </VStack>
               </Box>
 
               <Box bg="blue.50" p={4} borderRadius="md">

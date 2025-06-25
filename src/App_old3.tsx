@@ -25,12 +25,10 @@ import Footer from './components/layout/Footer';
 import NFTCards1 from './pages/NFTCards1';
 import YieldCalculatorPage from './pages/YieldCalculatorPage';
 import NFTPage from './pages/NFTPage';
-import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
 
 // NOUVEAUX COMPOSANTS COMMUNAUTÉ
 import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
 import PlatformAccessPage from './pages/PlatformAccessPage';
-import RegistrationPage from './pages/RegistrationPage'; // ← NOUVEAU
 import EnhancedAuthService from './services/EnhancedAuthService';
 
 import { pinataService } from './services/pinataService';
@@ -249,24 +247,8 @@ const AppContent: React.FC = () => {
               </PublicRoute>
             }
           />
-          {/* 🆕 NOUVELLE ROUTE PUBLIQUE - Termes et Conditions */}
-          <Route
-            path="/terms-and-conditions"
-            element={
-              <PublicRoute>
-              <TermsAndConditionsPage />
-              </PublicRoute>
-            }
-          />
 
-          {/* 🆕 NOUVELLE ROUTE PUBLIQUE - Page d'inscription */}
-          <Route 
-            path="/registration" 
-            element={<RegistrationPage />} 
-          />
-          <Route path="/conditions-utilisation" element={<TermsAndConditionsPage />} />
-
-          {/* 🆕 AUTRES ROUTES COMMUNAUTÉ */}
+          {/* 🆕 NOUVELLES ROUTES COMMUNAUTÉ (sans protection, accessibles directement) */}
           <Route 
             path="/community-registration" 
             element={<CommunityRegistrationPage />} 
@@ -315,7 +297,6 @@ const AppContent: React.FC = () => {
                     <Route path="/nft-page" element={<NFTPage />} />
                     <Route path="/history" element={<TransactionHistoryUsers />} />
                     <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
-                    
                     
                     {/* Redirection INCHANGÉE */}
                     <Route path="*" element={<Navigate to="/" replace />} />

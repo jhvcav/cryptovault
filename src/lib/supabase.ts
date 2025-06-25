@@ -68,9 +68,12 @@ export class CryptocaVaultDB {
   static async createCommunityMember(memberData: {
     wallet_address: string;
     username: string;
+    first_name?: string;
+    last_name?: string;
     email: string;
     phone?: string;
     acceptance_ip?: string;
+    registration_method?: string;
   }) {
     const { data, error } = await supabase
       .from('community_members')
@@ -80,7 +83,8 @@ export class CryptocaVaultDB {
         charter_accepted: true,
         charter_version: '1.0',
         acceptance_timestamp: new Date().toISOString(),
-        status: 'pending_nft_mint'
+        status: 'pending',
+        registration_method: memberData.registration_method || 'public'
       }])
       .select()
       .single();
@@ -92,14 +96,14 @@ export class CryptocaVaultDB {
     return data;
   }
 
-  // =================== WALLETS AUTORISÉS ===================
+  // =================== WALLETS AUTORISÉS (VOTRE TABLE EXISTANTE) ===================
 
   static async checkWalletAuthorization(walletAddress: string) {
     const { data, error } = await supabase
-      .from('authorized_wallets')
+      .from('users_authorized') // ← UTILISE VOTRE TABLE EXISTANTE
       .select('*')
       .eq('wallet_address', walletAddress.toLowerCase())
-      .eq('status', 'active')
+      .eq('status', 'Active') // ← UTILISE VOTRE COLONNE 'status'
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -233,6 +237,176 @@ export class CryptocaVaultDB {
       authorizationData: walletAuth,
       preApprovalData: preApproval
     };
+  }
+
+
+static async getAvailableAuthorizedWallets() {
+    try {
+      // Récupérer les wallets autorisés actifs
+      const { data: authorizedWallets, error: authError } = await supabase
+        .from('users_authorized')
+        .select('id, wallet_address, first_name, last_name, status')
+        .eq('status', 'Active');
+
+      if (authError) {
+        throw new Error(`Erreur récupération wallets autorisés: ${authError.message}`);
+      }
+
+      // Récupérer les wallets déjà inscrits à la communauté
+      const { data: existingMembers, error: memberError } = await supabase
+        .from('community_members')
+        .select('wallet_address');
+
+      if (memberError) {
+        throw new Error(`Erreur vérification membres existants: ${memberError.message}`);
+      }
+
+      // Filtrer les wallets disponibles (non encore inscrits)
+      const existingWallets = existingMembers?.map(m => m.wallet_address.toLowerCase()) || [];
+      const availableWallets = authorizedWallets?.filter(
+        wallet => !existingWallets.includes(wallet.wallet_address.toLowerCase())
+      ) || [];
+
+      return availableWallets;
+
+    } catch (error) {
+      console.error('Erreur getAvailableAuthorizedWallets:', error);
+      throw error;
+    }
+  }
+
+  // =================== ADMIN FUNCTIONS ===================
+
+  static async getAllPendingMembers() {
+    const { data, error } = await supabase
+      .from('community_members')
+      .select('*')
+      .eq('status', 'pending_nft_mint')
+      .order('acceptance_timestamp', { ascending: true });
+
+    if (error) {
+      throw new Error(`Erreur récupération membres en attente: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  static async getAllActiveMembers() {
+    const { data, error } = await supabase
+      .from('community_members')
+      .select('*')
+      .eq('status', 'active')
+      .order('acceptance_timestamp', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erreur récupération membres actifs: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  static async getRecentPublicRegistrations(days: number = 7) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const { data, error } = await supabase
+      .from('community_members')
+      .select('*')
+      .eq('registration_method', 'public')
+      .gte('acceptance_timestamp', startDate.toISOString())
+      .order('acceptance_timestamp', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erreur récupération inscriptions récentes: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  // =================== VALIDATION FUNCTIONS ===================
+
+  static async checkEmailAvailability(email: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('community_members')
+        .select('email')
+        .eq('email', email.toLowerCase())
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Pas de résultat trouvé, email disponible
+        return true;
+      }
+
+      // Email trouvé, pas disponible
+      return false;
+    } catch (error) {
+      console.error('Erreur vérification email:', error);
+      return false;
+    }
+  }
+
+  static async activateCommunityMember(walletAddress: string, nftTokenId?: string) {
+    try {
+      const updateData: any = {
+        status: 'active',
+        updated_at: new Date().toISOString()
+      };
+
+      if (nftTokenId) {
+        updateData.nft_minted = true;
+        updateData.nft_token_id = nftTokenId;
+        updateData.nft_mint_date = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('community_members')
+        .update(updateData)
+        .eq('wallet_address', walletAddress.toLowerCase());
+
+      if (error) {
+        throw new Error(`Erreur activation membre: ${error.message}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erreur activateCommunityMember:', error);
+      throw error;
+    }
+  }
+}
+
+// =============================================
+// UTILITAIRES DE VALIDATION
+// =============================================
+
+export class ValidationUtils {
+  
+  static isValidWalletAddress(address: string): boolean {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+  }
+
+  static isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  static isValidPhone(phone: string): boolean {
+    if (!phone || phone.trim() === '') return true; // Optionnel
+    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+    return phoneRegex.test(phone);
+  }
+
+  static sanitizeString(input: string): string {
+    return input.trim().replace(/[<>]/g, ''); // Basique XSS prevention
+  }
+
+  static formatName(name: string): string {
+    return name.trim()
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 }
 

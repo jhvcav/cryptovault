@@ -24,7 +24,6 @@ import AdminDashboard from './AdminDashboard';
 import WalletMonitoring from './WalletMonitoring';
 import ContractMonitoring from './ContractMonitoring';
 import PlansManagement from './PlansManagement';
-import AdminRegistrationsPage from './AdminRegistrationsPage'; // Import de la nouvelle page
 import NFTImageManager from '../components/NFTImageManager'; // Renommé
 import NFTContractManager from '../components/NFTContractManager'; // Nouveau composant
 
@@ -33,7 +32,6 @@ const AdminPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [nftSubTab, setNftSubTab] = useState(0);
-  const [usersSubTab, setUsersSubTab] = useState(0); // Nouvel état pour les sous-onglets utilisateurs
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const bgColor = 'transparent';
@@ -193,50 +191,9 @@ const AdminPage: React.FC = () => {
                 <AdminDashboard />
               </TabPanel>
 
-              {/* Onglet 2: Gestion des utilisateurs avec sous-onglets */}
+              {/* Onglet 2: Gestion des utilisateurs */}
               <TabPanel p={0}>
-                <Box>
-                  <Tabs
-                    index={usersSubTab}
-                    onChange={setUsersSubTab}
-                    variant="soft-rounded"
-                    colorScheme="blue"
-                  >
-                    <TabList bg="blue.50" p={4} borderRadius="lg" mb={4}>
-                      <Tab
-                        mr={2}
-                        _selected={{
-                          color: 'white',
-                          bg: 'blue.500',
-                          shadow: 'md'
-                        }}
-                      >
-                        👤 Utilisateurs Autorisés
-                      </Tab>
-                      <Tab
-                        _selected={{
-                          color: 'white',
-                          bg: 'blue.500',
-                          shadow: 'md'
-                        }}
-                      >
-                        📝 Demandes d'Inscription
-                      </Tab>
-                    </TabList>
-
-                    <TabPanels>
-                      {/* Sous-onglet 1: Gestion des utilisateurs existante */}
-                      <TabPanel p={0}>
-                        <UsersManagement />
-                      </TabPanel>
-
-                      {/* Sous-onglet 2: Gestion des inscriptions publiques */}
-                      <TabPanel p={0}>
-                        <AdminRegistrationsPage />
-                      </TabPanel>
-                    </TabPanels>
-                  </Tabs>
-                </Box>
+                <UsersManagement />
               </TabPanel>
 
               {/* Onglet 3: Gestion des Plans */}

@@ -92,7 +92,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4 text-white">Légal</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/terms-and-conditions" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Conditions d'Utilisation
                 </Link>
               </li>

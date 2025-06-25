@@ -960,42 +960,63 @@ const handleWalletAddressChange = (newAddress: string) => {
           </ModalContent>
         </Modal>
 
+        {/* Dialog de confirmation de modification */}
         <AlertDialog
-  isOpen={showConfirmDialog}
-  leastDestructiveRef={cancelRef}
-  onClose={() => setShowConfirmDialog(false)}
->
-  <AlertDialogOverlay>
-    <AlertDialogContent>
-      <AlertDialogHeader fontSize="lg" fontWeight="bold">
-        ⚠️ Confirmation de modification
-      </AlertDialogHeader>
+          isOpen={showConfirmDialog}
+          leastDestructiveRef={cancelRef}
+          onClose={() => setShowConfirmDialog(false)}
+        >
+          <AlertDialogOverlay>
+            <AlertDialogContent>
+              <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                ⚠️ Confirmation de modification
+              </AlertDialogHeader>
 
-      <AlertDialogBody>
-        <VStack spacing={3} align="start">
-          <Text>
-            Vous êtes sur le point de modifier des informations sensibles :
-          </Text>
-          
-          {formData.walletAddress !== editingUser?.walletAddress && (
-            <Box p={3} bg="red.50" borderRadius="md" w="full">
-              <Text fontSize="sm" color="red.700">
-                <strong>🔐 Adresse Wallet :</strong>
-                <br />
-                <code>{editingUser?.walletAddress}</code>
-                <br />
-                <strong>→</strong>
-                <br />
-                <code>{formData.walletAddress}</code>
-              </Text>
-            </Box>
-          )}
-          
-          <Text fontSize="sm" color="gray.600">
-            Cette action est irréversible. Êtes-vous sûr de vouloir continuer ?
-          </Text>
-        </VStack>
-      </AlertDialogBody>
+              <AlertDialogBody>
+                <VStack spacing={3} align="start">
+                  <Text>
+                    Vous êtes sur le point de modifier des informations sensibles :
+                  </Text>
+                  
+                  {editingUser && formData.walletAddress !== editingUser.walletAddress && (
+                    <Box p={3} bg="red.50" borderRadius="md" w="full">
+                      <Text fontSize="sm" color="red.700">
+                        <strong>🔐 Adresse Wallet :</strong>
+                        <br />
+                        <code>{editingUser.walletAddress}</code>
+                        <br />
+                        <strong>→</strong>
+                        <br />
+                        <code>{formData.walletAddress}</code>
+                      </Text>
+                    </Box>
+                  )}
+                  
+                  <Text fontSize="sm" color="gray.600">
+                    Cette action est irréversible. Êtes-vous sûr de vouloir continuer ?
+                  </Text>
+                </VStack>
+              </AlertDialogBody>
+
+              <AlertDialogFooter>
+                <Button 
+                  ref={cancelRef} 
+                  onClick={() => setShowConfirmDialog(false)}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  colorScheme="red" 
+                  onClick={confirmUpdate} 
+                  ml={3}
+                  isLoading={isLoading}
+                >
+                  Confirmer les modifications
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialogOverlay>
+        </AlertDialog>
 
         {/* Dialog de confirmation de suppression */}
         <AlertDialog
@@ -1018,26 +1039,6 @@ const handleWalletAddressChange = (newAddress: string) => {
                   Cette action peut être annulée en modifiant le statut.
                 </Text>
               </AlertDialogBody>
-
-              <AlertDialogFooter>
-        <Button 
-          ref={cancelRef} 
-          onClick={() => setShowConfirmDialog(false)}
-        >
-          Annuler
-        </Button>
-        <Button 
-          colorScheme="red" 
-          onClick={confirmUpdate} 
-          ml={3}
-          isLoading={isLoading}
-        >
-          Confirmer les modifications
-        </Button>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialogOverlay>
-</AlertDialog>
 
               <AlertDialogFooter>
                 <Button ref={cancelRef} onClick={onDeleteClose}>
