@@ -9,8 +9,8 @@
 # Configuration des Netlify Functions
 [functions]
   directory = "netlify/functions"
-  # Spécifier explicitement l'extension pour les fonctions
-  included_files = ["netlify/functions/**/*.cjs"]
+  # Inclure les fichiers .cjs
+  included_files = ["**/*.cjs"]
 
 # Redirections - IMPORTANT: l'ordre compte !
 # Les API routes en premier

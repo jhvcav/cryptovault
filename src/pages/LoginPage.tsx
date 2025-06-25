@@ -23,6 +23,7 @@ import {
 } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 import { detectMobileAndMetaMask } from '../components/utils/mobileDetection';
+import { useNavigate } from 'react-router-dom';
 
 
 // Déclaration TypeScript pour window.ethereum
@@ -275,6 +276,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
 }, []);
 
+const navigate = useNavigate();
+
   return (
     <Box
       minH="100vh"
@@ -384,6 +387,58 @@ const handleSubmit = async (e: React.FormEvent) => {
               mb={4}
             >
               {showMetaMaskText ? "MetaMask" : ""}
+            </Button>
+
+            {/* Bouton inscription RMR flottant - repositionné pour mobile */}
+            <Button
+              position="absolute"
+              top={{ base: 4, md: 6 }}
+              left={{ base: 4, md: 6 }}
+              size={metaMaskButtonSize}
+              bg="linear-gradient(145deg,rgb(27, 46, 107),rgb(85, 50, 26))"
+              color="white"
+              boxShadow="
+                0 8px 16px rgba(232, 93, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+              "
+              border="1px solid rgba(0, 0, 0, 0.1)"
+              _hover={{
+                transform: 'translateY(-2px)',
+                boxShadow: `
+                  0 12px 24px rgba(232, 93, 0, 0.4),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                  inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                `,
+                bg: "linear-gradient(145deg,rgb(146, 37, 110),rgb(71, 9, 56))",
+              }}
+              _active={{
+                transform: 'translateY(1px)',
+                boxShadow: `
+                  0 4px 8px rgba(232, 93, 0, 0.3),
+                  inset 0 2px 4px rgba(0, 0, 0, 0.2)
+                `,
+                bg: "linear-gradient(145deg, #e85d00, #d15000)",
+              }}
+              onClick={() => navigate('/community-registrations')}
+              leftIcon={
+                <Text 
+                  fontSize={{ base: "16px", md: "20px" }}
+                  filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
+                >
+                </Text>
+              }
+              borderRadius="lg"
+              px={{ base: 2, md: 2 }}
+              py={3}
+              fontWeight="700"
+              fontSize={{ base: "xs", md: "md" }}
+              textShadow="0 1px 2px rgba(0,0,0,0.3)"
+              transition="all 0.2s ease"
+              minW={{ base: "60px", md: "110px" }}
+              mb={4}
+            >
+              {showMetaMaskText ? "Inscription" : ""}
             </Button>
 
             <VStack spacing={{ base: 6, md: 8 }} align="stretch" pt={4}>
