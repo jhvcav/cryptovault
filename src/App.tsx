@@ -26,6 +26,8 @@ import NFTCards1 from './pages/NFTCards1';
 import YieldCalculatorPage from './pages/YieldCalculatorPage';
 import NFTPage from './pages/NFTPage';
 import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
+import PolitiqueEtConfidentialitePage from './pages/PolitiqueEtConfidentialitePage';
+import DivulgationDesRisquesPage from './pages/DivulgationDesRisquesPage';
 
 // NOUVEAUX COMPOSANTS COMMUNAUTÉ
 import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
@@ -316,11 +318,27 @@ const AppContent: React.FC = () => {
           <Route
             path="/terms-and-conditions"
             element={
-              <PublicRoute>
                 <Box w="100%" minH="100vh" display="flex" flexDirection="column">
                   <TermsAndConditionsPage />
                 </Box>
-              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/politique-et-confidentialite"
+            element={
+                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                  <PolitiqueEtConfidentialitePage />
+                </Box>
+            }
+          />
+
+          <Route
+            path="/divulgation-des-risques"
+            element={
+                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                  <DivulgationDesRisquesPage />
+                </Box>
             }
           />
 

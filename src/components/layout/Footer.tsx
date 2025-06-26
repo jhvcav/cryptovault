@@ -97,12 +97,12 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/politique-et-confidentialite" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Politique de Confidentialité
                 </Link>
               </li>
               <li>
-                <Link to="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/divulgation-des-risques" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Divulgation des Risques
                 </Link>
               </li>
