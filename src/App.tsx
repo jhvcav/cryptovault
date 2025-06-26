@@ -1,571 +1,525 @@
-// src/App.tsx - CORRECTION RESPONSIVITÉ MOBILE/TABLETTE
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ChakraProvider, extendTheme, Box } from '@chakra-ui/react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { WalletProvider } from './contexts/WalletContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { InvestmentProvider } from './contexts/InvestmentContext';
-import { useMetaMaskSecurityBSC } from './hooks/useMetaMaskSecurityBSC';
-import { detectMobileAndMetaMask, forceMobileBreakpoints } from './components/utils/mobileDetection';
+// src/components/layout/Navbar.tsx - VERSION RESPONSIVE FIXÉE
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Flex,
+  HStack,
+  IconButton,
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  useDisclosure,
+  useColorModeValue,
+  Stack,
+  Avatar,
+  Text,
+  Badge,
+  VStack,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerCloseButton,
+  Container,
+  useBreakpointValue,
+} from '@chakra-ui/react';
+import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useWallet } from '../../contexts/WalletContext';
 
-// Vos composants existants
-import Navbar from './components/layout/Navbar';
-import SecurityMonitor from './components/SecurityMonitor';
-import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import Dashboard from './pages/Dashboard';
-import InvestPage from './pages/InvestPage';
-import RoadmapPage from './pages/RoadmapPage';
-import AdminPage from './pages/AdminPage';
-import NFTMarketplace from './pages/NFTMarketplace';
-import LoadingSpinner from './components/LoadingSpinner';
-import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
-import Footer from './components/layout/Footer';
-import NFTCards1 from './pages/NFTCards1';
-import YieldCalculatorPage from './pages/YieldCalculatorPage';
-import NFTPage from './pages/NFTPage';
-import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
-
-// NOUVEAUX COMPOSANTS COMMUNAUTÉ
-import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
-import PlatformAccessPage from './pages/PlatformAccessPage';
-import RegistrationPage from './pages/RegistrationPage';
-import EnhancedAuthService from './services/EnhancedAuthService';
-
-import { pinataService } from './services/pinataService';
-
-// Force les breakpoints pour mobile si nécessaire
-const mobileInfo = detectMobileAndMetaMask();
-console.log('🔍 Mobile détecté:', mobileInfo);
-
-if (mobileInfo.shouldUseMobileMode) {
-  console.log('📱 Forçage du mode mobile...');
-  forceMobileBreakpoints();
+// Types pour les liens de navigation
+interface NavLink {
+  label: string;
+  href: string;
+  icon?: string;
+  requiresAuth?: boolean;
+  badge?: string;
 }
 
-// ========================================
-// 🎨 CONFIGURATION THÈME CHAKRA UI RESPONSIVE
-// ========================================
-const chakraTheme = extendTheme({
-  config: {
-    initialColorMode: 'dark',
-    useSystemColorMode: false,
-  },
-  colors: {
-    brand: {
-      50: '#e6f3ff',
-      100: '#b3d9ff',
-      200: '#80bfff',
-      300: '#4da6ff',
-      400: '#1a8cff',
-      500: '#0073e6',
-      600: '#005bb3',
-      700: '#004280',
-      800: '#002a4d',
-      900: '#00111a',
-    },
-  },
-  fonts: {
-    heading: 'Inter, sans-serif',
-    body: 'Inter, sans-serif',
-  },
-  // 🆕 STYLES GLOBAUX RESPONSIVE
-  styles: {
-    global: {
-      // Reset et base
-      '*': {
-        margin: 0,
-        padding: 0,
-        boxSizing: 'border-box',
-      },
-      html: {
-        fontSize: { base: '14px', md: '16px' },
-        scrollBehavior: 'smooth',
-        // Empêche le zoom sur les inputs sur iOS
-        '-webkit-text-size-adjust': '100%',
-        '-ms-text-size-adjust': '100%',
-      },
-      body: {
-        fontFamily: 'Inter, sans-serif',
-        minHeight: '100vh',
-        width: '100%',
-        margin: 0,
-        padding: 0,
-        // Empêche le scroll horizontal
-        overflowX: 'hidden',
-        // Support PWA
-        '-webkit-touch-callout': 'none',
-        '-webkit-user-select': 'none',
-        userSelect: 'none',
-        // Améliore les performances de scroll sur mobile
-        '-webkit-overflow-scrolling': 'touch',
-      },
-      // Container principal responsive
-      '#root': {
-        minHeight: '100vh',
-        width: '100%',
-        margin: 0,
-        padding: 0,
-        position: 'relative',
-      },
-      // Améliore l'affichage des boutons sur mobile
-      'button, input, select, textarea': {
-        '-webkit-appearance': 'none',
-        '-moz-appearance': 'none',
-        fontSize: { base: '16px', md: '14px' }, // Évite le zoom sur iOS
-      },
-    },
-  },
-  // 🆕 BREAKPOINTS PERSONNALISÉS
-  breakpoints: {
-    base: '0px',    // mobile
-    sm: '480px',    // mobile large
-    md: '768px',    // tablette
-    lg: '992px',    // desktop
-    xl: '1280px',   // desktop large
-    '2xl': '1536px' // très large
-  },
-});
-
-// ========================================
-// 🔧 CONFIGURATION DEBUG PINATA (INCHANGÉ)
-// ========================================
-const setupPinataDebug = () => {
-  if (import.meta.env.DEV) {
-    (window as any).testPinata = async () => {
-      console.log('🔍 Test connexion Pinata...');
-      try {
-        const isAuth = await pinataService.testAuthentication();
-        if (isAuth) {
-          console.log('✅ Pinata connecté !');
-          const files = await pinataService.getAllPinnedFiles();
-          console.log('📁 Fichiers épinglés:', files.count);
-        } else {
-          console.log('❌ Échec connexion Pinata');
-        }
-      } catch (error) {
-        console.error('💥 Erreur:', error);
-      }
-    };
-
-    (window as any).pinataService = pinataService;
-    console.log('🔧 Debug Pinata: testPinata() disponible');
-  }
-};
-
-setupPinataDebug();
-
-// ========================================
-// 🆕 ROUTE DE PROTECTION COMMUNAUTÉ (INCHANGÉ)
-// ========================================
-const CommunityProtectedRoute: React.FC<{ 
-  children: React.ReactNode;
-  requiresCommunity?: boolean;
-  requiresPlatform?: boolean;
-  requiresLegalAcceptance?: boolean;
-}> = ({ 
-  children, 
-  requiresCommunity = false, 
-  requiresPlatform = false, 
-  requiresLegalAcceptance = false 
-}) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+const Navbar: React.FC = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { balance, isConnected } = useWallet();
+  const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (!isAuthenticated || !user?.walletAddress) return;
+  // État pour le scroll
+  const [scrolled, setScrolled] = useState(false);
 
-      try {
-        if (requiresCommunity || requiresPlatform || requiresLegalAcceptance) {
-          const status = await EnhancedAuthService.getCompleteUserAccessStatus(user.walletAddress);
-          
-          if (requiresCommunity && !status.isCommunityMember) {
-            navigate('/community-registration');
-            return;
-          }
-          
-          if (requiresPlatform && !status.isPlatformAuthorized) {
-            return;
-          }
-          
-          if (requiresLegalAcceptance && !status.hasRecentLegalAcceptance) {
-            navigate('/platform-access');
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Erreur vérification statut communauté:', error);
-      }
+  // Responsive values
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: 'container.xl' });
+  const logoSize = useBreakpointValue({ base: 'md', md: 'lg' });
+  const avatarSize = useBreakpointValue({ base: 'sm', md: 'md' });
+
+  // Couleurs
+  const bgColor = useColorModeValue('white', 'gray.900');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // Liens de navigation
+  const navLinks: NavLink[] = [
+    { label: 'Accueil', href: '/', icon: '🏠' },
+    { label: 'Dashboard', href: '/dashboard', icon: '📊', requiresAuth: true },
+    { label: 'Investir', href: '/invest', icon: '💰', requiresAuth: true },
+    { label: 'NFT Collection', href: '/nft-collection', icon: '🎨', requiresAuth: true },
+    { label: 'Historique', href: '/history', icon: '📈', requiresAuth: true },
+    { label: 'Calculateur', href: '/yield-calculator', icon: '🧮', requiresAuth: true },
+    { label: 'Roadmap', href: '/roadmap', icon: '🗺️' },
+  ];
+
+  // Gestion du scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      setScrolled(isScrolled);
     };
 
-    if (!isLoading) {
-      checkAccess();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fonction pour vérifier si un lien est actif
+  const isActiveLink = (href: string) => {
+    return location.pathname === href;
+  };
+
+  // Gestion de la déconnexion
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+      onClose();
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
     }
-  }, [isAuthenticated, user?.walletAddress, isLoading, requiresCommunity, requiresPlatform, requiresLegalAcceptance, navigate]);
+  };
 
-  return <>{children}</>;
-};
+  // Formatage de l'adresse wallet
+  const formatAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
-// ========================================
-// 🔒 COMPOSANTS DE SÉCURITÉ (INCHANGÉS)
-// ========================================
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
+  // Formatage du solde
+  const formatBalance = (balance: string) => {
+    const num = parseFloat(balance);
+    if (num === 0) return '0';
+    if (num < 0.001) return '< 0.001';
+    return num.toFixed(3);
+  };
 
-  const { getSecurityStatus } = useMetaMaskSecurityBSC({
-    onUnauthorizedChange: (oldAddr, newAddr) => {
-      console.log('🚨 [ProtectedRoute] Changement d\'adresse non autorisé:', { oldAddr, newAddr });
-    },
-    onSecurityBreach: () => {
-      console.log('🔒 [ProtectedRoute] Violation de sécurité - Redirection vers login');
-      navigate('/login', { replace: true });
-    },
-    checkInterval: 2000,
-    enableLogging: true
-  });
+  // Composant NavLink pour la navigation
+  const NavLinkComponent: React.FC<{ 
+    navLink: NavLink; 
+    onClose?: () => void; 
+    isMobile?: boolean;
+  }> = ({ navLink, onClose, isMobile = false }) => {
+    if (navLink.requiresAuth && !isAuthenticated) return null;
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/login', { replace: true });
-    }
-  }, [isAuthenticated, isLoading, navigate]);
+    const isActive = isActiveLink(navLink.href);
 
-  if (isLoading) {
     return (
-      <LoadingSpinner 
-        message="Vérification de l'authentification..."
-        subMessage="Sécurisation de votre session"
-        variant="security"
-      />
+      <Box
+        as={Link}
+        to={navLink.href}
+        onClick={onClose}
+        display="flex"
+        alignItems="center"
+        gap={2}
+        px={isMobile ? 4 : 3}
+        py={isMobile ? 3 : 2}
+        borderRadius="lg"
+        color={isActive ? 'blue.500' : 'gray.600'}
+        bg={isActive ? 'blue.50' : 'transparent'}
+        fontWeight={isActive ? 'bold' : 'medium'}
+        fontSize={isMobile ? 'md' : 'sm'}
+        transition="all 0.2s"
+        _hover={{
+          bg: isActive ? 'blue.100' : 'gray.50',
+          color: isActive ? 'blue.600' : 'gray.800',
+          transform: 'translateY(-1px)',
+        }}
+        _dark={{
+          color: isActive ? 'blue.300' : 'gray.300',
+          bg: isActive ? 'blue.900' : 'transparent',
+          _hover: {
+            bg: isActive ? 'blue.800' : 'gray.700',
+            color: isActive ? 'blue.200' : 'gray.100',
+          }
+        }}
+        w={isMobile ? 'full' : 'auto'}
+      >
+        {navLink.icon && (
+          <Text fontSize={isMobile ? 'lg' : 'md'}>{navLink.icon}</Text>
+        )}
+        <Text>{navLink.label}</Text>
+        {navLink.badge && (
+          <Badge
+            colorScheme="red"
+            size="xs"
+            borderRadius="full"
+            px={1}
+          >
+            {navLink.badge}
+          </Badge>
+        )}
+      </Box>
     );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  };
 
   return (
     <>
-      {children}
-      <SecurityMonitor />
+      {/* 🎯 NAVBAR PRINCIPALE RESPONSIVE */}
+      <Box
+        bg={scrolled ? 'rgba(255, 255, 255, 0.95)' : bgColor}
+        backdropFilter={scrolled ? 'blur(10px)' : 'none'}
+        borderBottom={scrolled ? '1px solid' : 'none'}
+        borderColor={borderColor}
+        transition="all 0.3s ease"
+        position="sticky"
+        top={0}
+        zIndex={1000}
+        w="100%"
+        shadow={scrolled ? 'sm' : 'none'}
+      >
+        <Container maxW={containerMaxW} px={{ base: 2, md: 4 }}>
+          <Flex
+            h={{ base: 14, md: 16 }}
+            alignItems="center"
+            justifyContent="space-between"
+            w="100%"
+            gap={{ base: 2, md: 4 }}
+          >
+            {/* 🏠 LOGO - Partie gauche */}
+            <Box
+              as={Link}
+              to="/"
+              display="flex"
+              alignItems="center"
+              gap={2}
+              flexShrink={0}
+              _hover={{ transform: 'scale(1.05)' }}
+              transition="transform 0.2s"
+            >
+              <Box
+                w={{ base: 8, md: 10 }}
+                h={{ base: 8, md: 10 }}
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                borderRadius="lg"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                shadow="md"
+              >
+                <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight="bold" color="white">
+                  C
+                </Text>
+              </Box>
+              <VStack spacing={0} align="start" display={{ base: 'none', sm: 'flex' }}>
+                <Text
+                  fontSize={logoSize}
+                  fontWeight="bold"
+                  color="gray.800"
+                  _dark={{ color: 'white' }}
+                  lineHeight={1}
+                >
+                  CryptoVault
+                </Text>
+                <Text
+                  fontSize="xs"
+                  color="gray.500"
+                  _dark={{ color: 'gray.400' }}
+                  lineHeight={1}
+                >
+                  Secure Platform
+                </Text>
+              </VStack>
+            </Box>
+
+            {/* 📱 NAVIGATION DESKTOP - Partie centrale */}
+            <HStack
+              spacing={1}
+              display={{ base: 'none', md: 'flex' }}
+              flex={1}
+              justify="center"
+              maxW="600px"
+            >
+              {navLinks.map((navLink) => (
+                <NavLinkComponent
+                  key={navLink.href}
+                  navLink={navLink}
+                />
+              ))}
+            </HStack>
+
+            {/* 👤 SECTION UTILISATEUR - Partie droite */}
+            <Flex alignItems="center" gap={{ base: 1, md: 3 }} flexShrink={0}>
+              {/* Informations utilisateur (desktop seulement) */}
+              {isAuthenticated && !isMobile && (
+                <VStack spacing={0} align="end" display={{ base: 'none', lg: 'flex' }}>
+                  <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }}>
+                    {formatAddress(user?.walletAddress || '')}
+                  </Text>
+                  <Text fontSize="xs" fontWeight="bold" color="green.600">
+                    {formatBalance(balance)} BNB
+                  </Text>
+                </VStack>
+              )}
+
+              {/* Menu utilisateur */}
+              {isAuthenticated ? (
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    variant="ghost"
+                    size={avatarSize}
+                    borderRadius="full"
+                    p={0}
+                    minW="auto"
+                    h="auto"
+                    _hover={{ transform: 'scale(1.05)' }}
+                    _active={{ transform: 'scale(0.95)' }}
+                  >
+                    <Avatar
+                      size={avatarSize}
+                      name={user?.username}
+                      bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                      color="white"
+                    />
+                  </MenuButton>
+                  <MenuList 
+                    shadow="xl" 
+                    borderRadius="xl" 
+                    border="1px solid"
+                    borderColor={borderColor}
+                    minW="200px"
+                  >
+                    <MenuItem icon={<Text>👤</Text>}>
+                      <VStack align="start" spacing={0}>
+                        <Text fontWeight="bold">{user?.username}</Text>
+                        <Text fontSize="xs" color="gray.500">
+                          {formatAddress(user?.walletAddress || '')}
+                        </Text>
+                      </VStack>
+                    </MenuItem>
+                    <MenuItem icon={<Text>💰</Text>}>
+                      <VStack align="start" spacing={0}>
+                        <Text>Solde BNB</Text>
+                        <Text fontSize="sm" color="green.600" fontWeight="bold">
+                          {formatBalance(balance)} BNB
+                        </Text>
+                      </VStack>
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem icon={<Text>⚙️</Text>}>
+                      Paramètres
+                    </MenuItem>
+                    <MenuItem icon={<Text>🛡️</Text>}>
+                      Sécurité
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem
+                      icon={<Text>🚪</Text>}
+                      onClick={handleLogout}
+                      color="red.500"
+                      _hover={{ bg: 'red.50' }}
+                      _dark={{ _hover: { bg: 'red.900' } }}
+                    >
+                      Déconnexion
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              ) : (
+                <Button
+                  as={Link}
+                  to="/login"
+                  size={avatarSize}
+                  colorScheme="blue"
+                  variant="outline"
+                  borderRadius="lg"
+                  fontSize={{ base: 'xs', md: 'sm' }}
+                  px={{ base: 3, md: 4 }}
+                >
+                  Connexion
+                </Button>
+              )}
+
+              {/* 🍔 BOUTON HAMBURGER MOBILE - TOUJOURS VISIBLE */}
+              <IconButton
+                size={{ base: 'md', md: 'lg' }}
+                icon={<HamburgerIcon />}
+                aria-label="Ouvrir le menu"
+                display={{ base: 'flex', md: 'none' }}
+                onClick={onOpen}
+                variant="ghost"
+                colorScheme="blue"
+                borderRadius="lg"
+                minW={{ base: '40px', md: '48px' }}
+                h={{ base: '40px', md: '48px' }}
+                flexShrink={0}
+                _hover={{
+                  bg: 'blue.50',
+                  transform: 'scale(1.05)',
+                }}
+                _dark={{
+                  _hover: {
+                    bg: 'blue.900',
+                  }
+                }}
+              />
+            </Flex>
+          </Flex>
+        </Container>
+      </Box>
+
+      {/* 📱 DRAWER MOBILE */}
+      <Drawer
+        isOpen={isOpen}
+        placement="right"
+        onClose={onClose}
+        size="sm"
+      >
+        <DrawerOverlay />
+        <DrawerContent maxW="300px">
+          <DrawerCloseButton
+            size="lg"
+            top={4}
+            right={4}
+            borderRadius="full"
+            _hover={{ bg: 'red.50', color: 'red.500' }}
+          />
+          
+          <DrawerHeader borderBottomWidth="1px" pb={4} pt={6}>
+            <Flex align="center" gap={3}>
+              <Box
+                w={10}
+                h={10}
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                borderRadius="lg"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                shadow="md"
+              >
+                <Text fontSize="xl" fontWeight="bold" color="white">C</Text>
+              </Box>
+              <VStack spacing={0} align="start">
+                <Text fontSize="lg" fontWeight="bold" color="gray.800" _dark={{ color: 'white' }}>
+                  CryptoVault
+                </Text>
+                <Text fontSize="xs" color="gray.500" _dark={{ color: 'gray.400' }}>
+                  Menu Navigation
+                </Text>
+              </VStack>
+            </Flex>
+          </DrawerHeader>
+
+          <DrawerBody p={0}>
+            {/* Informations utilisateur mobile */}
+            {isAuthenticated && (
+              <Box p={4} bg="gray.50" _dark={{ bg: 'gray.800' }} borderBottomWidth="1px">
+                <Flex align="center" gap={3} mb={3}>
+                  <Avatar
+                    size="md"
+                    name={user?.username}
+                    bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                    color="white"
+                  />
+                  <VStack align="start" spacing={0}>
+                    <Text fontWeight="bold" fontSize="md">{user?.username}</Text>
+                    <Text fontSize="xs" color="gray.500">
+                      {formatAddress(user?.walletAddress || '')}
+                    </Text>
+                  </VStack>
+                </Flex>
+                
+                <Box
+                  bg="green.50"
+                  _dark={{ bg: 'green.900' }}
+                  p={3}
+                  borderRadius="lg"
+                  textAlign="center"
+                >
+                  <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }}>
+                    Solde BNB
+                  </Text>
+                  <Text fontSize="lg" fontWeight="bold" color="green.600">
+                    {formatBalance(balance)} BNB
+                  </Text>
+                </Box>
+              </Box>
+            )}
+
+            {/* Navigation mobile */}
+            <VStack spacing={0} p={4} align="stretch">
+              {navLinks.map((navLink) => (
+                <NavLinkComponent
+                  key={navLink.href}
+                  navLink={navLink}
+                  onClose={onClose}
+                  isMobile={true}
+                />
+              ))}
+              
+              {/* Actions utilisateur */}
+              {isAuthenticated && (
+                <>
+                  <Box h={4} />
+                  <Box
+                    p={3}
+                    borderRadius="lg"
+                    bg="gray.50"
+                    _dark={{ bg: 'gray.700' }}
+                  >
+                    <Text fontSize="sm" fontWeight="bold" color="gray.600" mb={2}>
+                      Compte
+                    </Text>
+                    <VStack spacing={2} align="stretch">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        justifyContent="start"
+                        leftIcon={<Text>⚙️</Text>}
+                        onClick={onClose}
+                      >
+                        Paramètres
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        justifyContent="start"
+                        leftIcon={<Text>🛡️</Text>}
+                        onClick={onClose}
+                      >
+                        Sécurité
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        justifyContent="start"
+                        leftIcon={<Text>🚪</Text>}
+                        color="red.500"
+                        onClick={handleLogout}
+                        _hover={{ bg: 'red.50' }}
+                        _dark={{ _hover: { bg: 'red.900' } }}
+                      >
+                        Déconnexion
+                      </Button>
+                    </VStack>
+                  </Box>
+                </>
+              )}
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };
 
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (!isLoading && isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (isLoading) {
-    return (
-      <LoadingSpinner 
-        message="Initialisation de l'application..."
-        subMessage="Configuration de l'environnement sécurisé"
-        variant="default"
-      />
-    );
-  }
-
-  return <>{children}</>;
-};
-
-// ========================================
-// 🆕 CONTENU PRINCIPAL AVEC LAYOUT RESPONSIVE
-// ========================================
-const AppContent: React.FC = () => {
-  return (
-    <Router>
-      {/* 🎨 CONTAINER PRINCIPAL RESPONSIVE */}
-      <Box
-        minH="100vh"
-        w="100%"
-        bg="linear-gradient(135deg, #1a202c 0%, #2d3748 100%)"
-        position="relative"
-        overflow="hidden"
-        // Centrage et contraintes de largeur
-        maxW="100vw"
-        mx="auto"
-        // Évite les débordements sur mobile
-        css={{
-          '&::-webkit-scrollbar': {
-            display: 'none'
-          },
-          msOverflowStyle: 'none',
-          scrollbarWidth: 'none'
-        }}
-      >
-        <Routes>
-          {/* Routes publiques */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                  <LoginPage />
-                </Box>
-              </PublicRoute>
-            }
-          />
-          
-          <Route
-            path="/terms-and-conditions"
-            element={
-              <PublicRoute>
-                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                  <TermsAndConditionsPage />
-                </Box>
-              </PublicRoute>
-            }
-          />
-
-          <Route 
-            path="/registration" 
-            element={
-              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                <RegistrationPage />
-              </Box>
-            } 
-          />
-          
-          <Route 
-            path="/conditions-utilisation" 
-            element={
-              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                <TermsAndConditionsPage />
-              </Box>
-            } 
-          />
-
-          <Route 
-            path="/community-registrations" 
-            element={
-              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                <CommunityRegistrationPage />
-              </Box>
-            } 
-          />
-          
-          <Route 
-            path="/platform-access" 
-            element={
-              <CommunityProtectedRoute requiresCommunity={true}>
-                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                  <PlatformAccessPage />
-                </Box>
-              </CommunityProtectedRoute>
-            } 
-          />
-
-          {/* Routes protégées avec layout responsive */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                {/* 🎯 LAYOUT PRINCIPAL RESPONSIVE */}
-                <Box
-                  w="100%"
-                  minH="100vh"
-                  display="flex"
-                  flexDirection="column"
-                  position="relative"
-                >
-                  {/* Navbar responsive */}
-                  <Box
-                    w="100%"
-                    position="sticky"
-                    top={0}
-                    zIndex={1000}
-                    bg="rgba(26, 32, 44, 0.95)"
-                    backdropFilter="blur(10px)"
-                  >
-                    <Navbar />
-                  </Box>
-                  
-                  {/* Contenu principal responsive */}
-                  <Box
-                    as="main"
-                    flex={1}
-                    w="100%"
-                    position="relative"
-                    // Padding responsive pour éviter que le contenu touche les bords
-                    px={{ base: 0, md: 0 }}
-                    py={{ base: 0, md: 0 }}
-                    // Centrage du contenu
-                    mx="auto"
-                    // Largeur maximale pour éviter l'étirement sur très grand écran
-                    maxW="100vw"
-                  >
-                    <Routes>
-                      <Route path="/" element={<HomePage />} />
-                      
-                      <Route 
-                        path="/dashboard" 
-                        element={
-                          <CommunityProtectedRoute 
-                            requiresCommunity={false}
-                            requiresPlatform={false}
-                            requiresLegalAcceptance={false}
-                          >
-                            <Dashboard />
-                          </CommunityProtectedRoute>
-                        } 
-                      />
-                      
-                      <Route path="/invest" element={<InvestPage />} />
-                      <Route path="/roadmap" element={<RoadmapPage />} />
-                      <Route path="/admin/*" element={<AdminPage />} />
-                      <Route path="/nft-collection" element={<NFTMarketplace />} />
-                      <Route path="/nft-cards" element={<NFTCards1 />} />
-                      <Route path="/nft-page" element={<NFTPage />} />
-                      <Route path="/history" element={<TransactionHistoryUsers />} />
-                      <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
-                      
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </Box>
-                  
-                  {/* Footer responsive */}
-                  <Box
-                    w="100%"
-                    mt="auto"
-                  >
-                    <Footer />
-                  </Box>
-                </Box>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Box>
-    </Router>
-  );
-};
-
-// ========================================
-// 🔧 GESTION D'ERREURS (INCHANGÉE)
-// ========================================
-const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  useEffect(() => {
-    const handleError = (event: ErrorEvent) => {
-      console.error('🚨 Erreur globale capturée:', event.error);
-      
-      if (event.error?.message?.includes('MetaMask')) {
-        console.error('💼 Erreur liée à MetaMask détectée');
-      } else if (event.error?.message?.includes('Provider')) {
-        console.error('🔌 Erreur de Provider - Vérifiez l\'ordre des providers dans App.tsx');
-      } else if (event.error?.message?.includes('useInvestment')) {
-        console.error('💰 Erreur InvestmentContext - Assurez-vous que InvestmentProvider est présent');
-      }
-    };
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('🚨 Promise rejetée non gérée:', event.reason);
-      event.preventDefault();
-    };
-
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
-
-  return <>{children}</>;
-};
-
-// ========================================
-// 🚀 COMPOSANT RACINE AVEC CSS GLOBAL
-// ========================================
-const App: React.FC = () => {
-  useEffect(() => {
-    console.log('🚀 CryptoVault Application démarrée');
-    console.log('📱 Mode responsive activé');
-    console.log('🆕 Nouvelles routes communauté disponibles');
-    
-    // 🎯 INJECTION CSS GLOBAL POUR MOBILE
-    const globalStyles = document.createElement('style');
-    globalStyles.innerHTML = `
-      /* Reset global */
-      * {
-        box-sizing: border-box !important;
-      }
-      
-      /* HTML et body */
-      html, body, #root {
-        width: 100% !important;
-        max-width: 100vw !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow-x: hidden !important;
-      }
-      
-      /* Évite le zoom sur iOS */
-      input, select, textarea {
-        font-size: 16px !important;
-      }
-      
-      /* Améliore les performances sur mobile */
-      * {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-      
-      /* Fix pour les containers Chakra UI */
-      .chakra-container {
-        max-width: 100% !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-      }
-      
-      /* Responsive breakpoints custom */
-      @media (max-width: 767px) {
-        .chakra-container {
-          width: 100% !important;
-          margin: 0 !important;
-        }
-      }
-    `;
-    document.head.appendChild(globalStyles);
-    
-    if (typeof window !== 'undefined') {
-      if (window.ethereum) {
-        console.log('✅ MetaMask détecté');
-      } else {
-        console.warn('⚠️ MetaMask non détecté');
-      }
-    }
-
-    document.title = 'CryptoVault - Plateforme d\'investissement sécurisée';
-    
-    // Cleanup
-    return () => {
-      document.head.removeChild(globalStyles);
-    };
-  }, []);
-
-  return (
-    <ErrorBoundary>
-      <ChakraProvider theme={chakraTheme}>
-        <ThemeProvider>
-          <AuthProvider>
-            <WalletProvider>
-              <InvestmentProvider>
-                <AppContent />
-              </InvestmentProvider>
-            </WalletProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </ChakraProvider>
-    </ErrorBoundary>
-  );
-};
-
-export default App;
+export default Navbar;
