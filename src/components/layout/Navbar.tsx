@@ -1,4 +1,4 @@
-// src/components/layout/Navbar.tsx
+// src/components/layout/Navbar.tsx - HAMBURGER COMPLET MOBILE
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useWallet } from '../../contexts/WalletContext';
@@ -36,26 +36,26 @@ const Navbar = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleChangeAccount = async () => {
-  try {
-    await changeAccount(); // Nouvelle fonction du WalletContext
-  } catch (error) {
-    console.error('Erreur changement de compte:', error);
-  }
-};
+    try {
+      await changeAccount();
+    } catch (error) {
+      console.error('Erreur changement de compte:', error);
+    }
+  };
 
-const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
 
-const isInMetaMaskBrowser = () => {
-  return /MetaMask/i.test(navigator.userAgent);
-};
+  const isInMetaMaskBrowser = () => {
+    return /MetaMask/i.test(navigator.userAgent);
+  };
 
-const openInMetaMask = () => {
-  const currentUrl = window.location.href;
-  const metamaskUrl = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
-  window.open(metamaskUrl, '_blank');
-};
+  const openInMetaMask = () => {
+    const currentUrl = window.location.href;
+    const metamaskUrl = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`;
+    window.open(metamaskUrl, '_blank');
+  };
 
   // Hook de sécurité MetaMask pour BSC
   const { getSecurityStatus, forceSecurityCheck } = useMetaMaskSecurityBSC({
@@ -88,6 +88,10 @@ const openInMetaMask = () => {
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+    // Fermer le menu balances si ouvert
+    if (showBalances) {
+      setShowBalances(false);
+    }
   };
 
   const shortenAddress = (address: string) => {
@@ -149,30 +153,30 @@ const openInMetaMask = () => {
         <div className="bg-red-600 text-white px-4 py-3 text-center relative animate-pulse">
           <div className="flex items-center justify-center space-x-2">
             <AlertTriangle size={20} />
-            <span className="font-medium">
+            <span className="font-medium text-sm">
               🚨 ALERTE SÉCURITÉ : Changement d'adresse wallet détecté - Déconnexion automatique
             </span>
           </div>
           <button
             onClick={() => setShowSecurityWarning(false)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-200"
+            className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-200"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
       )}
 
       {/* Avertissement réseau BSC */}
       {isConnected && !isOnBSC && (
-        <div className="bg-yellow-600 text-white px-4 py-2 text-center">
-          <div className="flex items-center justify-center space-x-3">
-            <Zap size={18} />
-            <span className="text-sm font-medium">
-              Vous n'êtes pas sur le réseau BSC (BNB Smart Chain)
+        <div className="bg-yellow-600 text-white px-2 sm:px-4 py-2 text-center">
+          <div className="flex items-center justify-center space-x-2 sm:space-x-3">
+            <Zap size={16} className="flex-shrink-0" />
+            <span className="text-xs sm:text-sm font-medium truncate">
+              Vous n'êtes pas sur le réseau BSC
             </span>
             <button
               onClick={handleSwitchToBSC}
-              className="bg-yellow-700 hover:bg-yellow-800 px-3 py-1 rounded text-xs font-medium transition-colors"
+              className="bg-yellow-700 hover:bg-yellow-800 px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors flex-shrink-0"
             >
               Changer vers BSC
             </button>
@@ -180,70 +184,78 @@ const openInMetaMask = () => {
         </div>
       )}
 
+      {/* 🎯 NAVBAR PRINCIPALE RESPONSIVE */}
       <nav className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link to="/" className="flex-shrink-0 flex items-center">
-                <Wallet className="h-8 w-8 text-blue-400" />
-                <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+        <div className="w-full px-3 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            
+            {/* 🏠 LOGO - Toujours visible */}
+            <div className="flex items-center flex-shrink-0">
+              <Link to="/" className="flex items-center space-x-2">
+                <Wallet className="h-7 w-7 lg:h-8 lg:w-8 text-blue-400 flex-shrink-0" />
+                <span className="text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent hidden sm:block">
                   CryptocaVault
                 </span>
+                <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent sm:hidden">
+                  CV
+                </span>
+              </Link>
+            </div>
+
+            {/* 📊 NAVIGATION DESKTOP UNIQUEMENT - Masquée sur mobile/tablette */}
+            <div className="hidden xl:flex xl:items-center xl:space-x-4">
+              <Link 
+                to="/" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/' 
+                    ? 'bg-slate-900 text-white' 
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                Accueil
+              </Link>
+              <Link 
+                to="/invest" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/invest' 
+                    ? 'bg-slate-900 text-white' 
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                Déposer des fonds
+              </Link>
+              <Link 
+                to="/dashboard" 
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/dashboard' 
+                    ? 'bg-slate-900 text-white' 
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                Tableau de Bord
               </Link>
               
-              {/* Menu desktop */}
-              <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+              {/* Menu Admin - Visible seulement pour l'owner */}
+              {isOwner && (
                 <Link 
-                  to="/" 
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === '/' 
+                  to="/admin" 
+                  className={`px-3 py-2 rounded-md text-sm font-medium relative transition-colors ${
+                    pathname.startsWith('/admin') 
                       ? 'bg-slate-900 text-white' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
-                  Accueil
+                  Admin
+                  <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    👑
+                  </span>
                 </Link>
-                <Link 
-                  to="/invest" 
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === '/invest' 
-                      ? 'bg-slate-900 text-white' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                  }`}
-                >
-                  Déposer des fonds
-                </Link>
-                <Link 
-                  to="/dashboard" 
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === '/dashboard' 
-                      ? 'bg-slate-900 text-white' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                  }`}
-                >
-                  Tableau de Bord
-                </Link>
-                
-                {/* Menu Admin - Visible seulement pour l'owner */}
-                {isOwner && (
-                  <Link 
-                    to="/admin" 
-                    className={`px-3 py-2 rounded-md text-sm font-medium relative ${
-                      pathname.startsWith('/admin') 
-                        ? 'bg-slate-900 text-white' 
-                        : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
-                    }`}
-                  >
-                    Admin
-                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                      👑
-                    </span>
-                  </Link>
-                )}
-              </div>
+              )}
             </div>
             
-            <div className="flex items-center space-x-4">
+            {/* 💼 SECTION DESKTOP DROITE - Visible uniquement sur desktop */}
+            <div className="hidden xl:flex xl:items-center xl:space-x-4">
+              {/* Bouton thème */}
               <button 
                 onClick={toggleTheme}
                 className="p-2 rounded-full text-slate-300 hover:text-white focus:outline-none"
@@ -251,8 +263,8 @@ const openInMetaMask = () => {
                 {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
               </button>
 
-              {/* Informations utilisateur et bouton de déconnexion */}
-              <div className="hidden md:flex items-center space-x-3">
+              {/* Informations utilisateur */}
+              <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
                   <span className="text-slate-300 text-sm">
                     Bonjour, {user?.firstName}
@@ -272,12 +284,12 @@ const openInMetaMask = () => {
                 </button>
               </div>
 
-              {/* Section Wallet avec sécurité */}
+              {/* Section Wallet Desktop */}
               {isConnected ? (
                 <div className="relative">
                   <div className="flex items-center space-x-2">
                     {/* Indicateur de sécurité */}
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center">
                       {securityStatus.isSecure ? (
                         <Shield className="w-4 h-4 text-green-400" title="Connexion sécurisée" />
                       ) : (
@@ -305,7 +317,7 @@ const openInMetaMask = () => {
                     </div>
                   </div>
 
-                  {/* Menu déroulant des balances */}
+                  {/* Menu déroulant des balances DESKTOP */}
                   {showBalances && (
                     <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 z-50">
                       <div className="p-4">
@@ -343,29 +355,6 @@ const openInMetaMask = () => {
                             </div>
                           </div>
 
-                          {isMobileDevice() && !isConnected && !window.ethereum && (
-                            <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 text-center">
-                              <div className="flex items-center justify-center space-x-3">
-                                <Smartphone size={20} />
-                                <div className="text-sm">
-                                  <p className="font-medium">
-                                    {isInMetaMaskBrowser() 
-                                      ? "Utilisez le bouton 'Connecter Wallet' ci-dessus" 
-                                      : "Pour la meilleure expérience mobile"}
-                                  </p>
-                                  {!isInMetaMaskBrowser() && (
-                                    <button
-                                      onClick={openInMetaMask}
-                                      className="underline font-medium hover:text-orange-200 transition-colors"
-                                    >
-                                      Ouvrir dans l'app MetaMask →
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
                           {/* USDC Balance */}
                           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
                             <div className="flex items-center space-x-3">
@@ -401,7 +390,6 @@ const openInMetaMask = () => {
                         {/* Actions */}
                         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-600">
                           <div className="flex space-x-2">
-                            {/* Nouveau bouton pour changer de compte */}
                             <button
                               onClick={handleChangeAccount}
                               className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors flex items-center justify-center space-x-1"
@@ -418,7 +406,7 @@ const openInMetaMask = () => {
                               }}
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
                             >
-                            Actualiser
+                              Actualiser
                             </button>
                             <button
                               onClick={handleWalletDisconnect}
@@ -463,91 +451,46 @@ const openInMetaMask = () => {
                   <span className="hidden sm:inline">MetaMask</span>
                 </button>
               )}
+            </div>
             
-              {/* Menu mobile toggle */}
-              <div className="md:hidden flex items-center">
-                <button
-                  onClick={toggleMobileMenu}
-                  className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none"
-                >
-                  {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
-              </div>
+            {/* 🍔 BOUTON HAMBURGER - MOBILE/TABLETTE UNIQUEMENT */}
+            <div className="xl:hidden flex items-center">
+              <button
+                onClick={toggleMobileMenu}
+                className="inline-flex items-center justify-center p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none transition-colors border-2 border-slate-600 hover:border-slate-500"
+                aria-label="Menu de navigation"
+              >
+                {mobileMenuOpen ? (
+                  <X size={24} className="text-white" />
+                ) : (
+                  <Menu size={24} />
+                )}
+              </button>
             </div>
           </div>
         </div>
         
-        {/* Menu mobile */}
+        {/* 📱 MENU MOBILE COMPLET - TOUS LES ÉLÉMENTS */}
         {mobileMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-slate-800">
-              <Link 
-                to="/" 
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  pathname === '/' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Accueil
-              </Link>
-              <Link 
-                to="/invest" 
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  pathname === '/invest' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Investir
-              </Link>
-              <Link 
-                to="/roadmap" 
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  pathname === '/roadmap' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Roadmap
-              </Link>
-              <Link 
-                to="/dashboard" 
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  pathname === '/dashboard' 
-                    ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Tableau de Bord
-              </Link>
+          <div className="xl:hidden">
+            <div className="px-3 pt-4 pb-6 space-y-3 bg-slate-800 border-t border-slate-700 max-h-screen overflow-y-auto">
               
-              {/* Menu Admin mobile */}
-              {isOwner && (
-                <Link 
-                  to="/admin" 
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium ${
-                    pathname.startsWith('/admin') 
-                      ? 'bg-slate-900 text-white' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span>Admin</span>
-                  <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
-                    👑
-                  </span>
-                </Link>
-              )}
-              
-              {/* Section utilisateur mobile */}
-              <div className="border-t border-slate-700 pt-3 mt-3">
-                <div className="px-3 py-2 text-slate-300 text-sm flex items-center space-x-2">
-                  <span>Connecté en tant que {user?.firstName} {user?.lastName}</span>
+              {/* 👤 SECTION UTILISATEUR EN HAUT */}
+              <div className="bg-slate-700 rounded-lg p-4 mb-4">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">
+                      {user?.firstName?.charAt(0) || 'U'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-slate-300 text-sm">
+                      {shortenAddress(address || '')}
+                    </p>
+                  </div>
                   {isOwner && (
                     <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
                       👑 OWNER
@@ -555,39 +498,245 @@ const openInMetaMask = () => {
                   )}
                 </div>
 
-                {/* Balances mobile */}
-                {isConnected && (
-                  <div className="px-3 py-2 space-y-2">
-                    <div className="text-slate-300 text-xs">Balances BSC:</div>
-                    <div className="flex justify-between text-sm bg-slate-700 p-2 rounded">
-                      <span className="text-slate-300">USDT:</span>
-                      <span className="text-white font-medium">{formatBalance(balance.usdt)}</span>
+                {/* 💰 WALLET INFO MOBILE */}
+                {isConnected ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-300">Statut Wallet:</span>
+                      <div className="flex items-center space-x-2">
+                        {securityStatus.isSecure ? (
+                          <Shield className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-red-400" />
+                        )}
+                        <span className="text-white">
+                          {securityStatus.isSecure ? 'Sécurisé' : 'Attention'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm bg-slate-700 p-2 rounded">
-                      <span className="text-slate-300">USDC:</span>
-                      <span className="text-white font-medium">{formatBalance(balance.usdc)}</span>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-300">Réseau:</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        isOnBSC 
+                          ? 'bg-green-600 text-white' 
+                          : 'bg-orange-600 text-white'
+                      }`}>
+                        {isOnBSC ? 'BSC' : `Chain ${chainId}`}
+                      </span>
+                    </div>
+
+                    {/* Balances compactes */}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-slate-600 p-2 rounded">
+                        <div className="text-slate-300 text-xs">USDT</div>
+                        <div className="text-white font-medium">{formatBalance(balance.usdt)}</div>
+                      </div>
+                      <div className="bg-slate-600 p-2 rounded">
+                        <div className="text-slate-300 text-xs">USDC</div>
+                        <div className="text-white font-medium">{formatBalance(balance.usdc)}</div>
+                      </div>
+                    </div>
+
+                    {/* Actions Wallet */}
+                    <div className="grid grid-cols-3 gap-2 mt-3">
+                      <button
+                        onClick={handleChangeAccount}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-2 rounded text-xs font-medium transition-colors flex items-center justify-center space-x-1"
+                      >
+                        <Users size={12} />
+                        <span>Changer</span>
+                      </button>
+                      <button
+                        onClick={handleRefreshBalances}
+                        className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded text-xs font-medium transition-colors"
+                      >
+                        Actualiser
+                      </button>
+                      <button
+                        onClick={handleWalletDisconnect}
+                        className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-2 rounded text-xs font-medium transition-colors"
+                      >
+                        Déconnecter
+                      </button>
                     </div>
                   </div>
+                ) : (
+                  <button
+                    onClick={handleWalletConnect}
+                    disabled={isConnecting}
+                    className="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white py-3 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-70"
+                  >
+                    {isConnecting ? 'Connexion...' : 'Connecter Wallet'}
+                  </button>
+                )}
+              </div>
+
+              {/* 📋 NAVIGATION PRINCIPALE */}
+              <div className="space-y-2">
+                <Link 
+                  to="/" 
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                    pathname === '/' 
+                      ? 'bg-slate-900 text-white border-l-4 border-blue-500' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="text-xl">🏠</span>
+                  <span>Accueil</span>
+                </Link>
+                
+                <Link 
+                  to="/invest" 
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                    pathname === '/invest' 
+                      ? 'bg-slate-900 text-white border-l-4 border-blue-500' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="text-xl">💰</span>
+                  <span>Déposer des fonds</span>
+                </Link>
+                
+                <Link 
+                  to="/dashboard" 
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                    pathname === '/dashboard' 
+                      ? 'bg-slate-900 text-white border-l-4 border-blue-500' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="text-xl">📊</span>
+                  <span>Tableau de Bord</span>
+                </Link>
+                
+                <Link 
+                  to="/roadmap" 
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                    pathname === '/roadmap' 
+                      ? 'bg-slate-900 text-white border-l-4 border-blue-500' 
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="text-xl">🗺️</span>
+                  <span>Roadmap</span>
+                </Link>
+                
+                {/* Menu Admin mobile */}
+                {isOwner && (
+                  <Link 
+                    to="/admin" 
+                    className={`flex items-center justify-between px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                      pathname.startsWith('/admin') 
+                        ? 'bg-slate-900 text-white border-l-4 border-blue-500' 
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xl">👑</span>
+                      <span>Administration</span>
+                    </div>
+                    <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+                      OWNER
+                    </span>
+                  </Link>
+                )}
+              </div>
+
+              {/* 🔧 PARAMÈTRES ET ACTIONS */}
+              <div className="border-t border-slate-600 pt-4 space-y-2">
+                <h3 className="text-slate-400 text-sm font-medium px-4 mb-2">Paramètres</h3>
+                
+                {/* Bouton thème */}
+                <button 
+                  onClick={() => {
+                    toggleTheme();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-base font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                >
+                  {theme === 'dark' ? (
+                    <>
+                      <Sun size={20} />
+                      <span>Mode Clair</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon size={20} />
+                      <span>Mode Sombre</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Bouton MetaMask si nécessaire */}
+                {isMobileDevice() && !window.ethereum && (
+                  <button
+                    onClick={() => {
+                      openInMetaMask();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-base font-medium bg-orange-600 hover:bg-orange-700 text-white transition-colors"
+                  >
+                    <ExternalLink size={20} />
+                    <span>Ouvrir dans MetaMask</span>
+                  </button>
                 )}
 
+                {/* Avertissement réseau si pas sur BSC */}
+                {isConnected && !isOnBSC && (
+                  <button
+                    onClick={() => {
+                      handleSwitchToBSC();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-base font-medium bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
+                  >
+                    <Zap size={20} />
+                    <span>Changer vers BSC</span>
+                  </button>
+                )}
+              </div>
+
+              {/* 🚪 DÉCONNEXION */}
+              <div className="border-t border-slate-600 pt-4">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-slate-700"
+                  className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-base font-medium text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-colors"
                 >
-                  <LogOut size={16} />
+                  <LogOut size={20} />
                   <span>Déconnexion</span>
                 </button>
+              </div>
+
+              {/* 📱 INFO VERSION MOBILE */}
+              <div className="border-t border-slate-600 pt-4">
+                <div className="px-4 py-2 text-xs text-slate-500 text-center">
+                  CryptocaVault Mobile v1.0
+                </div>
               </div>
             </div>
           </div>
         )}
       </nav>
 
-      {/* Click outside pour fermer les menus */}
+      {/* Click outside pour fermer les menus DESKTOP */}
       {showBalances && (
         <div 
           className="fixed inset-0 z-40" 
           onClick={() => setShowBalances(false)}
+        />
+      )}
+
+      {/* Overlay pour menu mobile */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 xl:hidden" 
+          onClick={() => setMobileMenuOpen(false)}
         />
       )}
     </>
