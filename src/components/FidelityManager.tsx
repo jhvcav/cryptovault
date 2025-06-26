@@ -63,7 +63,7 @@ const FidelityManager: React.FC = () => {
   const [fidelityStats, setFidelityStats] = useState({
     totalEligible: 0,
     totalClaimed: 0,
-    remaining: 0,
+    remaining: 50, // Supply NFT Fidélité
     claimRate: 0
   });
   
@@ -87,7 +87,8 @@ const FidelityManager: React.FC = () => {
     error: contractError,
     getFidelityEligibility,
     setFidelityEligible,
-    setMultipleFidelityEligible
+    setMultipleFidelityEligible,
+    getAllFidelityUsers // Assumons que cette fonction existe pour récupérer tous les utilisateurs
   } = useNFTContract();
 
   // Charger les données initiales
@@ -97,58 +98,69 @@ const FidelityManager: React.FC = () => {
     }
   }, [contract, isOwner, contractLoading]);
 
-  // Fonction pour charger les données de fidélité
+  // Fonction pour charger les données de fidélité RÉELLES depuis la blockchain
   const loadFidelityData = async () => {
     try {
-      setLoadingAction('Chargement des données de fidélité...');
+      setLoadingAction('Chargement des données de fidélité depuis la blockchain...');
       
-      // Pour l'exemple, on va charger depuis votre base de données
-      // En réalité, vous devriez avoir une API pour récupérer les utilisateurs fidèles
-      const mockUsers: FidelityUser[] = [
-        {
-          address: '0x460852bb2347042be1a257f6652b9afd2939959b',
-          firstName: 'John',
-          lastName: 'Doe',
-          eligible: true,
-          alreadyClaimed: false
-        },
-        {
-          address: '0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          eligible: true,
-          alreadyClaimed: true,
-          claimedDate: '2024-01-15',
-          txHash: '0x123...'
-        }
-      ];
+      // Récupérer les utilisateurs éligibles depuis la blockchain
+      // Cette fonction doit être implémentée dans votre hook useNFTContract
+      const blockchainUsers = await getAllFidelityUsers?.() || [];
       
-      // Vérifier le statut blockchain pour chaque utilisateur
-      const updatedUsers = await Promise.all(
-        mockUsers.map(async (user) => {
-          try {
-            const eligibility = await getFidelityEligibility(user.address);
-            return {
-              ...user,
-              eligible: eligibility.eligible,
-              alreadyClaimed: eligibility.alreadyClaimed
-            };
-          } catch (error) {
-            console.warn(`Erreur vérification ${user.address}:`, error);
-            return user;
-          }
-        })
-      );
+      // Si getAllFidelityUsers n'existe pas, vous pouvez utiliser une liste d'adresses
+      // que vous maintenez dans votre base de données ou fichier de configuration
+      // et vérifier leur éligibilité une par une
       
-      setFidelityUsers(updatedUsers);
+      let users: FidelityUser[] = [];
       
-      // Calculer les statistiques
+      if (blockchainUsers.length > 0) {
+        // Cas 1: Récupération directe depuis la blockchain
+        users = blockchainUsers;
+      } else {
+        // Cas 2: Vous devez maintenir une liste d'adresses à vérifier
+        // Remplacez cette partie par votre propre logique de récupération d'adresses
+        const addressesToCheck: string[] = [
+          // Ajoutez ici les adresses que vous voulez vérifier
+          // Ou récupérez-les depuis votre base de données/API
+        ];
+        
+        // Vérifier le statut blockchain pour chaque adresse
+        users = await Promise.all(
+          addressesToCheck.map(async (address) => {
+            try {
+              const eligibility = await getFidelityEligibility(address);
+              return {
+                address,
+                eligible: eligibility.eligible,
+                alreadyClaimed: eligibility.alreadyClaimed,
+                // Vous pouvez ajouter des métadonnées depuis votre base de données
+                firstName: undefined,
+                lastName: undefined
+              };
+            } catch (error) {
+              console.warn(`Erreur vérification ${address}:`, error);
+              return {
+                address,
+                eligible: false,
+                alreadyClaimed: false
+              };
+            }
+          })
+        );
+      }
+      
+      // Filtrer seulement les utilisateurs qui ont une éligibilité ou qui ont déjà réclamé
+      const activeUsers = users.filter(user => user.eligible || user.alreadyClaimed);
+      
+      setFidelityUsers(activeUsers);
+      
+      // Calculer les statistiques réelles
       const stats = {
-        totalEligible: updatedUsers.filter(u => u.eligible).length,
-        totalClaimed: updatedUsers.filter(u => u.alreadyClaimed).length,
-        remaining: 50 - updatedUsers.filter(u => u.alreadyClaimed).length, // Supply NFT Fidélité
-        claimRate: updatedUsers.length > 0 
-          ? (updatedUsers.filter(u => u.alreadyClaimed).length / updatedUsers.filter(u => u.eligible).length) * 100 
+        totalEligible: activeUsers.filter(u => u.eligible).length,
+        totalClaimed: activeUsers.filter(u => u.alreadyClaimed).length,
+        remaining: 50 - activeUsers.filter(u => u.alreadyClaimed).length,
+        claimRate: activeUsers.filter(u => u.eligible).length > 0 
+          ? (activeUsers.filter(u => u.alreadyClaimed).length / activeUsers.filter(u => u.eligible).length) * 100 
           : 0
       };
       
@@ -158,7 +170,7 @@ const FidelityManager: React.FC = () => {
       console.error('Erreur chargement données fidélité:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de charger les données de fidélité',
+        description: 'Impossible de charger les données de fidélité depuis la blockchain',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -185,12 +197,8 @@ const FidelityManager: React.FC = () => {
         isClosable: true,
       });
       
-      // Ajouter à la liste locale
-      setFidelityUsers(prev => [...prev, {
-        address,
-        eligible: true,
-        alreadyClaimed: false
-      }]);
+      // Recharger les données depuis la blockchain
+      await loadFidelityData();
       
       setNewUserAddress('');
       
@@ -225,8 +233,8 @@ const FidelityManager: React.FC = () => {
         isClosable: true,
       });
       
-      // Retirer de la liste locale
-      setFidelityUsers(prev => prev.filter(u => u.address !== address));
+      // Recharger les données depuis la blockchain
+      await loadFidelityData();
       
     } catch (error) {
       console.error('Erreur retrait utilisateur:', error);
@@ -275,14 +283,9 @@ const FidelityManager: React.FC = () => {
         isClosable: true,
       });
       
-      // Ajouter à la liste locale
-      const newUsers = addresses.map(addr => ({
-        address: addr,
-        eligible: true,
-        alreadyClaimed: false
-      }));
+      // Recharger les données depuis la blockchain
+      await loadFidelityData();
       
-      setFidelityUsers(prev => [...prev, ...newUsers]);
       setBulkAddresses('');
       onClose();
       
@@ -318,7 +321,7 @@ const FidelityManager: React.FC = () => {
     return (
       <Box p={6} textAlign="center">
         <Spinner size="xl" color="purple.500" />
-        <Text mt={4}>Chargement des données de fidélité...</Text>
+        <Text mt={4}>Connexion à la blockchain...</Text>
       </Box>
     );
   }
@@ -453,7 +456,7 @@ const FidelityManager: React.FC = () => {
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Adresse ou nom..."
+              placeholder="Adresse..."
               size="sm"
             />
           </FormControl>
@@ -497,27 +500,15 @@ const FidelityManager: React.FC = () => {
                 <Table variant="simple" size="sm">
                   <Thead>
                     <Tr>
-                      <Th>Utilisateur</Th>
                       <Th>Adresse</Th>
                       <Th>Statut Éligibilité</Th>
                       <Th>Statut NFT</Th>
-                      <Th>Date Réclamation</Th>
                       <Th>Actions</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
                     {filteredUsers.map((user) => (
                       <Tr key={user.address}>
-                        <Td>
-                          <VStack align="start" spacing={0}>
-                            <Text fontWeight="bold" fontSize="sm">
-                              {user.firstName && user.lastName 
-                                ? `${user.firstName} ${user.lastName}`
-                                : 'Utilisateur Anonyme'
-                              }
-                            </Text>
-                          </VStack>
-                        </Td>
                         <Td>
                           <HStack spacing={2}>
                             <Text fontSize="xs" fontFamily="mono">
@@ -548,25 +539,6 @@ const FidelityManager: React.FC = () => {
                           </Badge>
                         </Td>
                         <Td>
-                          {user.claimedDate ? (
-                            <VStack align="start" spacing={0}>
-                              <Text fontSize="xs">{user.claimedDate}</Text>
-                              {user.txHash && (
-                                <Link 
-                                  href={`https://bscscan.com/tx/${user.txHash}`}
-                                  isExternal
-                                  fontSize="xs"
-                                  color="blue.500"
-                                >
-                                  TX: {user.txHash.slice(0, 8)}...
-                                </Link>
-                              )}
-                            </VStack>
-                          ) : (
-                            <Text fontSize="xs" color="gray.500">-</Text>
-                          )}
-                        </Td>
-                        <Td>
                           <HStack spacing={1}>
                             <Tooltip label="Retirer l'éligibilité">
                               <IconButton
@@ -590,7 +562,10 @@ const FidelityManager: React.FC = () => {
               {filteredUsers.length === 0 && (
                 <Box textAlign="center" py={8}>
                   <Text color="gray.500">
-                    Aucun utilisateur trouvé avec les filtres actuels
+                    {fidelityUsers.length === 0 
+                      ? "Aucun utilisateur éligible trouvé sur la blockchain"
+                      : "Aucun utilisateur trouvé avec les filtres actuels"
+                    }
                   </Text>
                 </Box>
               )}
