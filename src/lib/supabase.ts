@@ -408,6 +408,204 @@ export class ValidationUtils {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   }
+
+  // =================== GESTION FIDÉLITÉ NFT ===================
+
+static async getAllFidelityUsers() {
+  try {
+    const { data, error } = await supabase
+      .from('users_authorized')
+      .select('*')
+      .eq('status', 'Active')
+      .order('registration_date', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erreur récupération utilisateurs fidélité: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Erreur getAllFidelityUsers:', error);
+    throw error;
+  }
+}
+
+static async getFidelityUsersByStatus(fidelityStatus: 'OUI' | 'NON') {
+  try {
+    const { data, error } = await supabase
+      .from('users_authorized')
+      .select('*')
+      .eq('status', 'Active')
+      .eq('fidelity_status', fidelityStatus)
+      .order('registration_date', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erreur récupération utilisateurs fidélité: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Erreur getFidelityUsersByStatus:', error);
+    throw error;
+  }
+}
+
+static async updateFidelityNFTClaim(
+  walletAddress: string, 
+  claimed: boolean, 
+  txHash?: string
+) {
+  try {
+    const updateData: any = {
+      fidelity_nft_claimed: claimed,
+      fidelity_nft_claimed_date: claimed ? new Date().toISOString() : null
+    };
+
+    if (txHash) {
+      updateData.fidelity_nft_tx_hash = txHash;
+    }
+
+    const { error } = await supabase
+      .from('users_authorized')
+      .update(updateData)
+      .eq('wallet_address', walletAddress.toLowerCase());
+
+    if (error) {
+      throw new Error(`Erreur mise à jour claim NFT: ${error.message}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur updateFidelityNFTClaim:', error);
+    throw error;
+  }
+}
+
+static async updateFidelityStatus(
+  walletAddress: string, 
+  fidelityStatus: 'OUI' | 'NON'
+) {
+  try {
+    const { error } = await supabase
+      .from('users_authorized')
+      .update({ 
+        fidelity_status: fidelityStatus 
+      })
+      .eq('wallet_address', walletAddress.toLowerCase());
+
+    if (error) {
+      throw new Error(`Erreur mise à jour statut fidélité: ${error.message}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur updateFidelityStatus:', error);
+    throw error;
+  }
+}
+
+static async getFidelityStats() {
+  try {
+    // Récupérer tous les utilisateurs actifs
+    const { data: allUsers, error: allError } = await supabase
+      .from('users_authorized')
+      .select('fidelity_status, fidelity_nft_claimed')
+      .eq('status', 'Active');
+
+    if (allError) throw allError;
+
+    // Calculer les statistiques
+    const totalUsers = allUsers?.length || 0;
+    const fidelityUsers = allUsers?.filter(u => u.fidelity_status === 'OUI').length || 0;
+    const claimedNFTs = allUsers?.filter(u => u.fidelity_nft_claimed === true).length || 0;
+
+    return {
+      totalUsers,
+      fidelityUsers,
+      claimedNFTs,
+      claimRate: fidelityUsers > 0 ? (claimedNFTs / fidelityUsers) * 100 : 0,
+      remainingNFTs: 50 - claimedNFTs // Assumant un supply de 50 NFT
+    };
+  } catch (error) {
+    console.error('Erreur getFidelityStats:', error);
+    throw error;
+  }
+}
+
+static async searchUsers(searchTerm: string) {
+  try {
+    const { data, error } = await supabase
+      .from('users_authorized')
+      .select('*')
+      .eq('status', 'Active')
+      .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,wallet_address.ilike.%${searchTerm}%`)
+      .order('registration_date', { ascending: false });
+
+    if (error) {
+      throw new Error(`Erreur recherche utilisateurs: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Erreur searchUsers:', error);
+    throw error;
+  }
+}
+
+// =================== FONCTIONS D'AUDIT FIDÉLITÉ ===================
+
+static async createFidelityAuditLog(auditData: {
+  action: 'nft_eligible_added' | 'nft_eligible_removed' | 'nft_claimed' | 'sync_blockchain';
+  wallet_address: string;
+  tx_hash?: string;
+  details?: Record<string, any>;
+  ip_address?: string;
+}) {
+  try {
+    const { error } = await supabase
+      .from('audit_logs')
+      .insert([{
+        ...auditData,
+        wallet_address: auditData.wallet_address.toLowerCase(),
+        timestamp: new Date().toISOString(),
+        details: auditData.details ? JSON.stringify(auditData.details) : null
+      }]);
+
+    if (error) {
+      console.error('Erreur création audit log fidélité:', error);
+      // Ne pas faire échouer l'opération principale pour les logs
+    }
+  } catch (error) {
+    console.error('Erreur createFidelityAuditLog:', error);
+    // Ne pas propager l'erreur pour les logs
+  }
+}
+
+static async getFidelityAuditLogs(walletAddress?: string, limit: number = 50) {
+  try {
+    let query = supabase
+      .from('audit_logs')
+      .select('*')
+      .in('action', ['nft_eligible_added', 'nft_eligible_removed', 'nft_claimed', 'sync_blockchain'])
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+
+    if (walletAddress) {
+      query = query.eq('wallet_address', walletAddress.toLowerCase());
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Erreur récupération logs fidélité: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Erreur getFidelityAuditLogs:', error);
+    throw error;
+  }
+}
 }
 
 // Export par défaut
