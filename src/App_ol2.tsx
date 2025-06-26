@@ -1,7 +1,7 @@
-// src/App.tsx - CORRECTION RESPONSIVITÉ MOBILE/TABLETTE
+// src/App.tsx - Intégration système communauté (VERSION PROGRESSIVE)
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ChakraProvider, extendTheme, Box } from '@chakra-ui/react';
+import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -30,7 +30,7 @@ import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
 // NOUVEAUX COMPOSANTS COMMUNAUTÉ
 import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
 import PlatformAccessPage from './pages/PlatformAccessPage';
-import RegistrationPage from './pages/RegistrationPage';
+import RegistrationPage from './pages/RegistrationPage'; // ← NOUVEAU
 import EnhancedAuthService from './services/EnhancedAuthService';
 
 import { pinataService } from './services/pinataService';
@@ -44,9 +44,7 @@ if (mobileInfo.shouldUseMobileMode) {
   forceMobileBreakpoints();
 }
 
-// ========================================
-// 🎨 CONFIGURATION THÈME CHAKRA UI RESPONSIVE
-// ========================================
+// Configuration du thème Chakra UI (INCHANGÉ)
 const chakraTheme = extendTheme({
   config: {
     initialColorMode: 'dark',
@@ -70,67 +68,19 @@ const chakraTheme = extendTheme({
     heading: 'Inter, sans-serif',
     body: 'Inter, sans-serif',
   },
-  // 🆕 STYLES GLOBAUX RESPONSIVE
   styles: {
     global: {
-      // Reset et base
-      '*': {
-        margin: 0,
-        padding: 0,
-        boxSizing: 'border-box',
-      },
-      html: {
-        fontSize: { base: '14px', md: '16px' },
-        scrollBehavior: 'smooth',
-        // Empêche le zoom sur les inputs sur iOS
-        '-webkit-text-size-adjust': '100%',
-        '-ms-text-size-adjust': '100%',
-      },
       body: {
         fontFamily: 'Inter, sans-serif',
-        minHeight: '100vh',
-        width: '100%',
-        margin: 0,
-        padding: 0,
-        // Empêche le scroll horizontal
-        overflowX: 'hidden',
-        // Support PWA
-        '-webkit-touch-callout': 'none',
-        '-webkit-user-select': 'none',
-        userSelect: 'none',
-        // Améliore les performances de scroll sur mobile
-        '-webkit-overflow-scrolling': 'touch',
-      },
-      // Container principal responsive
-      '#root': {
-        minHeight: '100vh',
-        width: '100%',
-        margin: 0,
-        padding: 0,
-        position: 'relative',
-      },
-      // Améliore l'affichage des boutons sur mobile
-      'button, input, select, textarea': {
-        '-webkit-appearance': 'none',
-        '-moz-appearance': 'none',
-        fontSize: { base: '16px', md: '14px' }, // Évite le zoom sur iOS
       },
     },
-  },
-  // 🆕 BREAKPOINTS PERSONNALISÉS
-  breakpoints: {
-    base: '0px',    // mobile
-    sm: '480px',    // mobile large
-    md: '768px',    // tablette
-    lg: '992px',    // desktop
-    xl: '1280px',   // desktop large
-    '2xl': '1536px' // très large
   },
 });
 
 // ========================================
 // 🔧 CONFIGURATION DEBUG PINATA (INCHANGÉ)
 // ========================================
+
 const setupPinataDebug = () => {
   if (import.meta.env.DEV) {
     (window as any).testPinata = async () => {
@@ -157,8 +107,9 @@ const setupPinataDebug = () => {
 setupPinataDebug();
 
 // ========================================
-// 🆕 ROUTE DE PROTECTION COMMUNAUTÉ (INCHANGÉ)
+// 🆕 NOUVEAU: Route de Protection Communauté
 // ========================================
+
 const CommunityProtectedRoute: React.FC<{ 
   children: React.ReactNode;
   requiresCommunity?: boolean;
@@ -178,15 +129,18 @@ const CommunityProtectedRoute: React.FC<{
       if (!isAuthenticated || !user?.walletAddress) return;
 
       try {
+        // Vérifier le statut complet uniquement si nécessaire
         if (requiresCommunity || requiresPlatform || requiresLegalAcceptance) {
           const status = await EnhancedAuthService.getCompleteUserAccessStatus(user.walletAddress);
           
+          // Rediriger selon les besoins
           if (requiresCommunity && !status.isCommunityMember) {
             navigate('/community-registration');
             return;
           }
           
           if (requiresPlatform && !status.isPlatformAuthorized) {
+            // Utilisateur membre mais pas autorisé plateforme - rester sur la page actuelle
             return;
           }
           
@@ -211,6 +165,7 @@ const CommunityProtectedRoute: React.FC<{
 // ========================================
 // 🔒 COMPOSANTS DE SÉCURITÉ (INCHANGÉS)
 // ========================================
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -258,6 +213,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // INCHANGÉ: Redirection vers HomePage après connexion
   if (!isLoading && isAuthenticated) {
     return <Navigate to="/" replace />;
   }
@@ -276,173 +232,101 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // ========================================
-// 🆕 CONTENU PRINCIPAL AVEC LAYOUT RESPONSIVE
+// 🆕 CONTENU PRINCIPAL AVEC NOUVELLES ROUTES
 // ========================================
+
 const AppContent: React.FC = () => {
   return (
     <Router>
-      {/* 🎨 CONTAINER PRINCIPAL RESPONSIVE */}
-      <Box
-        minH="100vh"
-        w="100%"
-        bg="linear-gradient(135deg, #1a202c 0%, #2d3748 100%)"
-        position="relative"
-        overflow="hidden"
-        // Centrage et contraintes de largeur
-        maxW="100vw"
-        mx="auto"
-        // Évite les débordements sur mobile
-        css={{
-          '&::-webkit-scrollbar': {
-            display: 'none'
-          },
-          msOverflowStyle: 'none',
-          scrollbarWidth: 'none'
-        }}
-      >
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
         <Routes>
-          {/* Routes publiques */}
+          {/* Route publique - Page de connexion (INCHANGÉE) */}
           <Route
             path="/login"
             element={
               <PublicRoute>
-                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                  <LoginPage />
-                </Box>
+                <LoginPage />
               </PublicRoute>
             }
           />
-          
+          {/* 🆕 NOUVELLE ROUTE PUBLIQUE - Termes et Conditions */}
           <Route
             path="/terms-and-conditions"
             element={
               <PublicRoute>
-                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                  <TermsAndConditionsPage />
-                </Box>
+              <TermsAndConditionsPage />
               </PublicRoute>
             }
           />
 
+          {/* 🆕 NOUVELLE ROUTE PUBLIQUE - Page d'inscription */}
           <Route 
             path="/registration" 
-            element={
-              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                <RegistrationPage />
-              </Box>
-            } 
+            element={<RegistrationPage />} 
           />
-          
-          <Route 
-            path="/conditions-utilisation" 
-            element={
-              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                <TermsAndConditionsPage />
-              </Box>
-            } 
-          />
+          <Route path="/conditions-utilisation" element={<TermsAndConditionsPage />} />
 
+          {/* 🆕 AUTRES ROUTES COMMUNAUTÉ */}
           <Route 
             path="/community-registrations" 
-            element={
-              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                <CommunityRegistrationPage />
-              </Box>
-            } 
+            element={<CommunityRegistrationPage />} 
           />
           
           <Route 
             path="/platform-access" 
             element={
               <CommunityProtectedRoute requiresCommunity={true}>
-                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
-                  <PlatformAccessPage />
-                </Box>
+                <PlatformAccessPage />
               </CommunityProtectedRoute>
             } 
           />
 
-          {/* Routes protégées avec layout responsive */}
+          {/* Routes protégées EXISTANTES */}
           <Route
             path="/*"
             element={
               <ProtectedRoute>
-                {/* 🎯 LAYOUT PRINCIPAL RESPONSIVE */}
-                <Box
-                  w="100%"
-                  minH="100vh"
-                  display="flex"
-                  flexDirection="column"
-                  position="relative"
-                >
-                  {/* Navbar responsive */}
-                  <Box
-                    w="100%"
-                    position="sticky"
-                    top={0}
-                    zIndex={1000}
-                    bg="rgba(26, 32, 44, 0.95)"
-                    backdropFilter="blur(10px)"
-                  >
-                    <Navbar />
-                  </Box>
-                  
-                  {/* Contenu principal responsive */}
-                  <Box
-                    as="main"
-                    flex={1}
-                    w="100%"
-                    position="relative"
-                    // Padding responsive pour éviter que le contenu touche les bords
-                    px={{ base: 0, md: 0 }}
-                    py={{ base: 0, md: 0 }}
-                    // Centrage du contenu
-                    mx="auto"
-                    // Largeur maximale pour éviter l'étirement sur très grand écran
-                    maxW="100vw"
-                  >
-                    <Routes>
-                      <Route path="/" element={<HomePage />} />
-                      
-                      <Route 
-                        path="/dashboard" 
-                        element={
-                          <CommunityProtectedRoute 
-                            requiresCommunity={false}
-                            requiresPlatform={false}
-                            requiresLegalAcceptance={false}
-                          >
-                            <Dashboard />
-                          </CommunityProtectedRoute>
-                        } 
-                      />
-                      
-                      <Route path="/invest" element={<InvestPage />} />
-                      <Route path="/roadmap" element={<RoadmapPage />} />
-                      <Route path="/admin/*" element={<AdminPage />} />
-                      <Route path="/nft-collection" element={<NFTMarketplace />} />
-                      <Route path="/nft-cards" element={<NFTCards1 />} />
-                      <Route path="/nft-page" element={<NFTPage />} />
-                      <Route path="/history" element={<TransactionHistoryUsers />} />
-                      <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
-                      
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </Box>
-                  
-                  {/* Footer responsive */}
-                  <Box
-                    w="100%"
-                    mt="auto"
-                  >
-                    <Footer />
-                  </Box>
-                </Box>
+                <Navbar />
+                <main className="relative">
+                  <Routes>
+                    {/* HomePage - INCHANGÉE */}
+                    <Route path="/" element={<HomePage />} />
+                    
+                    {/* 🔄 Dashboard avec protection communauté OPTIONNELLE */}
+                    <Route 
+                      path="/dashboard" 
+                      element={
+                        <CommunityProtectedRoute 
+                          requiresCommunity={false}     // ← Mise à false pour ne pas forcer
+                          requiresPlatform={false}      // ← Vos utilisateurs existants continuent
+                          requiresLegalAcceptance={false} // ← à fonctionner normalement
+                        >
+                          <Dashboard />
+                        </CommunityProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Toutes vos autres routes INCHANGÉES */}
+                    <Route path="/invest" element={<InvestPage />} />
+                    <Route path="/roadmap" element={<RoadmapPage />} />
+                    <Route path="/admin/*" element={<AdminPage />} />
+                    <Route path="/nft-collection" element={<NFTMarketplace />} />
+                    <Route path="/nft-cards" element={<NFTCards1 />} />
+                    <Route path="/nft-page" element={<NFTPage />} />
+                    <Route path="/history" element={<TransactionHistoryUsers />} />
+                    <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
+                    
+                    
+                    {/* Redirection INCHANGÉE */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </main>
+                <Footer />
               </ProtectedRoute>
             }
           />
         </Routes>
-      </Box>
+      </div>
     </Router>
   );
 };
@@ -450,6 +334,7 @@ const AppContent: React.FC = () => {
 // ========================================
 // 🔧 GESTION D'ERREURS (INCHANGÉE)
 // ========================================
+
 const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
@@ -482,58 +367,14 @@ const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 };
 
 // ========================================
-// 🚀 COMPOSANT RACINE AVEC CSS GLOBAL
+// 🚀 COMPOSANT RACINE (INCHANGÉ)
 // ========================================
+
 const App: React.FC = () => {
   useEffect(() => {
     console.log('🚀 CryptoVault Application démarrée');
-    console.log('📱 Mode responsive activé');
+    console.log('🏠 Redirection après connexion : HomePage (/)');
     console.log('🆕 Nouvelles routes communauté disponibles');
-    
-    // 🎯 INJECTION CSS GLOBAL POUR MOBILE
-    const globalStyles = document.createElement('style');
-    globalStyles.innerHTML = `
-      /* Reset global */
-      * {
-        box-sizing: border-box !important;
-      }
-      
-      /* HTML et body */
-      html, body, #root {
-        width: 100% !important;
-        max-width: 100vw !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow-x: hidden !important;
-      }
-      
-      /* Évite le zoom sur iOS */
-      input, select, textarea {
-        font-size: 16px !important;
-      }
-      
-      /* Améliore les performances sur mobile */
-      * {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-      
-      /* Fix pour les containers Chakra UI */
-      .chakra-container {
-        max-width: 100% !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-      }
-      
-      /* Responsive breakpoints custom */
-      @media (max-width: 767px) {
-        .chakra-container {
-          width: 100% !important;
-          margin: 0 !important;
-        }
-      }
-    `;
-    document.head.appendChild(globalStyles);
     
     if (typeof window !== 'undefined') {
       if (window.ethereum) {
@@ -544,11 +385,6 @@ const App: React.FC = () => {
     }
 
     document.title = 'CryptoVault - Plateforme d\'investissement sécurisée';
-    
-    // Cleanup
-    return () => {
-      document.head.removeChild(globalStyles);
-    };
   }, []);
 
   return (
