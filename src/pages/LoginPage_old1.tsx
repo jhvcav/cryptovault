@@ -1,4 +1,4 @@
-// src/pages/LoginPage.tsx - VERSION CORRIGÉE LARGEUR DESKTOP
+// src/pages/LoginPage.tsx
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
@@ -25,6 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { detectMobileAndMetaMask } from '../components/utils/mobileDetection';
 import { useNavigate } from 'react-router-dom';
 
+
 // Déclaration TypeScript pour window.ethereum
 declare global {
   interface Window {
@@ -47,29 +48,12 @@ const LoginPage: React.FC = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)');
 
-  // 🎯 RESPONSIVE VALUES CORRIGÉS POUR DESKTOP
-  const containerMaxW = useBreakpointValue({ 
-    base: 'full',        // Mobile : pleine largeur
-    sm: 'sm',           // Mobile large : container small
-    md: 'md',           // Tablette : container medium
-    lg: 'lg',           // Desktop : container large
-    xl: 'xl',           // Large desktop : container extra large
-    '2xl': '2xl'        // Très large : container 2xl
-  });
-  
-  const cardMaxW = useBreakpointValue({
-    base: 'full',        // Mobile : pleine largeur
-    sm: '400px',        // Mobile large : 400px max
-    md: '500px',        // Tablette : 500px max
-    lg: '600px',        // Desktop : 600px max
-    xl: '650px',        // Large desktop : 650px max
-    '2xl': '700px'      // Très large : 700px max
-  });
-
-  const cardPadding = useBreakpointValue({ base: 6, md: 8, lg: 10 });
-  const headingSize = useBreakpointValue({ base: 'xl', md: '2xl', lg: '3xl' });
-  const logoSize = useBreakpointValue({ base: 16, md: 20, lg: 24 });
-  const logoFontSize = useBreakpointValue({ base: '2xl', md: '4xl', lg: '5xl' });
+  // Responsive values
+  const containerMaxW = useBreakpointValue({ base: 'sm', md: 'lg' });
+  const cardPadding = useBreakpointValue({ base: 6, md: 10 });
+  const headingSize = useBreakpointValue({ base: 'xl', md: '2xl' });
+  const logoSize = useBreakpointValue({ base: 16, md: 20 });
+  const logoFontSize = useBreakpointValue({ base: '2xl', md: '4xl' });
   const buttonSize = useBreakpointValue({ base: 'md', md: 'lg' });
   const metaMaskButtonSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const metaMaskButtonText = useBreakpointValue({ base: '🦊', md: 'Connect MetaMask' });
@@ -118,182 +102,182 @@ const LoginPage: React.FC = () => {
 
   // Fonction pour connecter MetaMask et récupérer l'adresse
   const connectMetaMask = async () => {
-    const mobileInfo = detectMobileAndMetaMask();
-    
-    console.log('🦊 Tentative MetaMask sur:', mobileInfo);
-    
-    if (!window.ethereum) {
-      if (mobileInfo.isMetaMaskBrowser) {
-        // On est dans MetaMask mais ethereum pas encore injecté
-        toast({
-          title: "Chargement...",
-          description: "MetaMask se charge, veuillez patienter quelques secondes.",
-          status: "info",
-          duration: 3000,
-          isClosable: true,
-        });
-        
-        // Attendre l'injection avec timeout
-        let attempts = 0;
-        const maxAttempts = 10;
-        
-        setIsConnectingMetaMask(true);
-        
-        const waitForEthereum = setInterval(() => {
-          attempts++;
-          console.log(`🔄 Tentative ${attempts}/${maxAttempts} pour détecter ethereum...`);
-          
-          if (window.ethereum) {
-            clearInterval(waitForEthereum);
-            console.log('✅ window.ethereum détecté !');
-            // Relancer la fonction maintenant qu'ethereum est disponible
-            connectMetaMask();
-            return;
-          }
-          
-          if (attempts >= maxAttempts) {
-            clearInterval(waitForEthereum);
-            setIsConnectingMetaMask(false);
-            toast({
-              title: "Erreur MetaMask",
-              description: "Impossible de détecter MetaMask. Essayez de rafraîchir la page.",
-              status: "error",
-              duration: 5000,
-              isClosable: true,
-            });
-          }
-        }, 500);
-        
-        return;
-      }
-      
+  const mobileInfo = detectMobileAndMetaMask();
+  
+  console.log('🦊 Tentative MetaMask sur:', mobileInfo);
+  
+  if (!window.ethereum) {
+    if (mobileInfo.isMetaMaskBrowser) {
+      // On est dans MetaMask mais ethereum pas encore injecté
       toast({
-        title: "MetaMask non détecté",
-        description: "Veuillez installer MetaMask ou utiliser le navigateur MetaMask.",
-        status: "error",
-        duration: 5000,
+        title: "Chargement...",
+        description: "MetaMask se charge, veuillez patienter quelques secondes.",
+        status: "info",
+        duration: 3000,
         isClosable: true,
       });
+      
+      // Attendre l'injection avec timeout
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      setIsConnectingMetaMask(true);
+      
+      const waitForEthereum = setInterval(() => {
+        attempts++;
+        console.log(`🔄 Tentative ${attempts}/${maxAttempts} pour détecter ethereum...`);
+        
+        if (window.ethereum) {
+          clearInterval(waitForEthereum);
+          console.log('✅ window.ethereum détecté !');
+          // Relancer la fonction maintenant qu'ethereum est disponible
+          connectMetaMask();
+          return;
+        }
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(waitForEthereum);
+          setIsConnectingMetaMask(false);
+          toast({
+            title: "Erreur MetaMask",
+            description: "Impossible de détecter MetaMask. Essayez de rafraîchir la page.",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      }, 500);
+      
       return;
     }
+    
+    toast({
+      title: "MetaMask non détecté",
+      description: "Veuillez installer MetaMask ou utiliser le navigateur MetaMask.",
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+    return;
+  }
 
-    setIsConnectingMetaMask(true);
+  setIsConnectingMetaMask(true);
+  try {
+    // Méthode robuste pour mobile
+    let accounts;
+    
     try {
-      // Méthode robuste pour mobile
-      let accounts;
+      // D'abord vérifier les comptes déjà connectés
+      accounts = await window.ethereum.request({ method: 'eth_accounts' });
       
-      try {
-        // D'abord vérifier les comptes déjà connectés
-        accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        
-        if (!accounts || accounts.length === 0) {
-          // Si pas de comptes, demander la connexion
-          accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        }
-      } catch (error: any) {
-        if (error.code === 4001) {
-          throw new Error('Connexion refusée par l\'utilisateur');
-        }
-        throw error;
-      }
-
-      if (accounts && accounts.length > 0) {
-        const metamaskAddress = accounts[0];
-        console.log('🦊 Adresse récupérée:', metamaskAddress);
-        
-        setWalletAddress(metamaskAddress);
-        
-        // Stocker pour utilisation future
-        sessionStorage.setItem('lastConnectedWallet', metamaskAddress);
-        
-        toast({
-          title: "Wallet connecté !",
-          description: `${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
+      if (!accounts || accounts.length === 0) {
+        // Si pas de comptes, demander la connexion
+        accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       }
     } catch (error: any) {
-      console.error('Erreur MetaMask:', error);
-      
-      let errorMessage = "Erreur lors de la connexion à MetaMask";
-      if (error.message) {
-        errorMessage = error.message;
+      if (error.code === 4001) {
+        throw new Error('Connexion refusée par l\'utilisateur');
       }
+      throw error;
+    }
+
+    if (accounts && accounts.length > 0) {
+      const metamaskAddress = accounts[0];
+      console.log('🦊 Adresse récupérée:', metamaskAddress);
+      
+      setWalletAddress(metamaskAddress);
+      
+      // Stocker pour utilisation future
+      sessionStorage.setItem('lastConnectedWallet', metamaskAddress);
       
       toast({
-        title: "Erreur MetaMask",
-        description: errorMessage,
-        status: "error",
-        duration: 5000,
+        title: "Wallet connecté !",
+        description: `${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
+        status: "success",
+        duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsConnectingMetaMask(false);
     }
-  };
-
-  // Fonction pour détecter si on est sur mobile et dans MetaMask
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  } catch (error: any) {
+    console.error('Erreur MetaMask:', error);
     
-    const mobileInfo = detectMobileAndMetaMask();
-    console.log('🚀 Soumission formulaire sur:', mobileInfo);
-    
-    setError('');
-
-    if (!walletAddress.trim()) {
-      setError('Veuillez saisir votre adresse wallet');
-      return;
+    let errorMessage = "Erreur lors de la connexion à MetaMask";
+    if (error.message) {
+      errorMessage = error.message;
     }
-
-    const trimmedAddress = walletAddress.trim();
     
-    if (!trimmedAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
-      setError('Format d\'adresse wallet invalide');
-      return;
+    toast({
+      title: "Erreur MetaMask",
+      description: errorMessage,
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+  } finally {
+    setIsConnectingMetaMask(false);
+  }
+};
+
+// Fonction pour détecter si on est sur mobile et dans MetaMask
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  const mobileInfo = detectMobileAndMetaMask();
+  console.log('🚀 Soumission formulaire sur:', mobileInfo);
+  
+  setError('');
+
+  if (!walletAddress.trim()) {
+    setError('Veuillez saisir votre adresse wallet');
+    return;
+  }
+
+  const trimmedAddress = walletAddress.trim();
+  
+  if (!trimmedAddress.match(/^0x[a-fA-F0-9]{40}$/i)) {
+    setError('Format d\'adresse wallet invalide');
+    return;
+  }
+
+  console.log('✅ Connexion avec adresse:', trimmedAddress);
+  setIsSubmitting(true);
+
+  try {
+    const success = await login(trimmedAddress);
+    console.log('✅ Résultat login:', success);
+    
+    if (!success) {
+      setError('Vous n\'êtes pas autorisé à accéder à cette plateforme. Contactez votre Leader.');
+    } else {
+      console.log('🎉 Connexion réussie ! Redirection vers dashboard...');
     }
+  } catch (error) {
+    console.error('❌ Erreur login:', error);
+    setError('Erreur de connexion. Veuillez réessayer.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-    console.log('✅ Connexion avec adresse:', trimmedAddress);
-    setIsSubmitting(true);
-
-    try {
-      const success = await login(trimmedAddress);
-      console.log('✅ Résultat login:', success);
-      
-      if (!success) {
-        setError('Vous n\'êtes pas autorisé à accéder à cette plateforme. Contactez votre Leader.');
-      } else {
-        console.log('🎉 Connexion réussie ! Redirection vers dashboard...');
+ React.useEffect(() => {
+  const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
+  
+  if (isMetaMaskBrowser) {
+    console.log('📱 Navigateur MetaMask détecté - Attente initialisation...');
+    
+    // Attendre plus longtemps pour laisser MetaMask s'initialiser
+    const timer = setTimeout(() => {
+      console.log('🔄 Tentative auto-connexion après délai...');
+      if (window.ethereum && !walletAddress) {
+        connectMetaMask();
       }
-    } catch (error) {
-      console.error('❌ Erreur login:', error);
-      setError('Erreur de connexion. Veuillez réessayer.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  React.useEffect(() => {
-    const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
+    }, 4000); // 4 secondes au lieu de 2
     
-    if (isMetaMaskBrowser) {
-      console.log('📱 Navigateur MetaMask détecté - Attente initialisation...');
-      
-      // Attendre plus longtemps pour laisser MetaMask s'initialiser
-      const timer = setTimeout(() => {
-        console.log('🔄 Tentative auto-connexion après délai...');
-        if (window.ethereum && !walletAddress) {
-          connectMetaMask();
-        }
-      }, 4000); // 4 secondes au lieu de 2
-      
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    return () => clearTimeout(timer);
+  }
+}, []);
 
-  const navigate = useNavigate();
+const navigate = useNavigate();
 
   return (
     <Box
@@ -307,8 +291,8 @@ const LoginPage: React.FC = () => {
         position="absolute"
         top="10%"
         left="10%"
-        w={{ base: "100px", md: "200px", lg: "250px" }}
-        h={{ base: "100px", md: "200px", lg: "250px" }}
+        w={{ base: "100px", md: "200px" }}
+        h={{ base: "100px", md: "200px" }}
         bg="rgba(255, 255, 255, 0.1)"
         rounded="full"
         filter="blur(40px)"
@@ -320,8 +304,8 @@ const LoginPage: React.FC = () => {
         position="absolute"
         bottom="10%"
         right="15%"
-        w={{ base: "150px", md: "300px", lg: "400px" }}
-        h={{ base: "150px", md: "300px", lg: "400px" }}
+        w={{ base: "150px", md: "300px" }}
+        h={{ base: "150px", md: "300px" }}
         bg="rgba(255, 255, 255, 0.05)"
         rounded="full"
         filter="blur(60px)"
@@ -330,17 +314,16 @@ const LoginPage: React.FC = () => {
         display={{ base: "none", md: "block" }}
       />
       
-      {/* 🎯 CONTAINER PRINCIPAL AVEC LARGEUR CONTRÔLÉE */}
       <Flex
         minH="100vh"
         align="center"
         justify="center"
-        p={{ base: 4, md: 6, lg: 8 }}
+        p={{ base: 4, md: 4 }}
         position="relative"
         zIndex={1}
       >
         <Container maxW={containerMaxW} w="full">
-          {/* 🎨 CARTE PRINCIPALE AVEC LARGEUR MAXIMALE */}
+          {/* Carte principale */}
           <Box
             bg={cardBg}
             backdropFilter="blur(20px)"
@@ -351,8 +334,6 @@ const LoginPage: React.FC = () => {
             position="relative"
             overflow="hidden"
             w="full"
-            maxW={cardMaxW}
-            mx="auto"
           >
             {/* Bouton MetaMask flottant - repositionné pour mobile */}
             <Button
@@ -496,7 +477,7 @@ const LoginPage: React.FC = () => {
                   </Heading>
                   <Text
                     mt={{ base: 2, md: 3 }}
-                    fontSize={{ base: "sm", md: "lg", lg: "xl" }}
+                    fontSize={{ base: "sm", md: "lg" }}
                     bgGradient="linear(to-r, #667eea, #764ba2)"
                     bgClip="text"
                     textAlign="center"

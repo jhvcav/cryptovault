@@ -37,11 +37,8 @@ export const useNFTAccess = (): NFTAccessInfo => {
     error: null
   });
 
-  // ✅ CORRECTION: Fonction pour déterminer les plans accessibles selon le tier NFT
-  const getAccessiblePlans = (highestTier: number, ownedTiers: number[]): number[] => {
-    // Vérifier d'abord si l'utilisateur possède un NFT Fidélité (Tier 5)
-    const hasFidelityNFT = ownedTiers.includes(5);
-    
+  // Fonction pour déterminer les plans accessibles selon le tier NFT
+  const getAccessiblePlans = (highestTier: number): number[] => {
     switch (highestTier) {
       case 1: // NFT Bronze
         return [0]; // Accès au plan Starter uniquement
@@ -51,30 +48,9 @@ export const useNFTAccess = (): NFTAccessInfo => {
         return [0, 1, 2]; // Accès aux plans Starter + Standard + Premium
       case 4: // NFT Privilège
         return [0, 1, 2]; // Accès à tous les plans (peut être étendu)
-      case 5: // ✅ AJOUTÉ: NFT Fidélité
-        return [0]; // Accès au plan Starter uniquement (équivalent au Bronze)
       default:
-        // ✅ CORRECTION: Si pas de tier mais possède NFT Fidélité
-        if (hasFidelityNFT) {
-          return [0]; // Accès au plan Starter
-        }
         return []; // Aucun accès sans NFT
     }
-  };
-
-  // ✅ AMÉLIORATION: Fonction pour obtenir le meilleur accès possible
-  const getBestAccessiblePlans = (ownedTiers: number[]): number[] => {
-    if (ownedTiers.length === 0) return [];
-    
-    // Calculer l'accès maximum basé sur tous les NFT possédés
-    const allAccessiblePlans = new Set<number>();
-    
-    ownedTiers.forEach(tier => {
-      const plans = getAccessiblePlans(tier, ownedTiers);
-      plans.forEach(plan => allAccessiblePlans.add(plan));
-    });
-    
-    return Array.from(allAccessiblePlans).sort((a, b) => a - b);
   };
 
   // Fonction pour convertir le multiplicateur du contrat (120 = 1.2x)
@@ -140,17 +116,16 @@ export const useNFTAccess = (): NFTAccessInfo => {
         }
       }
 
-      // ✅ CORRECTION: Utiliser la nouvelle fonction pour déterminer les plans accessibles
-      const accessiblePlans = getBestAccessiblePlans(ownedNFTs);
+      // Déterminer les plans accessibles
+      const accessiblePlans = getAccessiblePlans(tierNumber);
 
-      console.log('🎯 NFT Access Info (Updated):', {
+      console.log('🎯 NFT Access Info:', {
         address,
         nftCount,
         highestTier: tierNumber,
         multiplier,
         accessiblePlans,
-        ownedNFTs,
-        hasFidelityNFT: ownedNFTs.includes(5)
+        ownedNFTs
       });
 
       setNftInfo({
