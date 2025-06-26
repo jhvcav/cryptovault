@@ -147,8 +147,8 @@ const NFTMarketplace: React.FC = () => {
         id: 1,
         name: 'NFT Bronze',
         icon: '🥉',
-        price: 10,
-        priceUSD: '$10',
+        price: 120,
+        priceUSD: '$120',
         supply: 1000,
         remaining: 847,
         multiplier: '1.2X',
@@ -217,8 +217,8 @@ const NFTMarketplace: React.FC = () => {
         id: 4,
         name: 'NFT Privilège',
         icon: '💎',
-        price: 1000,
-        priceUSD: '$1,000',
+        price: 10,
+        priceUSD: '$10',
         supply: 50,
         remaining: 23,
         multiplier: '2.5X',
@@ -338,7 +338,7 @@ const NFTMarketplace: React.FC = () => {
   };
 
   // Fonction d'achat normal
-  const handlePurchase = async (nft: NFTTier) => {
+  const handlePurchase = async (nft:NFTTier) => {
     if (!isConnected) {
       alert('Veuillez connecter votre wallet');
       return;

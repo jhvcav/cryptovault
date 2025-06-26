@@ -324,7 +324,7 @@ const AdminPage: React.FC = () => {
           <br />
           • Contrat CryptoVault: 0x719fd9F511DDc561D03801161742D84ECb9445e9
           <br />
-          • Contrat NFT: 0xe7778688E645d0795c71837C2d44e08A1B6f6c0A
+          • Contrat NFT: 0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72
           <br />
         </Box>
       </VStack>

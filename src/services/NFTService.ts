@@ -41,7 +41,7 @@ const USDC_ABI = [
 
 // Configuration des contrats
 const CONTRACTS = {
-  NFT_CONTRACT: import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '0xe7778688E645d0795c71837C2d44e08A1B6f6c0A',
+  NFT_CONTRACT: import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72',
   USDC_TOKEN: import.meta.env.VITE_USDC_TOKEN_ADDRESS || '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
   BSC_CHAIN_ID: 56,
   BSC_RPC_URL: import.meta.env.VITE_BSC_RPC_URL || 'https://bsc-dataseed.binance.org/'

@@ -58,6 +58,7 @@ const LoginPage: React.FC = () => {
   const metaMaskButtonSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const metaMaskButtonText = useBreakpointValue({ base: '🦊', md: 'Connect MetaMask' });
   const showMetaMaskText = useBreakpointValue({ base: false, md: true });
+  const inscriptionButtonSize = useBreakpointValue({ base: 'sm', md: 'md' });
 
   // Rediriger si déjà authentifié
   if (isAuthenticated) {
@@ -394,7 +395,7 @@ const navigate = useNavigate();
               position="absolute"
               top={{ base: 4, md: 6 }}
               left={{ base: 4, md: 6 }}
-              size={metaMaskButtonSize}
+              size={inscriptionButtonSize}
               bg="linear-gradient(145deg,rgb(27, 46, 107),rgb(85, 50, 26))"
               color="white"
               boxShadow="
@@ -426,6 +427,7 @@ const navigate = useNavigate();
                   fontSize={{ base: "16px", md: "20px" }}
                   filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
                 >
+                  📝
                 </Text>
               }
               borderRadius="lg"

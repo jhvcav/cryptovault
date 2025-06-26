@@ -13,7 +13,7 @@ const NFT_CONTRACT_ABI = [
 ];
 
 // Adresse du contrat NFT sur BSC
-const NFT_CONTRACT_ADDRESS = "0x3b9E6cad77E65e153321C91Ac5225a4C564b3aE4";
+const NFT_CONTRACT_ADDRESS = "0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72";
 
 interface NFTAccessInfo {
   hasNFT: boolean;

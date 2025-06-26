@@ -38,61 +38,61 @@ import {
   IconButton,
   Tooltip,
   Input,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText,
   SimpleGrid,
-  Divider,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { CheckIcon, CloseIcon, ViewIcon, EmailIcon, PhoneIcon } from '@chakra-ui/icons';
+import { 
+  CheckIcon, 
+  CloseIcon, 
+  ViewIcon, 
+  EmailIcon, 
+  PhoneIcon, 
+  EditIcon, 
+  DeleteIcon 
+} from '@chakra-ui/icons';
 import { supabase, CryptocaVaultDB } from '../lib/supabase';
 
 // Types
-interface PublicRegistration {
+interface CommunityMemberRegistration {
   id: string;
-  first_name: string;
-  last_name: string;
+  username: string;
   email: string;
-  phone: string;
-  status: 'pending' | 'approved' | 'rejected';
+  phone?: string;
   wallet_address?: string;
-  registration_date: string;
-  registration_ip?: string;
-  notes?: string;
-  processed_by?: string;
-  processed_date?: string;
-}
-
-interface AuthorizedWallet {
-  id: string;
-  wallet_address: string;
-  first_name: string;
-  last_name: string;
-  status: string;
-  user_type_id: number;
+  status: 'pending' | 'active' | 'inactive' | 'rejected';
+  acceptance_timestamp: string;
+  acceptance_ip?: string;
+  charter_accepted: boolean;
+  charter_version: string;
+  registration_method: string;
+  updated_at?: string;
+  nft_minted?: boolean;
+  nft_token_id?: string;
 }
 
 interface RegistrationStats {
   total: number;
   pending: number;
-  approved: number;
+  active: number;
+  inactive: number;
   rejected: number;
   today: number;
   thisWeek: number;
 }
 
 const AdminRegistrationsPage: React.FC = () => {
-  const [registrations, setRegistrations] = useState<PublicRegistration[]>([]);
-  const [availableWallets, setAvailableWallets] = useState<AuthorizedWallet[]>([]);
-  const [selectedRegistration, setSelectedRegistration] = useState<PublicRegistration | null>(null);
-  const [selectedWallet, setSelectedWallet] = useState<string>('');
+  const [registrations, setRegistrations] = useState<CommunityMemberRegistration[]>([]);
+  const [selectedRegistration, setSelectedRegistration] = useState<CommunityMemberRegistration | null>(null);
+  const [editedRegistration, setEditedRegistration] = useState<CommunityMemberRegistration | null>(null);
   const [adminNotes, setAdminNotes] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -101,16 +101,21 @@ const AdminRegistrationsPage: React.FC = () => {
   const [stats, setStats] = useState<RegistrationStats>({
     total: 0,
     pending: 0,
-    approved: 0,
+    active: 0,
+    inactive: 0,
     rejected: 0,
     today: 0,
     thisWeek: 0
   });
 
   const toast = useToast();
-  const { isOpen: isApprovalOpen, onOpen: onApprovalOpen, onClose: onApprovalClose } = useDisclosure();
+  const { isOpen: isValidateOpen, onOpen: onValidateOpen, onClose: onValidateClose } = useDisclosure();
   const { isOpen: isRejectOpen, onOpen: onRejectOpen, onClose: onRejectClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+
+  const deleteRef = React.useRef<HTMLButtonElement>(null);
 
   // Styles
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -126,19 +131,15 @@ const AdminRegistrationsPage: React.FC = () => {
       setIsLoading(true);
       setError('');
 
-      // Charger les inscriptions publiques
+      // Charger les inscriptions de la communauté
       const { data: regsData, error: regsError } = await supabase
-        .from('public_registrations')
+        .from('community_members')
         .select('*')
-        .order('registration_date', { ascending: false });
+        .order('acceptance_timestamp', { ascending: false });
 
       if (regsError) throw regsError;
 
-      // Charger les wallets autorisés disponibles
-      const availableWallets = await CryptocaVaultDB.getAvailableAuthorizedWallets();
-
       setRegistrations(regsData || []);
-      setAvailableWallets(availableWallets);
       
       // Calculer les statistiques
       calculateStats(regsData || []);
@@ -159,7 +160,7 @@ const AdminRegistrationsPage: React.FC = () => {
   };
 
   // Calculer les statistiques
-  const calculateStats = (data: PublicRegistration[]) => {
+  const calculateStats = (data: CommunityMemberRegistration[]) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -167,10 +168,11 @@ const AdminRegistrationsPage: React.FC = () => {
     const stats = {
       total: data.length,
       pending: data.filter(r => r.status === 'pending').length,
-      approved: data.filter(r => r.status === 'approved').length,
+      active: data.filter(r => r.status === 'active').length,
+      inactive: data.filter(r => r.status === 'inactive').length,
       rejected: data.filter(r => r.status === 'rejected').length,
-      today: data.filter(r => new Date(r.registration_date) >= today).length,
-      thisWeek: data.filter(r => new Date(r.registration_date) >= weekAgo).length,
+      today: data.filter(r => new Date(r.acceptance_timestamp) >= today).length,
+      thisWeek: data.filter(r => new Date(r.acceptance_timestamp) >= weekAgo).length,
     };
 
     setStats(stats);
@@ -180,9 +182,9 @@ const AdminRegistrationsPage: React.FC = () => {
   const filteredRegistrations = registrations.filter(reg => {
     const matchesFilter = filter === 'all' || reg.status === filter;
     const matchesSearch = searchTerm === '' || 
-      reg.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reg.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reg.email.toLowerCase().includes(searchTerm.toLowerCase());
+      reg.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (reg.wallet_address && reg.wallet_address.toLowerCase().includes(searchTerm.toLowerCase()));
     
     return matchesFilter && matchesSearch;
   });
@@ -202,104 +204,90 @@ const AdminRegistrationsPage: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'yellow';
-      case 'approved': return 'green';
+      case 'active': return 'green';
+      case 'inactive': return 'gray';
       case 'rejected': return 'red';
       default: return 'gray';
     }
   };
 
-  // Ouvrir modal d'approbation
-  const handleApprove = (registration: PublicRegistration) => {
+  // Ouvrir modal de validation
+  const handleValidate = (registration: CommunityMemberRegistration) => {
     setSelectedRegistration(registration);
-    setSelectedWallet('');
     setAdminNotes('');
-    onApprovalOpen();
+    onValidateOpen();
   };
 
   // Ouvrir modal de rejet
-  const handleReject = (registration: PublicRegistration) => {
+  const handleReject = (registration: CommunityMemberRegistration) => {
     setSelectedRegistration(registration);
     setAdminNotes('');
     onRejectOpen();
   };
 
   // Voir les détails
-  const handleView = (registration: PublicRegistration) => {
+  const handleView = (registration: CommunityMemberRegistration) => {
     setSelectedRegistration(registration);
     onViewOpen();
   };
 
-  // Approuver une inscription
-  const confirmApproval = async () => {
-    if (!selectedRegistration || !selectedWallet) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez sélectionner un wallet autorisé',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
+  // Ouvrir modal d'édition
+  const handleEdit = (registration: CommunityMemberRegistration) => {
+    setEditedRegistration({ ...registration });
+    onEditOpen();
+  };
+
+  // Ouvrir modal de suppression
+  const handleDelete = (registration: CommunityMemberRegistration) => {
+    setSelectedRegistration(registration);
+    onDeleteOpen();
+  };
+
+  // Valider une inscription
+  const confirmValidation = async () => {
+    if (!selectedRegistration) return;
 
     try {
       setIsLoading(true);
 
-      // Mettre à jour l'inscription
       const { error: updateError } = await supabase
-        .from('public_registrations')
+        .from('community_members')
         .update({
-          status: 'approved',
-          wallet_address: selectedWallet,
-          notes: adminNotes,
-          processed_by: 'admin', // À remplacer par l'ID de l'admin connecté
-          processed_date: new Date().toISOString()
+          status: 'active',
+          updated_at: new Date().toISOString()
         })
         .eq('id', selectedRegistration.id);
 
       if (updateError) throw updateError;
 
-      // Créer le membre de la communauté
-      const walletData = availableWallets.find(w => w.wallet_address === selectedWallet);
-      if (walletData) {
-        await CryptocaVaultDB.createCommunityMember({
-          wallet_address: selectedWallet,
-          username: `${selectedRegistration.first_name}_${selectedRegistration.last_name}`.toLowerCase(),
-          first_name: selectedRegistration.first_name,
-          last_name: selectedRegistration.last_name,
-          email: selectedRegistration.email,
-          phone: selectedRegistration.phone,
-          registration_method: 'admin_approval'
-        });
-      }
-
       // Log d'audit
       await CryptocaVaultDB.createAuditLog({
-        action: 'registration_approved',
-        wallet_address: selectedWallet,
+        action: 'member_validated',
+        wallet_address: selectedRegistration.wallet_address || 'none',
         details: {
-          registrationId: selectedRegistration.id,
-          approvedBy: 'admin',
-          originalEmail: selectedRegistration.email
+          memberId: selectedRegistration.id,
+          validatedBy: 'admin',
+          originalStatus: selectedRegistration.status,
+          notes: adminNotes
         }
       });
 
       toast({
-        title: 'Inscription approuvée',
-        description: `${selectedRegistration.first_name} ${selectedRegistration.last_name} a été approuvé`,
+        title: 'Inscription validée',
+        description: `${selectedRegistration.username} a été validé avec succès`,
         status: 'success',
         duration: 5000,
         isClosable: true,
       });
 
-      onApprovalClose();
+      onValidateClose();
       fetchData(); // Recharger les données
 
     } catch (error: any) {
-      console.error('Erreur approbation:', error);
+      console.error('Erreur validation:', error);
       toast({
         title: 'Erreur',
-        description: 'Erreur lors de l\'approbation: ' + error.message,
+        description: 'Erreur lors de la validation: ' + error.message,
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -317,12 +305,10 @@ const AdminRegistrationsPage: React.FC = () => {
       setIsLoading(true);
 
       const { error } = await supabase
-        .from('public_registrations')
+        .from('community_members')
         .update({
           status: 'rejected',
-          notes: adminNotes,
-          processed_by: 'admin', // À remplacer par l'ID de l'admin connecté
-          processed_date: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
         .eq('id', selectedRegistration.id);
 
@@ -330,19 +316,19 @@ const AdminRegistrationsPage: React.FC = () => {
 
       // Log d'audit
       await CryptocaVaultDB.createAuditLog({
-        action: 'registration_rejected',
-        wallet_address: 'none',
+        action: 'member_rejected',
+        wallet_address: selectedRegistration.wallet_address || 'none',
         details: {
-          registrationId: selectedRegistration.id,
+          memberId: selectedRegistration.id,
           rejectedBy: 'admin',
           reason: adminNotes,
-          email: selectedRegistration.email
+          originalStatus: selectedRegistration.status
         }
       });
 
       toast({
         title: 'Inscription rejetée',
-        description: `La demande de ${selectedRegistration.first_name} ${selectedRegistration.last_name} a été rejetée`,
+        description: `La demande de ${selectedRegistration.username} a été rejetée`,
         status: 'info',
         duration: 5000,
         isClosable: true,
@@ -365,13 +351,122 @@ const AdminRegistrationsPage: React.FC = () => {
     }
   };
 
+  // Sauvegarder les modifications
+  const saveEdit = async () => {
+    if (!editedRegistration) return;
+
+    try {
+      setIsLoading(true);
+
+      const { error } = await supabase
+        .from('community_members')
+        .update({
+          username: editedRegistration.username,
+          email: editedRegistration.email,
+          phone: editedRegistration.phone,
+          wallet_address: editedRegistration.wallet_address,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editedRegistration.id);
+
+      if (error) throw error;
+
+      // Log d'audit
+      await CryptocaVaultDB.createAuditLog({
+        action: 'member_edited',
+        wallet_address: editedRegistration.wallet_address || 'none',
+        details: {
+          memberId: editedRegistration.id,
+          editedBy: 'admin',
+          changes: 'Member data updated'
+        }
+      });
+
+      toast({
+        title: 'Modifications sauvegardées',
+        description: `Les données de ${editedRegistration.username} ont été mises à jour`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      onEditClose();
+      fetchData(); // Recharger les données
+
+    } catch (error: any) {
+      console.error('Erreur sauvegarde:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la sauvegarde: ' + error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Supprimer une inscription
+  const confirmDelete = async () => {
+    if (!selectedRegistration) return;
+
+    try {
+      setIsLoading(true);
+
+      const { error } = await supabase
+        .from('community_members')
+        .delete()
+        .eq('id', selectedRegistration.id);
+
+      if (error) throw error;
+
+      // Log d'audit
+      await CryptocaVaultDB.createAuditLog({
+        action: 'member_deleted',
+        wallet_address: selectedRegistration.wallet_address || 'none',
+        details: {
+          memberId: selectedRegistration.id,
+          deletedBy: 'admin',
+          memberData: {
+            username: selectedRegistration.username,
+            email: selectedRegistration.email
+          }
+        }
+      });
+
+      toast({
+        title: 'Inscription supprimée',
+        description: `${selectedRegistration.username} a été supprimé du système`,
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      onDeleteClose();
+      fetchData(); // Recharger les données
+
+    } catch (error: any) {
+      console.error('Erreur suppression:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la suppression: ' + error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Container maxW="7xl" py={8}>
       <VStack spacing={8} align="stretch">
         {/* En-tête */}
         <Box>
-          <Heading size="xl" mb={2}>Administration des Inscriptions</Heading>
-          <Text color="gray.600">Gérez les demandes d'inscription à la communauté CryptocaVault</Text>
+          <Heading size="xl" mb={2}>Gestion des Inscriptions Communauté</Heading>
+          <Text color="gray.600">Administrez les inscriptions à la communauté CryptocaVault</Text>
         </Box>
 
         {/* Statistiques */}
@@ -385,16 +480,16 @@ const AdminRegistrationsPage: React.FC = () => {
             <StatNumber color="yellow.500">{stats.pending}</StatNumber>
           </Stat>
           <Stat>
-            <StatLabel>Approuvées</StatLabel>
-            <StatNumber color="green.500">{stats.approved}</StatNumber>
+            <StatLabel>Actifs</StatLabel>
+            <StatNumber color="green.500">{stats.active}</StatNumber>
           </Stat>
           <Stat>
-            <StatLabel>Rejetées</StatLabel>
+            <StatLabel>Inactifs</StatLabel>
+            <StatNumber color="gray.500">{stats.inactive}</StatNumber>
+          </Stat>
+          <Stat>
+            <StatLabel>Rejetés</StatLabel>
             <StatNumber color="red.500">{stats.rejected}</StatNumber>
-          </Stat>
-          <Stat>
-            <StatLabel>Aujourd'hui</StatLabel>
-            <StatNumber color="purple.500">{stats.today}</StatNumber>
           </Stat>
           <Stat>
             <StatLabel>Cette semaine</StatLabel>
@@ -427,14 +522,15 @@ const AdminRegistrationsPage: React.FC = () => {
                 <Select value={filter} onChange={(e) => setFilter(e.target.value)}>
                   <option value="all">Tous</option>
                   <option value="pending">En attente</option>
-                  <option value="approved">Approuvées</option>
-                  <option value="rejected">Rejetées</option>
+                  <option value="active">Actifs</option>
+                  <option value="inactive">Inactifs</option>
+                  <option value="rejected">Rejetés</option>
                 </Select>
               </FormControl>
               <FormControl>
                 <FormLabel>Recherche</FormLabel>
                 <Input
-                  placeholder="Nom, prénom ou email..."
+                  placeholder="Username, email ou wallet..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -455,12 +551,13 @@ const AdminRegistrationsPage: React.FC = () => {
               <Table variant="simple">
                 <Thead>
                   <Tr>
-                    <Th>Nom</Th>
+                    <Th>Utilisateur</Th>
                     <Th>Email</Th>
                     <Th>Téléphone</Th>
-                    <Th>Date</Th>
+                    <Th>Wallet</Th>
+                    <Th>Date d'inscription</Th>
                     <Th>Statut</Th>
-                    <Th>Wallet assigné</Th>
+                    <Th>NFT</Th>
                     <Th>Actions</Th>
                   </Tr>
                 </Thead>
@@ -470,13 +567,11 @@ const AdminRegistrationsPage: React.FC = () => {
                       <Td>
                         <VStack align="start" spacing={1}>
                           <Text fontWeight="semibold">
-                            {registration.first_name} {registration.last_name}
+                            {registration.username}
                           </Text>
-                          {registration.registration_ip && (
-                            <Text fontSize="xs" color="gray.500">
-                              IP: {registration.registration_ip}
-                            </Text>
-                          )}
+                          <Text fontSize="xs" color="gray.500">
+                            {registration.registration_method}
+                          </Text>
                         </VStack>
                       </Td>
                       <Td>
@@ -488,16 +583,8 @@ const AdminRegistrationsPage: React.FC = () => {
                       <Td>
                         <HStack>
                           <PhoneIcon boxSize={3} color="gray.400" />
-                          <Text fontSize="sm">{registration.phone}</Text>
+                          <Text fontSize="sm">{registration.phone || '-'}</Text>
                         </HStack>
-                      </Td>
-                      <Td>
-                        <Text fontSize="sm">{formatDate(registration.registration_date)}</Text>
-                      </Td>
-                      <Td>
-                        <Badge colorScheme={getStatusColor(registration.status)}>
-                          {registration.status}
-                        </Badge>
                       </Td>
                       <Td>
                         {registration.wallet_address ? (
@@ -510,7 +597,24 @@ const AdminRegistrationsPage: React.FC = () => {
                         )}
                       </Td>
                       <Td>
-                        <HStack spacing={2}>
+                        <Text fontSize="sm">{formatDate(registration.acceptance_timestamp)}</Text>
+                      </Td>
+                      <Td>
+                        <Badge colorScheme={getStatusColor(registration.status)}>
+                          {registration.status}
+                        </Badge>
+                      </Td>
+                      <Td>
+                        {registration.nft_minted ? (
+                          <Badge colorScheme="purple" size="sm">
+                            #{registration.nft_token_id}
+                          </Badge>
+                        ) : (
+                          <Text fontSize="sm" color="gray.400">-</Text>
+                        )}
+                      </Td>
+                      <Td>
+                        <HStack spacing={1}>
                           <Tooltip label="Voir détails">
                             <IconButton
                               aria-label="Voir"
@@ -520,17 +624,26 @@ const AdminRegistrationsPage: React.FC = () => {
                               onClick={() => handleView(registration)}
                             />
                           </Tooltip>
+                          <Tooltip label="Modifier">
+                            <IconButton
+                              aria-label="Modifier"
+                              icon={<EditIcon />}
+                              size="sm"
+                              variant="ghost"
+                              colorScheme="blue"
+                              onClick={() => handleEdit(registration)}
+                            />
+                          </Tooltip>
                           {registration.status === 'pending' && (
                             <>
-                              <Tooltip label="Approuver">
+                              <Tooltip label="Valider">
                                 <IconButton
-                                  aria-label="Approuver"
+                                  aria-label="Valider"
                                   icon={<CheckIcon />}
                                   size="sm"
                                   colorScheme="green"
                                   variant="ghost"
-                                  onClick={() => handleApprove(registration)}
-                                  isDisabled={availableWallets.length === 0}
+                                  onClick={() => handleValidate(registration)}
                                 />
                               </Tooltip>
                               <Tooltip label="Rejeter">
@@ -545,6 +658,16 @@ const AdminRegistrationsPage: React.FC = () => {
                               </Tooltip>
                             </>
                           )}
+                          <Tooltip label="Supprimer">
+                            <IconButton
+                              aria-label="Supprimer"
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              colorScheme="red"
+                              variant="ghost"
+                              onClick={() => handleDelete(registration)}
+                            />
+                          </Tooltip>
                         </HStack>
                       </Td>
                     </Tr>
@@ -560,65 +683,30 @@ const AdminRegistrationsPage: React.FC = () => {
             </Box>
           </CardBody>
         </Card>
-
-        {/* Informations sur les wallets disponibles */}
-        <Card bg={cardBg}>
-          <CardHeader>
-            <Heading size="md">Wallets Autorisés Disponibles ({availableWallets.length})</Heading>
-          </CardHeader>
-          <CardBody>
-            {availableWallets.length === 0 ? (
-              <Alert status="warning">
-                <AlertIcon />
-                Aucun wallet autorisé disponible. Vous devez d'abord ajouter des wallets dans le système.
-              </Alert>
-            ) : (
-              <Text color="gray.600">
-                {availableWallets.length} wallet(s) disponible(s) pour assignation
-              </Text>
-            )}
-          </CardBody>
-        </Card>
       </VStack>
 
-      {/* Modal d'approbation */}
-      <Modal isOpen={isApprovalOpen} onClose={onApprovalClose} size="lg">
+      {/* Modal de validation */}
+      <Modal isOpen={isValidateOpen} onClose={onValidateClose} size="md">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Approuver l'inscription</ModalHeader>
+          <ModalHeader>Valider l'inscription</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             {selectedRegistration && (
               <VStack spacing={4} align="stretch">
                 <Box p={4} bg="green.50" borderRadius="md">
                   <Text fontWeight="semibold">
-                    {selectedRegistration.first_name} {selectedRegistration.last_name}
+                    {selectedRegistration.username}
                   </Text>
                   <Text fontSize="sm" color="gray.600">{selectedRegistration.email}</Text>
-                  <Text fontSize="sm" color="gray.600">{selectedRegistration.phone}</Text>
                 </Box>
-
-                <FormControl isRequired>
-                  <FormLabel>Wallet à assigner</FormLabel>
-                  <Select
-                    placeholder="Sélectionnez un wallet autorisé"
-                    value={selectedWallet}
-                    onChange={(e) => setSelectedWallet(e.target.value)}
-                  >
-                    {availableWallets.map((wallet) => (
-                      <option key={wallet.id} value={wallet.wallet_address}>
-                        {wallet.wallet_address} - {wallet.first_name} {wallet.last_name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
 
                 <FormControl>
                   <FormLabel>Notes administratives (optionnel)</FormLabel>
                   <Textarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
-                    placeholder="Ajoutez des notes sur cette approbation..."
+                    placeholder="Ajoutez des notes sur cette validation..."
                     rows={3}
                   />
                 </FormControl>
@@ -626,23 +714,22 @@ const AdminRegistrationsPage: React.FC = () => {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onApprovalClose}>
+            <Button variant="ghost" mr={3} onClick={onValidateClose}>
               Annuler
             </Button>
             <Button
               colorScheme="green"
-              onClick={confirmApproval}
+              onClick={confirmValidation}
               isLoading={isLoading}
-              isDisabled={!selectedWallet}
             >
-              Confirmer l'approbation
+              Valider l'inscription
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
       {/* Modal de rejet */}
-      <Modal isOpen={isRejectOpen} onClose={onRejectClose} size="lg">
+      <Modal isOpen={isRejectOpen} onClose={onRejectClose} size="md">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Rejeter l'inscription</ModalHeader>
@@ -652,7 +739,7 @@ const AdminRegistrationsPage: React.FC = () => {
               <VStack spacing={4} align="stretch">
                 <Box p={4} bg="red.50" borderRadius="md">
                   <Text fontWeight="semibold">
-                    {selectedRegistration.first_name} {selectedRegistration.last_name}
+                    {selectedRegistration.username}
                   </Text>
                   <Text fontSize="sm" color="gray.600">{selectedRegistration.email}</Text>
                 </Box>
@@ -685,6 +772,78 @@ const AdminRegistrationsPage: React.FC = () => {
         </ModalContent>
       </Modal>
 
+      {/* Modal d'édition */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Modifier l'inscription</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {editedRegistration && (
+              <VStack spacing={4} align="stretch">
+                <FormControl isRequired>
+                  <FormLabel>Nom d'utilisateur</FormLabel>
+                  <Input
+                    value={editedRegistration.username}
+                    onChange={(e) => setEditedRegistration({
+                      ...editedRegistration,
+                      username: e.target.value
+                    })}
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Email</FormLabel>
+                  <Input
+                    type="email"
+                    value={editedRegistration.email}
+                    onChange={(e) => setEditedRegistration({
+                      ...editedRegistration,
+                      email: e.target.value
+                    })}
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Téléphone</FormLabel>
+                  <Input
+                    value={editedRegistration.phone || ''}
+                    onChange={(e) => setEditedRegistration({
+                      ...editedRegistration,
+                      phone: e.target.value
+                    })}
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Adresse Wallet</FormLabel>
+                  <Input
+                    value={editedRegistration.wallet_address || ''}
+                    onChange={(e) => setEditedRegistration({
+                      ...editedRegistration,
+                      wallet_address: e.target.value
+                    })}
+                    placeholder="0x..."
+                  />
+                </FormControl>
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onEditClose}>
+              Annuler
+            </Button>
+            <Button
+              colorScheme="blue"
+              onClick={saveEdit}
+              isLoading={isLoading}
+            >
+              Sauvegarder
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Modal de visualisation */}
       <Modal isOpen={isViewOpen} onClose={onViewClose} size="lg">
         <ModalOverlay />
@@ -696,12 +855,8 @@ const AdminRegistrationsPage: React.FC = () => {
               <VStack spacing={4} align="stretch">
                 <SimpleGrid columns={2} spacing={4}>
                   <Box>
-                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Prénom</Text>
-                    <Text>{selectedRegistration.first_name}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Nom</Text>
-                    <Text>{selectedRegistration.last_name}</Text>
+                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Nom d'utilisateur</Text>
+                    <Text>{selectedRegistration.username}</Text>
                   </Box>
                   <Box>
                     <Text fontWeight="semibold" fontSize="sm" color="gray.600">Email</Text>
@@ -709,11 +864,7 @@ const AdminRegistrationsPage: React.FC = () => {
                   </Box>
                   <Box>
                     <Text fontWeight="semibold" fontSize="sm" color="gray.600">Téléphone</Text>
-                    <Text>{selectedRegistration.phone}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Date d'inscription</Text>
-                    <Text>{formatDate(selectedRegistration.registration_date)}</Text>
+                    <Text>{selectedRegistration.phone || 'Non renseigné'}</Text>
                   </Box>
                   <Box>
                     <Text fontWeight="semibold" fontSize="sm" color="gray.600">Statut</Text>
@@ -721,38 +872,58 @@ const AdminRegistrationsPage: React.FC = () => {
                       {selectedRegistration.status}
                     </Badge>
                   </Box>
-                </SimpleGrid>
-
-                {selectedRegistration.registration_ip && (
                   <Box>
-                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Adresse IP</Text>
-                    <Text fontFamily="mono">{selectedRegistration.registration_ip}</Text>
+                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Date d'inscription</Text>
+                    <Text>{formatDate(selectedRegistration.acceptance_timestamp)}</Text>
                   </Box>
-                )}
+                  <Box>
+                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Méthode d'inscription</Text>
+                    <Text>{selectedRegistration.registration_method}</Text>
+                  </Box>
+                </SimpleGrid>
 
                 {selectedRegistration.wallet_address && (
                   <Box>
-                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Wallet assigné</Text>
-                    <Text fontFamily="mono">{selectedRegistration.wallet_address}</Text>
+                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Adresse Wallet</Text>
+                    <Text fontFamily="mono" fontSize="sm">{selectedRegistration.wallet_address}</Text>
                   </Box>
                 )}
 
-                {selectedRegistration.notes && (
+                {selectedRegistration.acceptance_ip && (
                   <Box>
-                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Notes administratives</Text>
-                    <Box p={3} bg="gray.50" borderRadius="md">
-                      <Text>{selectedRegistration.notes}</Text>
-                    </Box>
+                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Adresse IP d'inscription</Text>
+                    <Text fontFamily="mono" fontSize="sm">{selectedRegistration.acceptance_ip}</Text>
                   </Box>
                 )}
 
-                {selectedRegistration.processed_date && (
+                <Box>
+                  <Text fontWeight="semibold" fontSize="sm" color="gray.600">Charte acceptée</Text>
+                  <HStack>
+                    <Badge colorScheme={selectedRegistration.charter_accepted ? 'green' : 'red'}>
+                      {selectedRegistration.charter_accepted ? 'Oui' : 'Non'}
+                    </Badge>
+                    <Text fontSize="sm" color="gray.500">
+                      Version {selectedRegistration.charter_version}
+                    </Text>
+                  </HStack>
+                </Box>
+
+                {selectedRegistration.nft_minted && (
                   <Box>
-                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Traité le</Text>
-                    <Text>{formatDate(selectedRegistration.processed_date)}</Text>
-                    {selectedRegistration.processed_by && (
-                      <Text fontSize="sm" color="gray.500">Par: {selectedRegistration.processed_by}</Text>
-                    )}
+                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">NFT</Text>
+                    <HStack>
+                      <Badge colorScheme="purple">
+                        Token #{selectedRegistration.nft_token_id}
+                      </Badge>
+                      <Text fontSize="sm" color="gray.500">NFT généré</Text>
+                    </HStack>
+                  </Box>
+                )}
+
+                {selectedRegistration.updated_at && (
+                  <Box>
+                    <Text fontWeight="semibold" fontSize="sm" color="gray.600">Dernière mise à jour</Text>
+                    <Text fontSize="sm">{formatDate(selectedRegistration.updated_at)}</Text>
                   </Box>
                 )}
               </VStack>
@@ -763,6 +934,64 @@ const AdminRegistrationsPage: React.FC = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* AlertDialog de suppression */}
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={deleteRef}
+        onClose={onDeleteClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Supprimer l'inscription
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              {selectedRegistration && (
+                <VStack spacing={3} align="stretch">
+                  <Text>
+                    Êtes-vous sûr de vouloir supprimer définitivement l'inscription de :
+                  </Text>
+                  <Box p={3} bg="red.50" borderRadius="md" border="1px solid" borderColor="red.200">
+                    <Text fontWeight="semibold" color="red.800">
+                      {selectedRegistration.username}
+                    </Text>
+                    <Text fontSize="sm" color="red.600">
+                      {selectedRegistration.email}
+                    </Text>
+                    {selectedRegistration.wallet_address && (
+                      <Text fontSize="xs" fontFamily="mono" color="red.600">
+                        {selectedRegistration.wallet_address}
+                      </Text>
+                    )}
+                  </Box>
+                  <Alert status="warning" size="sm">
+                    <AlertIcon />
+                    <Text fontSize="sm">
+                      Cette action est irréversible. Toutes les données associées seront perdues.
+                    </Text>
+                  </Alert>
+                </VStack>
+              )}
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={deleteRef} onClick={onDeleteClose}>
+                Annuler
+              </Button>
+              <Button 
+                colorScheme="red" 
+                onClick={confirmDelete}
+                isLoading={isLoading}
+                ml={3}
+              >
+                Supprimer définitivement
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Container>
   );
 };

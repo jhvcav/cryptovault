@@ -41,7 +41,7 @@ const NFT_CONTRACT_ABI = [
   "event FidelityNFTClaimed(address indexed user, uint256 indexed tokenId)"
 ];
 
-const CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '0xe7778688E645d0795c71837C2d44e08A1B6f6c0A';
+const CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72';
 const BSC_RPC_URL = import.meta.env.VITE_BSC_RPC_URL || 'https://bsc-dataseed1.binance.org/';
 
 export interface NFTTier {

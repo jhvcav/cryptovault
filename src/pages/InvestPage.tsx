@@ -295,7 +295,7 @@ const InvestPage: React.FC = () => {
           <Lock size={48} className="text-yellow-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">NFT d'accès requis</h2>
           <p className="text-slate-400 mb-6">
-            Vous devez posséder un NFT d'accès pour utiliser les plans d'investissement.
+            Vous devez posséder un NFT d'accès pour utiliser les plans de récompense.
           </p>
           <Link
             to="/nft-collection"

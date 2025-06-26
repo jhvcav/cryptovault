@@ -161,40 +161,43 @@ contract CryptocaVaultNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard 
     // ========== FONCTIONS PUBLIQUES D'ACHAT AVEC TREASURY AUTO ==========
     
     function purchaseNFT(uint256 tier) external nonReentrant {
-        require(nftTiers[tier].active, "Tier non actif");
-        require(nftTiers[tier].minted < nftTiers[tier].supply, "Supply epuisee");
-        require(nftTiers[tier].price > 0, "Tier invalide pour achat");
-        require(!isSpecialTier[tier], "Tier special non achetable"); // Protection tiers speciaux
-        
-        uint256 price = nftTiers[tier].price;
-        
-        // Verifier que l'utilisateur a approuve le montant
-        require(
-            usdcToken.allowance(msg.sender, address(this)) >= price,
-            "Allowance USDC insuffisante"
-        );
-        
-        // Verifier que l'utilisateur a suffisamment d'USDC
-        require(
-            usdcToken.balanceOf(msg.sender) >= price,
-            "Balance USDC insuffisante"
-        );
-        
-        // Transferer les USDC directement vers le treasury
-        bool success = usdcToken.transferFrom(msg.sender, TREASURY_WALLET, price);
-        require(success, "Transfert USDC vers treasury echoue");
-        
-        // Mettre à jour les stats de revenus
-        totalRevenue += price;
-        tierRevenue[tier] += price;
-        
-        // Minter le NFT
-        _mintNFT(msg.sender, tier, false);
-        
-        // Emettre les evenements
-        emit NFTPurchased(msg.sender, _tokenIdCounter, tier, price);
-        emit RevenueGenerated(tier, price, TREASURY_WALLET);
-    }
+    require(nftTiers[tier].active, "Tier non actif");
+    require(nftTiers[tier].minted < nftTiers[tier].supply, "Supply epuisee");
+    require(nftTiers[tier].price > 0, "Tier invalide pour achat");
+    require(!isSpecialTier[tier], "Tier special non achetable");
+    
+    uint256 price = nftTiers[tier].price;
+    
+    // AJOUT : Conversion décimales
+    uint256 usdcPrice = price / 10**12; // 18→6 décimales
+
+    // Vérifications USDC (UNE SEULE FOIS avec usdcPrice)
+    require(
+        usdcToken.allowance(msg.sender, address(this)) >= usdcPrice,
+        "Allowance USDC insuffisante"
+    );
+    
+    // Verifier que l'utilisateur a suffisamment d'USDC
+    require(
+        usdcToken.balanceOf(msg.sender) >= usdcPrice,
+        "Balance USDC insuffisante"
+    );
+    
+    // Transferer les USDC directement vers le treasury
+    bool success = usdcToken.transferFrom(msg.sender, TREASURY_WALLET, usdcPrice);
+    require(success, "Transfert USDC vers treasury echoue");
+    
+    // Mettre à jour les stats de revenus
+    totalRevenue += price;
+    tierRevenue[tier] += price;
+    
+    // Minter le NFT
+    _mintNFT(msg.sender, tier, false);
+    
+    // Emettre les evenements
+    emit NFTPurchased(msg.sender, _tokenIdCounter, tier, price);
+    emit RevenueGenerated(tier, price, TREASURY_WALLET);
+}
     
     // FONCTION claimFidelityNFT pour supporter n'importe quel tier
     function claimFidelityNFT(address fidelUser) external onlyOwner {
@@ -603,10 +606,10 @@ contract CryptocaVaultNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard 
     }
     
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        require(_ownerOf(tokenId) != address(0), "Token inexistant");
-        
-        uint256 tier = nftToTier[tokenId];
-        return string(abi.encodePacked(nftTiers[tier].baseURI, Strings.toString(tokenId), ".json"));
+    require(_ownerOf(tokenId) != address(0), "Token inexistant");
+    
+    uint256 tier = nftToTier[tokenId];
+    return string(abi.encodePacked(nftTiers[tier].baseURI, Strings.toString(tier), ".json"));                                                
     }
     
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
