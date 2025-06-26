@@ -63,6 +63,7 @@ import { ExternalLinkIcon, InfoIcon, EditIcon, AddIcon, CheckIcon, WarningIcon }
 // Imports des hooks et services
 import { useNFTContract, NFTTier, RevenueStats } from '../hooks/useNFTContract';
 import { usePinata, pinataService } from '../services/pinataService';
+import FidelityManager from './FidelityManager';
 
 const NFTContractManager: React.FC = () => {
   // États pour les données du contrat
@@ -458,8 +459,8 @@ const NFTContractManager: React.FC = () => {
               </Heading>
               <HStack spacing={4}>
                 <Text color="gray.600" fontSize="sm">
-                  Contrat : 0xe7778688E645d0795c71837C2d44e08A1B6f6c0A
-                  <Link href="https://bscscan.com/address/0xe7778688E645d0795c71837C2d44e08A1B6f6c0A" isExternal ml={2}>
+                  Contrat : 0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72
+                  <Link href="https://bscscan.com/address/0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72" isExternal ml={2}>
                     <ExternalLinkIcon />
                   </Link>
                 </Text>
@@ -569,7 +570,13 @@ const NFTContractManager: React.FC = () => {
             {isOwner && <Tab>➕ Créer Nouveau Tier</Tab>}
             <Tab>🔍 Vérification Pinata</Tab>
             <Tab>💰 Analytics Avancées</Tab>
+            <Tab>🎁 Gestion Fidélité</Tab>
           </TabList>
+
+          <TabPanel>
+            <FidelityManager />
+          </TabPanel>
+
 
           <TabPanels>
             {/* Onglet 1: Gestion des Tiers */}

@@ -281,7 +281,7 @@ const InvestPage: React.FC = () => {
           <Shield size={48} className="text-blue-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Connectez votre wallet</h2>
           <p className="text-slate-400 mb-4">
-            Connectez votre wallet MetaMask pour accéder aux plans d'investissement.
+            Connectez votre wallet MetaMask pour accéder aux plans de récompenses.
           </p>
         </div>
       </div>
@@ -316,10 +316,10 @@ const InvestPage: React.FC = () => {
         <section className="mb-12">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-4">
-              Plans d'Investissement
+              Plans de récompenses
             </h1>
             <p className="text-slate-400 text-lg">
-              Choisissez votre plan et maximisez vos rendements avec vos bonus NFT
+              Choisissez votre plan et maximisez vos récompenses avec vos bonus NFT
             </p>
           </div>
 
@@ -375,7 +375,7 @@ const InvestPage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Shield className="text-blue-400" size={24} />
                 <h2 className="text-2xl font-bold text-white">
-                  Plans d'Investissement
+                  Plans de récompenses accessibles
                 </h2>
               </div>
               <div className="bg-blue-600 text-white px-4 py-2 rounded-full font-bold text-lg">

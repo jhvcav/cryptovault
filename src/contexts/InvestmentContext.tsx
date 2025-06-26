@@ -398,7 +398,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
     if (!stakingContract) throw new Error('Contract not initialized');
     
     const stakeId = parseInt(investmentId);
-    if (isNaN(stakeId)) throw new Error('ID d\'investissement invalide');
+    if (isNaN(stakeId)) throw new Error('ID dépot invalide');
     
     try {
       const signer = await (new ethers.BrowserProvider(window.ethereum as any)).getSigner();
@@ -537,7 +537,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
         });
       
       setActiveInvestments(updatedInvestments);
-      console.log("Investissements mis à jour!");
+      console.log("Récompenses mises à jour!");
     } catch (refreshError) {
       console.error("Erreur lors de la mise à jour des récompenses:", refreshError);
       // On continue quand même car l'investissement a réussi
@@ -545,7 +545,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
     
     return true;
   } catch (error) {
-    console.error('Erreur lors de l\'investissement:', error);
+    console.error('Erreur lors du dépot:', error);
     throw error; // Relancer l'erreur pour que handleInvest puisse la gérer
   }
 };
@@ -566,7 +566,7 @@ const calculateReturns = async (stakeId: number): Promise<number> => {
   if (!stakingContract) throw new Error('Contract not initialized');
   
   const stakeId = parseInt(investmentId);
-  if (isNaN(stakeId)) throw new Error('ID d\'investissement invalide');
+  if (isNaN(stakeId)) throw new Error('ID de récompense invalide');
   
   try {
     // Vérifier si la période de blocage est terminée

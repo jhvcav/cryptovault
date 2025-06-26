@@ -68,70 +68,73 @@ const CommunityRegistrationPage: React.FC = () => {
 
   // Responsive values
   const containerMaxW = useBreakpointValue({ base: 'sm', md: 'lg', lg: 'xl' });
-  const cardPadding = useBreakpointValue({ base: 4, md: 8, lg: 10 });
-  const headingSize = useBreakpointValue({ base: 'lg', md: 'xl', lg: '2xl' });
-  const buttonSize = useBreakpointValue({ base: 'md', md: 'lg' });
-  const buttonFontSize = useBreakpointValue({ base: 'sm', md: 'md', lg: 'lg' });
-  const iconSize = useBreakpointValue({ base: 'md', md: 'lg', lg: 'xl' });
-  const buttonHeight = useBreakpointValue({ base: '12', md: '14', lg: '16' });
+  const cardPadding = useBreakpointValue({ base: 6, md: 10 });
+  const headingSize = useBreakpointValue({ base: 'xl', md: '2xl' });
 
   // Fonction pour envoyer une notification email à l'administrateur
-  const sendAdminNotification = async (memberData: any) => {
-    try {
-      console.log('📧 Envoi notification admin pour:', memberData.username);
-      
-      const response = await fetch('/api/send-admin-notification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          memberData: {
-            username: memberData.username,
-            email: memberData.email,
-            phone: memberData.phone,
-            registrationDate: memberData.acceptance_timestamp,
-            registrationIP: memberData.acceptance_ip
-          }
-        })
-      });
-
-      if (!response.ok) {
-        let errorMessage = `Erreur HTTP ${response.status}`;
-        
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-          console.error('❌ Erreur API:', errorData);
-        } catch (parseError) {
-          console.warn('Impossible de parser la réponse d\'erreur');
+  // Fonction temporaire pour envoyer une notification email à l'administrateur
+// Fonction finale pour envoyer une notification email à l'administrateur
+const sendAdminNotification = async (memberData: any) => {
+  try {
+    console.log('📧 Envoi notification admin pour:', memberData.username);
+    
+    const response = await fetch('/api/send-admin-notification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        memberData: {
+          username: memberData.username,
+          email: memberData.email,
+          phone: memberData.phone,
+          registrationDate: memberData.acceptance_timestamp,
+          registrationIP: memberData.acceptance_ip
         }
-        
-        throw new Error(errorMessage);
-      }
+      })
+    });
 
-      const result = await response.json();
+    // Vérifier si la réponse est OK
+    if (!response.ok) {
+      let errorMessage = `Erreur HTTP ${response.status}`;
       
-      if (result.fallback) {
-        console.warn('⚠️ Email envoyé en mode fallback:', result.message);
-      } else {
-        console.log('✅ Email admin envoyé avec succès:', result.message);
+      // Essayer de parser la réponse d'erreur
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+        console.error('❌ Erreur API:', errorData);
+      } catch (parseError) {
+        console.warn('Impossible de parser la réponse d\'erreur');
       }
       
-      return result;
-
-    } catch (error) {
-      console.error('❌ Erreur notification admin:', error);
-      
-      if (error.message.includes('fetch')) {
-        console.error('🔍 Vérifiez que les deux serveurs tournent:');
-        console.error('   - Backend: http://localhost:3001/health');
-        console.error('   - Frontend: http://localhost:5173');
-      }
-      
-      throw error;
+      throw new Error(errorMessage);
     }
-  };
+
+    // Parser la réponse de succès
+    const result = await response.json();
+    
+    if (result.fallback) {
+      console.warn('⚠️ Email envoyé en mode fallback:', result.message);
+    } else {
+      console.log('✅ Email admin envoyé avec succès:', result.message);
+    }
+    
+    return result;
+
+  } catch (error) {
+    console.error('❌ Erreur notification admin:', error);
+    
+    // Informations de debug
+    if (error.message.includes('fetch')) {
+      console.error('🔍 Vérifiez que les deux serveurs tournent:');
+      console.error('   - Backend: http://localhost:3001/health');
+      console.error('   - Frontend: http://localhost:5173');
+    }
+    
+    // Ne pas faire échouer l'inscription
+    throw error;
+  }
+};
 
   // Fonction pour obtenir l'IP utilisateur
   const getUserIP = async (): Promise<string> => {
@@ -170,86 +173,88 @@ const CommunityRegistrationPage: React.FC = () => {
     );
   };
 
-  // Fonction d'inscription simplifiée
-  const registerCommunityMember = async () => {
-    try {
-      setIsLoading(true);
-      setError('');
+  // Enregistrer l'inscription
+  // Fonction d'inscription simplifiée (remplace registerCommunityMember)
+const registerCommunityMember = async () => {
+  try {
+    setIsLoading(true);
+    setError('');
 
-      // Vérifier si l'email n'est pas déjà utilisé
-      const { data: existingEmailData, error: checkEmailError } = await supabase
-        .from('community_members')
-        .select('email')
-        .eq('email', formData.email.trim().toLowerCase());
+    // Vérifier si l'email n'est pas déjà utilisé
+    const { data: existingEmailData, error: checkEmailError } = await supabase
+      .from('community_members')
+      .select('email')
+      .eq('email', formData.email.trim().toLowerCase());
 
-      if (checkEmailError && checkEmailError.code !== 'PGRST116') {
-        console.error('Erreur vérification email:', checkEmailError);
-        setError('Erreur lors de la vérification de l\'email.');
-        return;
-      }
-
-      if (existingEmailData && existingEmailData.length > 0) {
-        setError('Cette adresse email est déjà utilisée pour une inscription.');
-        return;
-      }
-
-      // Vérifier si le téléphone n'est pas déjà utilisé (si renseigné)
-      if (formData.phone.trim()) {
-        const { data: existingPhoneData, error: checkPhoneError } = await supabase
-          .from('community_members')
-          .select('phone')
-          .eq('phone', formData.phone.trim());
-
-        if (checkPhoneError && checkPhoneError.code !== 'PGRST116') {
-          console.error('Erreur vérification téléphone:', checkPhoneError);
-          setError('Erreur lors de la vérification du téléphone.');
-          return;
-        }
-
-        if (existingPhoneData && existingPhoneData.length > 0) {
-          setError('Ce numéro de téléphone est déjà utilisé pour une inscription.');
-          return;
-        }
-      }
-
-      // Créer l'inscription
-      const { data, error: insertError } = await supabase
-        .from('community_members')
-        .insert([{
-          username: formData.username.trim(),
-          email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim() || null,
-          acceptance_ip: null,
-          charter_accepted: true,
-          charter_version: '1.0',
-          acceptance_timestamp: new Date().toISOString(),
-          status: 'pending',
-          registration_method: 'public'
-        }])
-        .select()
-        .single();
-
-      if (insertError) {
-        throw new Error('Erreur lors de l\'enregistrement: ' + insertError.message);
-      }
-
-      // Envoyer un email de notification à l'administrateur
-      try {
-        await sendAdminNotification(data);
-      } catch (emailError) {
-        console.error('Erreur envoi email admin:', emailError);
-      }
-
-      setSuccess('Inscription réussie ! Vous recevrez bientôt les informations pour rejoindre notre groupe et formations.');
-      setCurrentStep(3);
-
-    } catch (error: any) {
-      console.error('Erreur inscription:', error);
-      setError('Erreur lors de l\'inscription: ' + (error.message || 'Erreur inconnue'));
-    } finally {
-      setIsLoading(false);
+    if (checkEmailError && checkEmailError.code !== 'PGRST116') {
+      console.error('Erreur vérification email:', checkEmailError);
+      setError('Erreur lors de la vérification de l\'email.');
+      return;
     }
-  };
+
+    if (existingEmailData && existingEmailData.length > 0) {
+      setError('Cette adresse email est déjà utilisée pour une inscription.');
+      return;
+    }
+
+    // Vérifier si le téléphone n'est pas déjà utilisé (si renseigné)
+    if (formData.phone.trim()) {
+      const { data: existingPhoneData, error: checkPhoneError } = await supabase
+        .from('community_members')
+        .select('phone')
+        .eq('phone', formData.phone.trim());
+
+      if (checkPhoneError && checkPhoneError.code !== 'PGRST116') {
+        console.error('Erreur vérification téléphone:', checkPhoneError);
+        setError('Erreur lors de la vérification du téléphone.');
+        return;
+      }
+
+      if (existingPhoneData && existingPhoneData.length > 0) {
+        setError('Ce numéro de téléphone est déjà utilisé pour une inscription.');
+        return;
+      }
+    }
+
+    // Créer l'inscription SANS récupérer l'IP côté client
+    const { data, error: insertError } = await supabase
+      .from('community_members')
+      .insert([{
+        username: formData.username.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim() || null,
+        acceptance_ip: null, // L'IP sera gérée côté serveur dans l'email
+        charter_accepted: true,
+        charter_version: '1.0',
+        acceptance_timestamp: new Date().toISOString(),
+        status: 'pending',
+        registration_method: 'public'
+      }])
+      .select()
+      .single();
+
+    if (insertError) {
+      throw new Error('Erreur lors de l\'enregistrement: ' + insertError.message);
+    }
+
+    // Envoyer un email de notification à l'administrateur
+    try {
+      await sendAdminNotification(data);
+    } catch (emailError) {
+      console.error('Erreur envoi email admin:', emailError);
+      // Ne pas faire échouer l'inscription si l'email échoue
+    }
+
+    setSuccess('Inscription réussie ! Vous recevrez bientôt les informations pour rejoindre notre groupe et formations.');
+    setCurrentStep(3);
+
+  } catch (error: any) {
+    console.error('Erreur inscription:', error);
+    setError('Erreur lors de l\'inscription: ' + (error.message || 'Erreur inconnue'));
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Gestion de la soumission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -285,7 +290,7 @@ const CommunityRegistrationPage: React.FC = () => {
         minH="100vh"
         align="center"
         justify="center"
-        p={{ base: 2, md: 4 }}
+        p={{ base: 4, md: 4 }}
         position="relative"
         zIndex={1}
       >
@@ -294,7 +299,7 @@ const CommunityRegistrationPage: React.FC = () => {
             bg={cardBg}
             backdropFilter="blur(20px)"
             border="1px solid rgba(255, 255, 255, 0.2)"
-            borderRadius={{ base: 'xl', md: '2xl', lg: '3xl' }}
+            borderRadius={{ base: '2xl', md: '3xl' }}
             shadow="2xl"
             p={cardPadding}
             position="relative"
@@ -302,22 +307,22 @@ const CommunityRegistrationPage: React.FC = () => {
             w="full"
           >
             {/* En-tête */}
-            <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+            <VStack spacing={6} align="stretch">
               <Box textAlign="center">
                 <Box
-                  p={{ base: 3, md: 4, lg: 6 }}
+                  p={{ base: 4, md: 6 }}
                   bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                   rounded="full"
                   shadow="xl"
-                  w={{ base: 14, md: 16, lg: 20 }}
-                  h={{ base: 14, md: 16, lg: 20 }}
+                  w={{ base: 16, md: 20 }}
+                  h={{ base: 16, md: 20 }}
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
                   mx="auto"
                   mb={4}
                 >
-                  <Text fontSize={{ base: "xl", md: "2xl", lg: "4xl" }} fontWeight="bold" color="white">🌟</Text>
+                  <Text fontSize={{ base: "2xl", md: "4xl" }} fontWeight="bold" color="white">🌟</Text>
                 </Box>
                 
                 <Heading
@@ -328,17 +333,15 @@ const CommunityRegistrationPage: React.FC = () => {
                   fontWeight="800"
                   lineHeight="1.2"
                   mb={2}
-                  px={{ base: 2, md: 0 }}
                 >
                   Rejoindre la Communauté RMR-M
                 </Heading>
                 
                 <Text
-                  fontSize={{ base: "xs", md: "sm", lg: "lg" }}
+                  fontSize={{ base: "sm", md: "lg" }}
                   color="gray.600"
                   textAlign="center"
                   px={{ base: 2, md: 0 }}
-                  lineHeight={{ base: "1.3", md: "1.5" }}
                 >
                   Vous avez été invité(e) à rejoindre notre communauté privée d'éducation crypto
                 </Text>
@@ -346,7 +349,7 @@ const CommunityRegistrationPage: React.FC = () => {
 
               {/* Barre de progression */}
               <Box>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="orange.600" mb={2}>
+                <Text fontSize="sm" color="orange.600" mb={2}>
                   Étape {currentStep} sur 3
                 </Text>
                 <Progress 
@@ -361,50 +364,50 @@ const CommunityRegistrationPage: React.FC = () => {
               {error && (
                 <Alert status="error" borderRadius="xl">
                   <AlertIcon />
-                  <Text fontSize={{ base: "xs", md: "sm" }}>{error}</Text>
+                  <Text fontSize={{ base: "sm", md: "md" }}>{error}</Text>
                 </Alert>
               )}
 
               {success && (
                 <Alert status="success" borderRadius="xl">
                   <AlertIcon />
-                  <Text fontSize={{ base: "xs", md: "sm" }}>{success}</Text>
+                  <Text fontSize={{ base: "sm", md: "md" }}>{success}</Text>
                 </Alert>
               )}
 
               {/* Étape 1: Présentation Charte */}
               {currentStep === 1 && !success && (
                 <Box>
-                  <Heading size={{ base: "md", md: "lg" }} mb={4} color="orange.600">
+                  <Heading size="lg" mb={4} color="orange.600">
                     📋 Charte de la Communauté
                   </Heading>
                   
-                  <Box bg="blue.50" borderRadius="xl" p={{ base: 4, md: 6 }} mb={4}>
-                    <Heading size={{ base: "sm", md: "md" }} color="blue.800" mb={3}>
+                  <Box bg="blue.50" borderRadius="xl" p={6} mb={4}>
+                    <Heading size="md" color="blue.800" mb={3}>
                       Points Clés à Retenir :
                     </Heading>
                     <VStack spacing={3} align="start">
-                      <HStack align="start">
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>🕘</Text>
-                        <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
+                      <HStack>
+                        <Text fontSize="xl">🕘</Text>
+                        <Text fontSize="sm" color="blue.700">
                           <Text as="span" fontWeight="bold">Formations quotidiennes</Text> : Tous les soirs à 21h30 (GMT+3)
                         </Text>
                       </HStack>
-                      <HStack align="start">
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>📅</Text>
-                        <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
+                      <HStack>
+                        <Text fontSize="xl">📅</Text>
+                        <Text fontSize="sm" color="blue.700">
                           <Text as="span" fontWeight="bold">Règle d'absence</Text> : Maximum 4 absences sur 6 sessions
                         </Text>
                       </HStack>
-                      <HStack align="start">
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>🤝</Text>
-                        <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
+                      <HStack>
+                        <Text fontSize="xl">🤝</Text>
+                        <Text fontSize="sm" color="blue.700">
                           <Text as="span" fontWeight="bold">Respect absolu</Text> : Aucune insulte, provocation ou commentaire haineux
                         </Text>
                       </HStack>
-                      <HStack align="start">
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>💪</Text>
-                        <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
+                      <HStack>
+                        <Text fontSize="xl">💪</Text>
+                        <Text fontSize="sm" color="blue.700">
                           <Text as="span" fontWeight="bold">Responsabilité personnelle</Text> : Vous êtes responsable de toutes vos décisions
                         </Text>
                       </HStack>
@@ -412,17 +415,11 @@ const CommunityRegistrationPage: React.FC = () => {
                   </Box>
 
                   <Button
-                    leftIcon={<Icon as={ExternalLinkIcon} boxSize={{ base: 3, md: 4 }} />}
+                    leftIcon={<Icon as={ExternalLinkIcon} />}
                     colorScheme="blue"
                     variant="outline"
                     onClick={onCharterOpen}
                     mb={6}
-                    size={buttonSize}
-                    fontSize={buttonFontSize}
-                    h={buttonHeight}
-                    w="full"
-                    whiteSpace="normal"
-                    textAlign="center"
                   >
                     Lire la Charte Complète
                   </Button>
@@ -431,24 +428,19 @@ const CommunityRegistrationPage: React.FC = () => {
                     onClick={startRegistration}
                     bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                     color="white"
-                    size={buttonSize}
+                    size="lg"
                     width="full"
                     _hover={{
                       bg: "linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%)",
                       transform: 'translateY(-2px)',
                     }}
                     borderRadius="xl"
-                    h={buttonHeight}
-                    fontSize={buttonFontSize}
+                    py={6}
+                    fontSize="lg"
                     fontWeight="600"
-                    leftIcon={<Text fontSize={iconSize}>📝</Text>}
-                    whiteSpace="normal"
-                    textAlign="center"
-                    px={{ base: 4, md: 6 }}
+                    leftIcon={<Text fontSize="xl">📝</Text>}
                   >
-                    <Text lineHeight="1.2">
-                      M'inscrire à la Communauté
-                    </Text>
+                    M'inscrire à la Communauté
                   </Button>
                 </Box>
               )}
@@ -456,14 +448,14 @@ const CommunityRegistrationPage: React.FC = () => {
               {/* Étape 2: Formulaire d'inscription */}
               {currentStep === 2 && !success && (
                 <Box as="form" onSubmit={handleSubmit}>
-                  <Heading size={{ base: "md", md: "lg" }} mb={6} color="orange.600">
+                  <Heading size="lg" mb={6} color="orange.600">
                     📝 Inscription à la Communauté
                   </Heading>
                   
-                  <VStack spacing={{ base: 4, md: 6 }}>
+                  <VStack spacing={6}>
                     {/* Informations utilisateur */}
                     <FormControl isRequired>
-                      <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
+                      <FormLabel color="white" fontWeight="600">
                         Nom d'utilisateur
                       </FormLabel>
                       <Input
@@ -475,12 +467,11 @@ const CommunityRegistrationPage: React.FC = () => {
                         color="black"
                         borderColor="gray.200"
                         _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
-                        size={{ base: "md", md: "lg" }}
                       />
                     </FormControl>
 
                     <FormControl isRequired>
-                      <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
+                      <FormLabel color="white" fontWeight="600">
                         Email de contact
                       </FormLabel>
                       <Input
@@ -493,12 +484,11 @@ const CommunityRegistrationPage: React.FC = () => {
                         color="black"
                         borderColor="gray.200"
                         _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
-                        size={{ base: "md", md: "lg" }}
                       />
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
+                      <FormLabel color="white" fontWeight="600">
                         Téléphone (pour signalement absences)
                       </FormLabel>
                       <Input
@@ -511,13 +501,12 @@ const CommunityRegistrationPage: React.FC = () => {
                         color="black"
                         borderColor="gray.200"
                         _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
-                        size={{ base: "md", md: "lg" }}
                       />
                     </FormControl>
 
                     {/* Acceptations obligatoires */}
                     <Box w="full">
-                      <Heading size={{ base: "sm", md: "md" }} mb={4} color="orange.600">
+                      <Heading size="md" mb={4} color="orange.600">
                         Acceptations Obligatoires
                       </Heading>
                       
@@ -526,9 +515,9 @@ const CommunityRegistrationPage: React.FC = () => {
                           isChecked={formData.charterAccepted}
                           onChange={(e) => handleInputChange('charterAccepted', e.target.checked)}
                           colorScheme="purple"
-                          size={{ base: "sm", md: "md" }}
+                          size="md"
                         >
-                          <Text fontSize={{ base: "xs", md: "sm" }} color="white" lineHeight="1.4">
+                          <Text fontSize="sm" color="white">
                             J'ai lu et j'accepte intégralement la{' '}
                             <Link color="purple.300" onClick={onCharterOpen} textDecoration="underline">
                               Charte de la Communauté RMR
@@ -540,9 +529,9 @@ const CommunityRegistrationPage: React.FC = () => {
                           isChecked={formData.participationConfirmed}
                           onChange={(e) => handleInputChange('participationConfirmed', e.target.checked)}
                           colorScheme="purple"
-                          size={{ base: "sm", md: "md" }}
+                          size="md"
                         >
-                          <Text fontSize={{ base: "xs", md: "sm" }} color="white" lineHeight="1.4">
+                          <Text fontSize="sm" color="white">
                             Je m'engage à participer aux formations quotidiennes (21h30 GMT+3) 
                             et à respecter la règle des absences (max 4/6 sessions)
                           </Text>
@@ -552,9 +541,9 @@ const CommunityRegistrationPage: React.FC = () => {
                           isChecked={formData.responsibilityAccepted}
                           onChange={(e) => handleInputChange('responsibilityAccepted', e.target.checked)}
                           colorScheme="orange"
-                          size={{ base: "sm", md: "md" }}
+                          size="md"
                         >
-                          <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium" color="white" lineHeight="1.4">
+                          <Text fontSize="sm" fontWeight="medium" color="white">
                             J'accepte la responsabilité totale de mes décisions d'investissement 
                             et comprends que toute décision sera ma décision personnelle
                           </Text>
@@ -564,9 +553,9 @@ const CommunityRegistrationPage: React.FC = () => {
                           isChecked={formData.respectConfirmed}
                           onChange={(e) => handleInputChange('respectConfirmed', e.target.checked)}
                           colorScheme="purple"
-                          size={{ base: "sm", md: "md" }}
+                          size="md"
                         >
-                          <Text fontSize={{ base: "xs", md: "sm" }} color="white" lineHeight="1.4">
+                          <Text fontSize="sm" color="white">
                             Je m'engage à maintenir un comportement respectueux en toutes 
                             circonstances au sein de la communauté
                           </Text>
@@ -577,12 +566,12 @@ const CommunityRegistrationPage: React.FC = () => {
                     {/* Informations importantes */}
                     <Box bg="blue.50" p={4} borderRadius="xl" w="full">
                       <HStack align="start">
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>📞</Text>
+                        <Text fontSize="xl">📞</Text>
                         <VStack align="start" spacing={1}>
-                          <Text fontWeight="bold" color="blue.800" fontSize={{ base: "xs", md: "sm" }}>
+                          <Text fontWeight="bold" color="blue.800">
                             Canaux de Communication
                           </Text>
-                          <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
+                          <Text fontSize="sm" color="blue.700">
                             Pour signaler vos absences, utilisez : WhatsApp, SMS, Téléphone, 
                             Email, Telegram ou Messenger. Les contacts vous seront fournis 
                             après votre inscription.
@@ -592,25 +581,23 @@ const CommunityRegistrationPage: React.FC = () => {
                     </Box>
 
                     {/* Boutons d'action */}
-                    <VStack spacing={3} w="full">
+                    <HStack spacing={4} w="full">
                       <Button
                         variant="outline"
-                        size={buttonSize}
+                        size="lg"
                         onClick={() => setCurrentStep(1)}
                         borderColor="white"
                         color="white"
                         _hover={{ bg: "rgba(255,255,255,0.1)" }}
                         borderRadius="xl"
-                        w="full"
-                        h={buttonHeight}
-                        fontSize={buttonFontSize}
+                        flex={1}
                       >
                         Retour
                       </Button>
 
                       <Button
                         type="submit"
-                        size={buttonSize}
+                        size="lg"
                         bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                         color="white"
                         _hover={{
@@ -619,23 +606,17 @@ const CommunityRegistrationPage: React.FC = () => {
                           bg: 'linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%)',
                         }}
                         isLoading={isLoading}
-                        loadingText="Inscription..."
+                        loadingText="Inscription en cours..."
                         disabled={!isFormValid() || isLoading}
                         borderRadius="xl"
-                        fontSize={buttonFontSize}
+                        fontSize="lg"
                         fontWeight="600"
-                        leftIcon={<Text fontSize={iconSize}>🌟</Text>}
-                        w="full"
-                        h={buttonHeight}
-                        whiteSpace="normal"
-                        textAlign="center"
-                        px={{ base: 4, md: 6 }}
+                        leftIcon={<Text fontSize="xl">🌟</Text>}
+                        flex={2}
                       >
-                        <Text lineHeight="1.2">
-                          Confirmer mon Inscription
-                        </Text>
+                        Confirmer mon Inscription
                       </Button>
-                    </VStack>
+                    </HStack>
                   </VStack>
                 </Box>
               )}
@@ -643,31 +624,31 @@ const CommunityRegistrationPage: React.FC = () => {
               {/* Étape 3: Message de succès */}
               {success && currentStep === 3 && (
                 <Box textAlign="center">
-                  <Box bg="green.50" borderRadius="xl" p={{ base: 6, md: 8 }}>
-                    <Text fontSize={{ base: "3xl", md: "4xl", lg: "5xl" }} mb={4}>🎉</Text>
-                    <Heading size={{ base: "lg", md: "xl" }} color="green.800" mb={4}>
+                  <Box bg="green.50" borderRadius="xl" p={8}>
+                    <Text fontSize="5xl" mb={4}>🎉</Text>
+                    <Heading size="xl" color="green.800" mb={4}>
                       Bienvenue dans la Communauté RMR-M !
                     </Heading>
                     <VStack spacing={3} color="green.700">
                       <HStack>
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>✅</Text>
-                        <Text fontSize={{ base: "xs", md: "sm" }}>Votre inscription a été enregistrée avec succès</Text>
+                        <Text fontSize="xl">✅</Text>
+                        <Text>Votre inscription a été enregistrée avec succès</Text>
                       </HStack>
                       <HStack>
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>✅</Text>
-                        <Text fontSize={{ base: "xs", md: "sm" }}>Vous recevrez bientôt un email de bienvenue</Text>
+                        <Text fontSize="xl">✅</Text>
+                        <Text>Vous recevrez bientôt un email de bienvenue</Text>
                       </HStack>
                       <HStack>
-                        <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>✅</Text>
-                        <Text fontSize={{ base: "xs", md: "sm" }}>Les liens pour rejoindre nos groupes vous seront envoyés</Text>
+                        <Text fontSize="xl">✅</Text>
+                        <Text>Les liens pour rejoindre nos groupes vous seront envoyés</Text>
                       </HStack>
                     </VStack>
                     
                     <Box mt={6} bg="blue.50" borderRadius="lg" p={4}>
-                      <Heading size={{ base: "sm", md: "md" }} color="blue.800" mb={2}>
+                      <Heading size="md" color="blue.800" mb={2}>
                         📅 Prochaines Étapes :
                       </Heading>
-                      <VStack spacing={2} fontSize={{ base: "xs", md: "sm" }} color="blue.700">
+                      <VStack spacing={2} fontSize="sm" color="blue.700">
                         <Text>1. Attendre l'email de confirmation avec les détails</Text>
                         <Text>2. Rejoindre le groupe WhatsApp</Text>
                         <Text>3. Participer à la prochaine formation webinaire (21h30 GMT+4)</Text>
@@ -683,16 +664,16 @@ const CommunityRegistrationPage: React.FC = () => {
       </Flex>
 
       {/* Modal Charte */}
-      <Modal isOpen={isCharterOpen} onClose={onCharterClose} size={{ base: "full", md: "xl" }}>
+      <Modal isOpen={isCharterOpen} onClose={onCharterClose} size="xl">
         <ModalOverlay />
-        <ModalContent maxH="80vh" mx={{ base: 2, md: 0 }}>
-          <ModalHeader fontSize={{ base: "md", md: "lg" }}>Charte de la Communauté RMR</ModalHeader>
+        <ModalContent maxH="80vh">
+          <ModalHeader>Charte de la Communauté RMR</ModalHeader>
           <ModalCloseButton />
           <ModalBody overflow="auto">
             <VStack spacing={4} align="start">
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2}>1. Participation aux Formations</Heading>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" lineHeight="1.4">
+                <Heading size="md" mb={2}>1. Participation aux Formations</Heading>
+                <Text fontSize="sm" color="gray.600">
                   • Horaire : Tous les soirs à 21h30 (GMT+3)<br/>
                   • Tolérance : 4 absences maximum sur 6 sessions<br/>
                   • Signalement obligatoire des absences
@@ -700,8 +681,8 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
               
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2}>2. Respect et Comportement</Heading>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" lineHeight="1.4">
+                <Heading size="md" mb={2}>2. Respect et Comportement</Heading>
+                <Text fontSize="sm" color="gray.600">
                   • Aucune insulte, provocation ou menace tolérée<br/>
                   • Bienveillance et entraide privilégiées<br/>
                   • Confidentialité des informations partagées
@@ -709,8 +690,8 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
               
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2}>3. Responsabilité</Heading>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" lineHeight="1.4">
+                <Heading size="md" mb={2}>3. Responsabilité</Heading>
+                <Text fontSize="sm" color="gray.600">
                   • Vous êtes responsable de toutes vos décisions d'investissement<br/>
                   • Aucune garantie de résultat financier<br/>
                   • Application volontaire des enseignements reçus
@@ -718,8 +699,8 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
 
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2}>4. Sanctions</Heading>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" lineHeight="1.4">
+                <Heading size="md" mb={2}>4. Sanctions</Heading>
+                <Text fontSize="sm" color="gray.600">
                   • Avertissement pour manquements mineurs<br/>
                   • Suspension temporaire pour récidive<br/>
                   • Exclusion définitive pour manquements graves
@@ -727,7 +708,7 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
 
               <Box bg="yellow.50" p={4} borderRadius="md">
-                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold" color="orange.800" lineHeight="1.4">
+                <Text fontSize="sm" fontWeight="bold" color="orange.800">
                   ⚠️ Important : En acceptant cette charte, vous vous engagez à respecter 
                   toutes ces règles. Le non-respect peut entraîner votre exclusion de la communauté.
                 </Text>
@@ -736,11 +717,11 @@ const CommunityRegistrationPage: React.FC = () => {
               <Divider />
 
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2}>5. Formations et Éducation</Heading>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" mb={3} lineHeight="1.4">
+                <Heading size="md" mb={2}>5. Formations et Éducation</Heading>
+                <Text fontSize="sm" color="gray.600" mb={3}>
                   Notre communauté propose des formations régulières sur :
                 </Text>
-                <VStack spacing={1} align="start" fontSize={{ base: "xs", md: "sm" }} color="gray.600">
+                <VStack spacing={1} align="start" fontSize="sm" color="gray.600">
                   <Text>• Fondamentaux des cryptomonnaies</Text>
                   <Text>• Analyse technique et fondamentale</Text>
                   <Text>• Identification et prévention des arnaques</Text>
@@ -751,8 +732,8 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
 
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2}>6. Communication et Support</Heading>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" lineHeight="1.4">
+                <Heading size="md" mb={2}>6. Communication et Support</Heading>
+                <Text fontSize="sm" color="gray.600">
                   • Canaux officiels : WhatsApp, Telegram, Discord<br/>
                   • Support prioritaire pour les membres actifs<br/>
                   • Partage d'expériences encouragé<br/>
@@ -761,20 +742,20 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
 
               <Box bg="blue.50" p={4} borderRadius="md">
-                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold" color="blue.800" mb={2}>
+                <Text fontSize="sm" fontWeight="bold" color="blue.800" mb={2}>
                   📚 Objectif de la Communauté
                 </Text>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
+                <Text fontSize="sm" color="blue.700">
                   Notre mission est de vous éduquer et vous accompagner pour que vous puissiez 
                   prendre des décisions éclairées en toute sécurité dans l'univers des cryptomonnaies.
                 </Text>
               </Box>
 
               <Box bg="orange.50" p={4} borderRadius="md">
-                <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold" color="orange.800" mb={2}>
+                <Text fontSize="sm" fontWeight="bold" color="orange.800" mb={2}>
                   ⚠️ Avertissement Final
                 </Text>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="orange.700" lineHeight="1.4">
+                <Text fontSize="sm" color="orange.700">
                   Les cryptomonnaies sont hautement volatiles et comportent des risques significatifs. 
                   N'investissez jamais plus que ce que vous pouvez vous permettre de perdre. 
                   Cette communauté fournit de l'éducation, pas des conseils d'investissement.
@@ -782,21 +763,12 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
             </VStack>
           </ModalBody>
-          <ModalFooter px={{ base: 4, md: 6 }}>
+          <ModalFooter>
             <VStack spacing={3} w="full">
-              <Button 
-                colorScheme="blue" 
-                onClick={onCharterClose} 
-                w="full"
-                size={{ base: "md", md: "lg" }}
-                fontSize={{ base: "sm", md: "md" }}
-                h={{ base: "10", md: "12" }}
-                whiteSpace="normal"
-                textAlign="center"
-              >
+              <Button colorScheme="blue" onClick={onCharterClose} w="full">
                 J'ai lu et compris la charte
               </Button>
-              <Text fontSize={{ base: "xs", md: "xs" }} color="gray.500" textAlign="center">
+              <Text fontSize="xs" color="gray.500" textAlign="center">
                 La charte complète est également disponible sur notre site web
               </Text>
             </VStack>

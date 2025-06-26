@@ -395,7 +395,7 @@ const Dashboard = () => {
                     to="/nft-collection"
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-2 px-6 rounded-lg font-medium transition-all duration-200 inline-block"
                   >
-                    Commencer à Investir
+                    Commencer à otenir des récompenses
                   </Link>
                 </div>
               ) : (
@@ -427,7 +427,7 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-400">Total Investi</span>
+                    <span className="text-slate-400">Total Dépôts</span>
                     <span className="text-white">{totalInvested.toFixed(2)} USDT/USDC</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">

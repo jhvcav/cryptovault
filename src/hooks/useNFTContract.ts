@@ -28,6 +28,8 @@ const NFT_CONTRACT_ABI = [
   "function unpauseTier(uint256 tier)",
   "function setFidelityEligible(address user, bool eligible)",
   "function setMultipleFidelityEligible(address[] users, bool eligible)",
+  "function fidelityEligible(address) view returns (bool)",
+  "function checkFidelityEligibility(address user) view returns (bool eligible, bool alreadyClaimed, bool tierActive, uint256 remaining)",
   
   // Fonctions publiques
   "function purchaseNFT(uint256 tier)",
@@ -63,6 +65,16 @@ export interface RevenueStats {
   totalRevenue: string;
   tierIds: number[];
   tierRevenues: string[];
+}
+
+export interface FidelityUser {
+  address: string;
+  firstName?: string;
+  lastName?: string;
+  eligible: boolean;
+  alreadyClaimed: boolean;
+  claimedDate?: string;
+  txHash?: string;
 }
 
 export const useNFTContract = () => {
@@ -168,6 +180,51 @@ export const useNFTContract = () => {
       throw err;
     }
   }, [contract]);
+
+  const getFidelityEligibility = useCallback(async (address: string) => {
+  if (!contract) throw new Error('Contrat non initialisé');
+  
+  try {
+    const result = await contract.checkFidelityEligibility(address);
+    return {
+      eligible: result.eligible,
+      alreadyClaimed: result.alreadyClaimed,
+      tierActive: result.tierActive,
+      remaining: Number(result.remaining)
+    };
+  } catch (err) {
+    console.error('Erreur getFidelityEligibility:', err);
+    throw err;
+  }
+}, [contract]);
+
+const setFidelityEligible = useCallback(async (address: string, eligible: boolean): Promise<string> => {
+  if (!contract || !signer) throw new Error('Contrat ou signer non disponible');
+  if (!isOwner) throw new Error('Seul le owner peut gérer les éligibilités');
+  
+  try {
+    const tx = await contract.setFidelityEligible(address, eligible);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  } catch (err) {
+    console.error('Erreur setFidelityEligible:', err);
+    throw err;
+  }
+}, [contract, signer, isOwner]);
+
+const setMultipleFidelityEligible = useCallback(async (addresses: string[], eligible: boolean): Promise<string> => {
+  if (!contract || !signer) throw new Error('Contrat ou signer non disponible');
+  if (!isOwner) throw new Error('Seul le owner peut gérer les éligibilités');
+  
+  try {
+    const tx = await contract.setMultipleFidelityEligible(addresses, eligible);
+    const receipt = await tx.wait();
+    return receipt.hash;
+  } catch (err) {
+    console.error('Erreur setMultipleFidelityEligible:', err);
+    throw err;
+  }
+}, [contract, signer, isOwner]);
 
   // Fonction pour récupérer les stats de revenus
   const getRevenueStats = useCallback(async (): Promise<RevenueStats> => {
@@ -356,6 +413,9 @@ export const useNFTContract = () => {
     isOwner,
     loading,
     error,
+    getFidelityEligibility,
+    setFidelityEligible,
+    setMultipleFidelityEligible,
     
     // Fonctions
     getAllTiers,
