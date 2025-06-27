@@ -115,10 +115,32 @@ const Navbar = () => {
   };
 
   const handleSwitchToBSC = async () => {
-    if (chainId !== BSC_CHAIN_ID) {
-      await switchNetwork(BSC_CHAIN_ID);
+  try {
+    console.log('🔄 Début du changement vers BSC...');
+    
+    // Vérifier que MetaMask est disponible
+    if (!window.ethereum) {
+      alert('MetaMask n\'est pas installé !');
+      return;
     }
-  };
+
+    // Appeler la fonction switchNetwork améliorée
+    await switchNetwork(BSC_CHAIN_ID); // BSC_CHAIN_ID = 56
+    
+    console.log('✅ Changement vers BSC terminé avec succès');
+    
+    // Optionnel : afficher un message de succès
+    setTimeout(() => {
+      alert('Vous êtes maintenant connecté au réseau BSC !');
+    }, 500);
+    
+  } catch (error: any) {
+    console.error('❌ Erreur handleSwitchToBSC:', error);
+    
+    // Afficher l'erreur à l'utilisateur
+    alert(`Erreur: ${error.message}`);
+  }
+};
 
   const handleRefreshBalances = async () => {
     setIsRefreshing(true);

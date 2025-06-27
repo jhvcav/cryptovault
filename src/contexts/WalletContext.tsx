@@ -426,37 +426,79 @@ const changeAccount = useCallback(async () => {
 
   // Fonction pour changer de réseau
   const switchNetwork = async (targetChainId: number) => {
-    if (!window.ethereum) return;
+  if (!window.ethereum) {
+    throw new Error('MetaMask non disponible');
+  }
 
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${targetChainId.toString(16)}` }],
-      });
-    } catch (error: any) {
-      if (error.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: `0x${targetChainId.toString(16)}`,
-              chainName: 'BSC Mainnet',
-              nativeCurrency: {
-                name: 'BNB',
-                symbol: 'BNB',
-                decimals: 18
-              },
-              rpcUrls: ['https://bsc-dataseed.binance.org/'],
-              blockExplorerUrls: ['https://bscscan.com/']
-            }]
-          });
-        } catch (addError) {
-          console.error('Erreur ajout réseau:', addError);
+  console.log('🔄 Tentative de changement vers chainId:', targetChainId);
+
+  try {
+    const hexChainId = `0x${targetChainId.toString(16)}`;
+    console.log('🔄 HexChainId:', hexChainId);
+
+    // Essayer de changer vers le réseau existant
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: hexChainId }],
+    });
+    
+    console.log('✅ Changement de réseau réussi vers chainId:', targetChainId);
+    
+  } catch (switchError: any) {
+    console.log('❌ Erreur lors du switch, code:', switchError.code);
+    
+    // Si le réseau n'existe pas (code 4902), l'ajouter
+    if (switchError.code === 4902) {
+      console.log('📥 Le réseau BSC n\'existe pas, ajout en cours...');
+      
+      try {
+        // Configuration complète pour BSC
+        const bscNetworkConfig = {
+          chainId: '0x38', // 56 en hexadécimal pour BSC
+          chainName: 'BNB Smart Chain',
+          nativeCurrency: {
+            name: 'BNB',
+            symbol: 'BNB',
+            decimals: 18
+          },
+          rpcUrls: [
+            'https://bsc-dataseed1.binance.org/',
+            'https://bsc-dataseed2.binance.org/',
+            'https://bsc-dataseed3.binance.org/',
+            'https://bsc-dataseed4.binance.org/',
+          ],
+          blockExplorerUrls: ['https://bscscan.com/']
+        };
+
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [bscNetworkConfig]
+        });
+        
+        console.log('✅ Réseau BSC ajouté avec succès');
+        
+      } catch (addError: any) {
+        console.error('❌ Erreur lors de l\'ajout du réseau BSC:', addError);
+        
+        // Messages d'erreur spécifiques
+        if (addError.code === 4001) {
+          throw new Error('Ajout du réseau refusé par l\'utilisateur');
+        } else {
+          throw new Error(`Impossible d'ajouter le réseau BSC: ${addError.message}`);
         }
       }
-      console.error('Erreur changement réseau:', error);
+    } else {
+      // Autres erreurs lors du changement
+      if (switchError.code === 4001) {
+        throw new Error('Changement de réseau refusé par l\'utilisateur');
+      } else if (switchError.code === -32002) {
+        throw new Error('Une demande est déjà en cours dans MetaMask');
+      } else {
+        throw new Error(`Erreur lors du changement de réseau: ${switchError.message}`);
+      }
     }
-  };
+  }
+};
 
   // Fonction utilitaire pour diagnostiquer les problèmes mobile
 const diagnosticMetaMaskMobile = () => {

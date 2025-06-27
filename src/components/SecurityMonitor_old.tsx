@@ -29,7 +29,6 @@ const SecurityMonitor: React.FC = () => {
   });
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
   const [showAlerts, setShowAlerts] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Hook de sécurité MetaMask
   const { getSecurityStatus, forceSecurityCheck } = useMetaMaskSecurityBSC({
@@ -92,28 +91,25 @@ const SecurityMonitor: React.FC = () => {
         return {
           bg: 'bg-green-500',
           hoverBg: 'hover:bg-green-600',
-          text: 'text-green-700',
+          text: 'text-green-500',
           borderColor: 'border-green-200',
-          bgLight: 'bg-green-50',
-          textDark: 'dark:text-green-400'
+          bgLight: 'bg-green-100'
         };
       case 'medium':
         return {
           bg: 'bg-yellow-500',
           hoverBg: 'hover:bg-yellow-600',
-          text: 'text-yellow-700',
+          text: 'text-yellow-500',
           borderColor: 'border-yellow-200',
-          bgLight: 'bg-yellow-50',
-          textDark: 'dark:text-yellow-400'
+          bgLight: 'bg-yellow-100'
         };
       case 'low':
         return {
           bg: 'bg-red-500',
           hoverBg: 'hover:bg-red-600',
-          text: 'text-red-700',
+          text: 'text-red-500',
           borderColor: 'border-red-200',
-          bgLight: 'bg-red-50',
-          textDark: 'dark:text-red-400'
+          bgLight: 'bg-red-100'
         };
     }
   };
@@ -127,48 +123,6 @@ const SecurityMonitor: React.FC = () => {
       return 'Attention requise';
     }
     return 'Sécurité optimale';
-  };
-
-  // Fonction pour forcer une vérification avec feedback visuel
-  const handleForceSecurityCheck = async () => {
-    setIsRefreshing(true);
-    try {
-      // Appeler la vérification forcée
-      await forceSecurityCheck();
-      
-      // Forcer une nouvelle vérification locale immédiatement
-      const metaMaskSecurity = getSecurityStatus();
-      const isOnBSC = chainId === BSC_CHAIN_ID;
-      
-      const currentStatus: SecurityStatus = {
-        addressMatch: metaMaskSecurity.isSecure,
-        sessionActive: metaMaskSecurity.isInitialized,
-        walletConnected: isConnected,
-        networkCorrect: isOnBSC,
-        lastCheck: new Date(),
-        securityLevel: 'high'
-      };
-
-      // Calculer le niveau de sécurité
-      if (!currentStatus.addressMatch || !currentStatus.sessionActive) {
-        currentStatus.securityLevel = 'low';
-      } else if (!currentStatus.walletConnected || !currentStatus.networkCorrect) {
-        currentStatus.securityLevel = 'medium';
-      } else {
-        currentStatus.securityLevel = 'high';
-      }
-
-      setSecurityStatus(currentStatus);
-      
-      // Simulation d'un délai pour le feedback visuel
-      setTimeout(() => {
-        setIsRefreshing(false);
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Erreur lors de la vérification de sécurité:', error);
-      setIsRefreshing(false);
-    }
   };
 
   return (
@@ -203,16 +157,11 @@ const SecurityMonitor: React.FC = () => {
             </h3>
             <div className="flex items-center space-x-2">
               <button
-                onClick={handleForceSecurityCheck}
-                disabled={isRefreshing}
-                className={`p-1 transition-all duration-300 ${
-                  isRefreshing 
-                    ? 'text-blue-500 dark:text-blue-400' 
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
-                title={isRefreshing ? "Vérification en cours..." : "Forcer une vérification"}
+                onClick={forceSecurityCheck}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title="Forcer une vérification"
               >
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                <RefreshCw size={16} />
               </button>
               <button
                 onClick={() => setShowSecurityPanel(false)}
@@ -224,9 +173,9 @@ const SecurityMonitor: React.FC = () => {
           </div>
 
           {/* Niveau de sécurité global */}
-          <div className={`p-3 rounded-lg border mb-4 ${colors.borderColor} ${colors.bgLight} dark:bg-gray-700`}>
+          <div className={`p-3 rounded-lg border mb-4 ${colors.borderColor} ${colors.bgLight}`}>
             <div className="flex items-center justify-between">
-              <span className="font-medium text-blue-800 dark:text-blue-200">
+              <span className="font-medium">
                 Niveau: {securityStatus.securityLevel === 'high' ? 'Élevé' : 
                          securityStatus.securityLevel === 'medium' ? 'Moyen' : 'Faible'}
               </span>
@@ -234,47 +183,47 @@ const SecurityMonitor: React.FC = () => {
                 securityStatus.securityLevel !== 'high' ? 'animate-pulse' : ''
               }`}></div>
             </div>
-            <p className="text-xs text-blue-800 dark:text-blue-200 mt-1">
-              {isRefreshing ? 'Vérification en cours...' : getSecurityMessage()}
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              {getSecurityMessage()}
             </p>
           </div>
 
           {/* Détails de sécurité */}
           <div className="space-y-3 mb-4">
             {/* Connexion Wallet */}
-            <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-gray-700 rounded">
-              <span className="flex items-center text-sm text-blue-800 dark:text-blue-200">
-                <Wifi className="mr-2 text-blue-800 dark:text-blue-200" size={16} />
+            <div className="flex items-center justify-between p-2 bg-orange-50 dark:bg-gray-700 rounded">
+              <span className="flex items-center text-sm">
+                <Wifi className="mr-2" size={16} />
                 Wallet connecté
               </span>
-              <span className={securityStatus.walletConnected ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-600 dark:text-red-400 font-bold'}>
+              <span className={securityStatus.walletConnected ? 'text-green-600' : 'text-red-600'}>
                 {securityStatus.walletConnected ? '✓' : '✗'}
               </span>
             </div>
 
             {/* Adresse autorisée */}
-            <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-gray-700 rounded">
-              <span className="flex items-center text-sm text-blue-800 dark:text-blue-200">
-                <Shield className="mr-2 text-blue-800 dark:text-blue-200" size={16} />
+            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+              <span className="flex items-center text-sm">
+                <Shield className="mr-2" size={16} />
                 Adresse autorisée
               </span>
-              <span className={securityStatus.addressMatch ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-600 dark:text-red-400 font-bold'}>
+              <span className={securityStatus.addressMatch ? 'text-green-600' : 'text-red-600'}>
                 {securityStatus.addressMatch ? '✓' : '✗'}
               </span>
             </div>
 
             {/* Réseau BSC */}
-            <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-gray-700 rounded">
-              <span className="flex items-center text-sm text-blue-800 dark:text-blue-200">
-                <Zap className="mr-2 text-blue-800 dark:text-blue-200" size={16} />
+            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+              <span className="flex items-center text-sm">
+                <Zap className="mr-2" size={16} />
                 Réseau BSC
               </span>
               <div className="flex items-center space-x-2">
-                <span className={securityStatus.networkCorrect ? 'text-green-600 dark:text-green-400 font-bold' : 'text-orange-600 dark:text-orange-400 font-bold'}>
+                <span className={securityStatus.networkCorrect ? 'text-green-600' : 'text-orange-600'}>
                   {securityStatus.networkCorrect ? '✓' : '⚠'}
                 </span>
                 {chainId && (
-                  <span className="text-xs text-blue-800 dark:text-blue-200 font-medium">
+                  <span className="text-xs text-gray-500">
                     ({chainId === BSC_CHAIN_ID ? 'BSC' : `Chain ${chainId}`})
                   </span>
                 )}
@@ -282,12 +231,12 @@ const SecurityMonitor: React.FC = () => {
             </div>
 
             {/* Session active */}
-            <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-gray-700 rounded">
-              <span className="flex items-center text-sm text-blue-800 dark:text-blue-200">
-                <Clock className="mr-2 text-blue-800 dark:text-blue-200" size={16} />
+            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+              <span className="flex items-center text-sm">
+                <Clock className="mr-2" size={16} />
                 Session active
               </span>
-              <span className={securityStatus.sessionActive ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-600 dark:text-red-400 font-bold'}>
+              <span className={securityStatus.sessionActive ? 'text-green-600' : 'text-red-600'}>
                 {securityStatus.sessionActive ? '✓' : '✗'}
               </span>
             </div>
@@ -295,24 +244,24 @@ const SecurityMonitor: React.FC = () => {
 
           {/* Informations utilisateur et wallet */}
           <div className="pt-3 border-t border-gray-200 dark:border-gray-600 space-y-2">
-            <div className="text-xs space-y-1">
-              <p className="text-blue-800 dark:text-blue-200 font-medium">👤 {user?.firstName} {user?.lastName}</p>
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              <p>👤 {user?.firstName} {user?.lastName}</p>
               {address && (
-                <p className="font-mono text-blue-800 dark:text-blue-200">💼 {address.substring(0, 8)}...{address.substring(address.length - 6)}</p>
+                <p className="font-mono">💼 {address.substring(0, 8)}...{address.substring(address.length - 6)}</p>
               )}
-              <p className="text-blue-800 dark:text-blue-200">🕒 Dernière vérif: {securityStatus.lastCheck.toLocaleTimeString()} {isRefreshing ? '(Actualisation...)' : ''}</p>
+              <p>🕒 Dernière vérif: {securityStatus.lastCheck.toLocaleTimeString()}</p>
             </div>
 
             {/* Balances BSC si connecté */}
             {isConnected && balance && (
-              <div className="text-xs space-y-1">
-                <p className="font-medium text-blue-800 dark:text-blue-200">💰 Balances BSC:</p>
+              <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                <p className="font-medium">💰 Balances BSC:</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded">
-                    <span className="text-green-800 dark:text-green-200 font-semibold">USDT: {balance.usdt.toFixed(2)}</span>
+                    <span className="text-green-700 dark:text-green-400">USDT: {balance.usdt.toFixed(2)}</span>
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
-                    <span className="text-blue-800 dark:text-blue-200 font-semibold">USDC: {balance.usdc.toFixed(2)}</span>
+                    <span className="text-blue-700 dark:text-blue-400">USDC: {balance.usdc.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
