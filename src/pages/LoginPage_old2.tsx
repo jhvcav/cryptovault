@@ -1,5 +1,5 @@
-// src/pages/LoginPage.tsx - VERSION CORRIGÉE BOUCLE INFINIE
-import React, { useState, useEffect, useCallback } from 'react';
+// src/pages/LoginPage.tsx - VERSION CORRIGÉE LARGEUR DESKTOP
+import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
   Box,
@@ -41,7 +41,6 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConnectingMetaMask, setIsConnectingMetaMask] = useState(false);
-  const [hasTriedAutoConnect, setHasTriedAutoConnect] = useState(false); // 🔥 NOUVEAU
   const toast = useToast();
 
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -50,21 +49,21 @@ const LoginPage: React.FC = () => {
 
   // 🎯 RESPONSIVE VALUES CORRIGÉS POUR DESKTOP
   const containerMaxW = useBreakpointValue({ 
-    base: 'full',
-    sm: 'sm',
-    md: 'md',
-    lg: 'lg',
-    xl: 'xl',
-    '2xl': '2xl'
+    base: 'full',        // Mobile : pleine largeur
+    sm: 'sm',           // Mobile large : container small
+    md: 'md',           // Tablette : container medium
+    lg: 'lg',           // Desktop : container large
+    xl: 'xl',           // Large desktop : container extra large
+    '2xl': '2xl'        // Très large : container 2xl
   });
   
   const cardMaxW = useBreakpointValue({
-    base: 'full',
-    sm: '400px',
-    md: '500px',
-    lg: '600px',
-    xl: '650px',
-    '2xl': '700px'
+    base: 'full',        // Mobile : pleine largeur
+    sm: '400px',        // Mobile large : 400px max
+    md: '500px',        // Tablette : 500px max
+    lg: '600px',        // Desktop : 600px max
+    xl: '650px',        // Large desktop : 650px max
+    '2xl': '700px'      // Très large : 700px max
   });
 
   const cardPadding = useBreakpointValue({ base: 6, md: 8, lg: 10 });
@@ -117,14 +116,15 @@ const LoginPage: React.FC = () => {
     );
   }
 
-  // 🔥 FONCTION CONNECTMASK STABILISÉE AVEC USECALLBACK
-  const connectMetaMask = useCallback(async () => {
+  // Fonction pour connecter MetaMask et récupérer l'adresse
+  const connectMetaMask = async () => {
     const mobileInfo = detectMobileAndMetaMask();
     
     console.log('🦊 Tentative MetaMask sur:', mobileInfo);
     
     if (!window.ethereum) {
       if (mobileInfo.isMetaMaskBrowser) {
+        // On est dans MetaMask mais ethereum pas encore injecté
         toast({
           title: "Chargement...",
           description: "MetaMask se charge, veuillez patienter quelques secondes.",
@@ -133,6 +133,7 @@ const LoginPage: React.FC = () => {
           isClosable: true,
         });
         
+        // Attendre l'injection avec timeout
         let attempts = 0;
         const maxAttempts = 10;
         
@@ -145,6 +146,7 @@ const LoginPage: React.FC = () => {
           if (window.ethereum) {
             clearInterval(waitForEthereum);
             console.log('✅ window.ethereum détecté !');
+            // Relancer la fonction maintenant qu'ethereum est disponible
             connectMetaMask();
             return;
           }
@@ -177,12 +179,15 @@ const LoginPage: React.FC = () => {
 
     setIsConnectingMetaMask(true);
     try {
+      // Méthode robuste pour mobile
       let accounts;
       
       try {
+        // D'abord vérifier les comptes déjà connectés
         accounts = await window.ethereum.request({ method: 'eth_accounts' });
         
         if (!accounts || accounts.length === 0) {
+          // Si pas de comptes, demander la connexion
           accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         }
       } catch (error: any) {
@@ -197,6 +202,8 @@ const LoginPage: React.FC = () => {
         console.log('🦊 Adresse récupérée:', metamaskAddress);
         
         setWalletAddress(metamaskAddress);
+        
+        // Stocker pour utilisation future
         sessionStorage.setItem('lastConnectedWallet', metamaskAddress);
         
         toast({
@@ -225,7 +232,7 @@ const LoginPage: React.FC = () => {
     } finally {
       setIsConnectingMetaMask(false);
     }
-  }, [toast]); // 🔥 DÉPENDANCES EXPLICITES
+  };
 
   // Fonction pour détecter si on est sur mobile et dans MetaMask
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,32 +275,23 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  // 🔥 USEEFFECT CORRIGÉ POUR ÉVITER LA BOUCLE INFINIE
-  useEffect(() => {
-    // Ne tenter la connexion automatique qu'une seule fois
-    if (hasTriedAutoConnect) {
-      return;
-    }
-
+  React.useEffect(() => {
     const isMetaMaskBrowser = /MetaMask/i.test(navigator.userAgent);
     
-    if (isMetaMaskBrowser && !walletAddress) {
-      console.log('📱 Navigateur MetaMask détecté - Tentative auto-connexion...');
+    if (isMetaMaskBrowser) {
+      console.log('📱 Navigateur MetaMask détecté - Attente initialisation...');
       
+      // Attendre plus longtemps pour laisser MetaMask s'initialiser
       const timer = setTimeout(() => {
         console.log('🔄 Tentative auto-connexion après délai...');
-        if (window.ethereum) {
+        if (window.ethereum && !walletAddress) {
           connectMetaMask();
         }
-        setHasTriedAutoConnect(true); // 🔥 MARQUER COMME TENTÉ
-      }, 4000);
+      }, 4000); // 4 secondes au lieu de 2
       
       return () => clearTimeout(timer);
-    } else {
-      // Marquer comme tenté même si pas MetaMask pour éviter les re-renders
-      setHasTriedAutoConnect(true);
     }
-  }, [connectMetaMask, hasTriedAutoConnect, walletAddress]); // 🔥 DÉPENDANCES EXPLICITES
+  }, []);
 
   const navigate = useNavigate();
 
@@ -304,7 +302,7 @@ const LoginPage: React.FC = () => {
       overflow="hidden"
       background="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
     >
-      {/* Éléments décoratifs de fond */}
+      {/* Éléments décoratifs de fond - masqués sur mobile pour améliorer les performances */}
       <Box
         position="absolute"
         top="10%"
@@ -332,6 +330,7 @@ const LoginPage: React.FC = () => {
         display={{ base: "none", md: "block" }}
       />
       
+      {/* 🎯 CONTAINER PRINCIPAL AVEC LARGEUR CONTRÔLÉE */}
       <Flex
         minH="100vh"
         align="center"
@@ -341,6 +340,7 @@ const LoginPage: React.FC = () => {
         zIndex={1}
       >
         <Container maxW={containerMaxW} w="full">
+          {/* 🎨 CARTE PRINCIPALE AVEC LARGEUR MAXIMALE */}
           <Box
             bg={cardBg}
             backdropFilter="blur(20px)"
@@ -354,7 +354,7 @@ const LoginPage: React.FC = () => {
             maxW={cardMaxW}
             mx="auto"
           >
-            {/* Bouton MetaMask flottant */}
+            {/* Bouton MetaMask flottant - repositionné pour mobile */}
             <Button
               position="absolute"
               top={{ base: 4, md: 6 }}
@@ -409,7 +409,7 @@ const LoginPage: React.FC = () => {
               {showMetaMaskText ? "MetaMask" : ""}
             </Button>
 
-            {/* Bouton inscription RMR flottant */}
+            {/* Bouton inscription RMR flottant - repositionné pour mobile */}
             <Button
               position="absolute"
               top={{ base: 4, md: 6 }}
