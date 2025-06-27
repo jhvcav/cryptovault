@@ -1,4 +1,4 @@
-// src/pages/LoginPage.tsx - VERSION CORRIGÉE BOUCLE INFINIE
+// src/pages/LoginPage.tsx - VERSION AVEC VÉRIFICATION CÔTÉ CLIENT
 import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import {
@@ -24,6 +24,50 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { detectMobileAndMetaMask } from '../components/utils/mobileDetection';
 import { useNavigate } from 'react-router-dom';
+
+// 🔐 FONCTION DE VÉRIFICATION DE SIGNATURE CÔTÉ CLIENT
+const verifySignature = async (address: string, message: string, signature: string): Promise<boolean> => {
+  try {
+    // Utiliser l'API Web3 pour vérifier la signature
+    if (!window.ethereum) {
+      console.error('❌ MetaMask non disponible pour la vérification');
+      return false;
+    }
+
+    // Méthode de vérification via eth_personal_ecRecover
+    const recoveredAddress = await window.ethereum.request({
+      method: 'personal_ecRecover',
+      params: [message, signature],
+    });
+
+    console.log('🔍 Adresse récupérée:', recoveredAddress);
+    console.log('🔍 Adresse attendue:', address);
+
+    // Comparer les adresses (insensible à la casse)
+    const isValid = recoveredAddress.toLowerCase() === address.toLowerCase();
+    console.log('✅ Signature valide:', isValid);
+    
+    return isValid;
+  } catch (error) {
+    console.error('❌ Erreur lors de la vérification de signature:', error);
+    
+    // Méthode alternative avec ethers.js si disponible
+    try {
+      // Si ethers.js est disponible dans votre projet
+      if (typeof window !== 'undefined' && (window as any).ethers) {
+        const ethers = (window as any).ethers;
+        const recoveredAddress = ethers.utils.verifyMessage(message, signature);
+        const isValid = recoveredAddress.toLowerCase() === address.toLowerCase();
+        console.log('✅ Signature valide (ethers):', isValid);
+        return isValid;
+      }
+    } catch (ethersError) {
+      console.error('❌ Erreur ethers:', ethersError);
+    }
+    
+    return false;
+  }
+};
 
 // Déclaration TypeScript pour window.ethereum
 declare global {
@@ -117,7 +161,7 @@ const LoginPage: React.FC = () => {
     );
   }
 
-  // 🔥 FONCTION CONNECTMASK STABILISÉE AVEC USECALLBACK
+  // 🔥 FONCTION CONNECTMASK STABILISÉE AVEC USECALLBACK ET SIGNATURE
   const connectMetaMask = useCallback(async () => {
     const mobileInfo = detectMobileAndMetaMask();
     
@@ -195,17 +239,72 @@ const LoginPage: React.FC = () => {
       if (accounts && accounts.length > 0) {
         const metamaskAddress = accounts[0];
         console.log('🦊 Adresse récupérée:', metamaskAddress);
-        
-        setWalletAddress(metamaskAddress);
-        sessionStorage.setItem('lastConnectedWallet', metamaskAddress);
-        
-        toast({
-          title: "Wallet connecté !",
-          description: `${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)}`,
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
+
+        // 🔐 ÉTAPE DE SIGNATURE CRYPTOGRAPHIQUE POUR PROUVER LA PROPRIÉTÉ
+        try {
+          toast({
+            title: "Vérification de propriété",
+            description: "Veuillez signer le message pour prouver que vous possédez ce wallet...",
+            status: "info",
+            duration: 5000,
+            isClosable: true,
+          });
+
+          // Message unique basé sur timestamp pour éviter les replay attacks
+          const timestamp = Date.now();
+          const message = `CryptocaVault - Authentification sécurisée\nAdresse: ${metamaskAddress}\nTimestamp: ${timestamp}\nJe confirme être le propriétaire de ce wallet.`;
+          
+          console.log('📝 Demande de signature du message:', message);
+          
+          // Demander la signature du message
+          const signature = await window.ethereum.request({
+            method: 'personal_sign',
+            params: [message, metamaskAddress],
+          });
+
+          console.log('✅ Signature obtenue:', signature);
+
+          // Stocker l'adresse, la signature et le message pour validation côté serveur
+          setWalletAddress(metamaskAddress);
+          
+          // Stocker les données de signature pour l'envoi au serveur lors du login
+          sessionStorage.setItem('walletAddress', metamaskAddress);
+          sessionStorage.setItem('signature', signature);
+          sessionStorage.setItem('message', message);
+          sessionStorage.setItem('timestamp', timestamp.toString());
+          
+          toast({
+            title: "Wallet connecté et vérifié !",
+            description: `${metamaskAddress.substring(0, 6)}...${metamaskAddress.substring(metamaskAddress.length - 4)} ✓ Signature valide`,
+            status: "success",
+            duration: 4000,
+            isClosable: true,
+          });
+
+        } catch (signError: any) {
+          console.error('❌ Erreur lors de la signature:', signError);
+          
+          if (signError.code === 4001) {
+            toast({
+              title: "Signature refusée",
+              description: "Vous devez signer le message pour prouver la propriété du wallet.",
+              status: "warning",
+              duration: 5000,
+              isClosable: true,
+            });
+          } else {
+            toast({
+              title: "Erreur de signature",
+              description: "Impossible de vérifier la propriété du wallet. Réessayez.",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+          
+          // Ne pas définir l'adresse si la signature échoue
+          return;
+        }
       }
     } catch (error: any) {
       console.error('Erreur MetaMask:', error);
@@ -227,7 +326,7 @@ const LoginPage: React.FC = () => {
     }
   }, [toast]); // 🔥 DÉPENDANCES EXPLICITES
 
-  // Fonction pour détecter si on est sur mobile et dans MetaMask
+  // Fonction pour gérer la soumission avec vérification de signature côté client
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -236,8 +335,43 @@ const LoginPage: React.FC = () => {
     
     setError('');
 
+    // Vérification que l'adresse provient de MetaMask avec signature
     if (!walletAddress.trim()) {
-      setError('Veuillez saisir votre adresse wallet');
+      setError('Veuillez d\'abord connecter votre wallet MetaMask');
+      return;
+    }
+
+    // Vérifier que nous avons les données de signature
+    const storedSignature = sessionStorage.getItem('signature');
+    const storedMessage = sessionStorage.getItem('message');
+    const storedTimestamp = sessionStorage.getItem('timestamp');
+    const storedAddress = sessionStorage.getItem('walletAddress');
+
+    if (!storedSignature || !storedMessage || !storedTimestamp || !storedAddress) {
+      setError('Données de signature manquantes. Veuillez reconnecter votre wallet MetaMask.');
+      setWalletAddress(''); // Forcer la reconnexion
+      return;
+    }
+
+    // Vérifier que l'adresse affichée correspond à celle signée
+    if (storedAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      setError('Incohérence dans les données de signature. Veuillez reconnecter votre wallet.');
+      setWalletAddress('');
+      return;
+    }
+
+    // Vérifier que la signature n'est pas trop ancienne (15 minutes max)
+    const currentTime = Date.now();
+    const signatureTime = parseInt(storedTimestamp);
+    const maxAge = 15 * 60 * 1000; // 15 minutes en millisecondes
+
+    if (currentTime - signatureTime > maxAge) {
+      setError('La signature a expiré. Veuillez reconnecter votre wallet MetaMask.');
+      setWalletAddress('');
+      sessionStorage.removeItem('signature');
+      sessionStorage.removeItem('message');
+      sessionStorage.removeItem('timestamp');
+      sessionStorage.removeItem('walletAddress');
       return;
     }
 
@@ -248,21 +382,47 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    console.log('✅ Connexion avec adresse:', trimmedAddress);
+    console.log('🔐 Vérification de la signature côté client...');
     setIsSubmitting(true);
 
     try {
+      // 🔐 VÉRIFICATION DE SIGNATURE CÔTÉ CLIENT
+      const isSignatureValid = await verifySignature(
+        storedAddress,
+        storedMessage,
+        storedSignature
+      );
+
+      if (!isSignatureValid) {
+        setError('Signature invalide. Vous n\'êtes pas le propriétaire de ce wallet.');
+        setWalletAddress('');
+        // Nettoyer les données de session
+        sessionStorage.removeItem('signature');
+        sessionStorage.removeItem('message');
+        sessionStorage.removeItem('timestamp');
+        sessionStorage.removeItem('walletAddress');
+        return;
+      }
+
+      console.log('✅ Signature vérifiée côté client - Tentative de connexion...');
+      
+      // Maintenant on peut faire confiance à l'adresse pour le login
       const success = await login(trimmedAddress);
       console.log('✅ Résultat login:', success);
       
       if (!success) {
         setError('Vous n\'êtes pas autorisé à accéder à cette plateforme. Contactez votre Leader.');
       } else {
-        console.log('🎉 Connexion réussie ! Redirection vers dashboard...');
+        console.log('🎉 Connexion réussie avec signature valide ! Redirection vers dashboard...');
+        // Nettoyer les données de session après succès
+        sessionStorage.removeItem('signature');
+        sessionStorage.removeItem('message');
+        sessionStorage.removeItem('timestamp');
+        sessionStorage.removeItem('walletAddress');
       }
     } catch (error) {
       console.error('❌ Erreur login:', error);
-      setError('Erreur de connexion. Veuillez réessayer.');
+      setError('Erreur de connexion ou de vérification de signature. Veuillez réessayer.');
     } finally {
       setIsSubmitting(false);
     }
@@ -553,22 +713,52 @@ const LoginPage: React.FC = () => {
                       type="text" 
                       color="black"
                       value={walletAddress}
-                      onChange={(e) => setWalletAddress(e.target.value)}
-                      placeholder="0x742d35Cc6634C0532925a3b8D404dEBC00000000"
-                      bg="white"
+                      readOnly
+                      placeholder="Cliquez sur le bouton MetaMask pour connecter votre wallet"
+                      bg={walletAddress ? "white" : "gray.50"}
                       border="2px solid"
-                      borderColor="gray.200"
+                      borderColor={walletAddress ? "green.300" : "gray.200"}
                       borderRadius="xl"
                       px={4}
                       py={3}
                       fontSize={{ base: "sm", md: "md" }}
-                      _hover={{ borderColor: 'blue.300' }}
+                      _hover={{ 
+                        borderColor: walletAddress ? 'green.400' : 'blue.300',
+                        cursor: 'not-allowed'
+                      }}
                       _focus={{ 
-                        borderColor: 'blue.500', 
-                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' 
+                        borderColor: walletAddress ? 'green.500' : 'blue.500', 
+                        boxShadow: walletAddress 
+                          ? '0 0 0 3px rgba(72, 187, 120, 0.1)' 
+                          : '0 0 0 3px rgba(102, 126, 234, 0.1)' 
                       }}
                       transition="all 0.3s ease"
+                      cursor="not-allowed"
+                      onPaste={(e) => e.preventDefault()}
+                      onKeyDown={(e) => e.preventDefault()}
+                      onDrop={(e) => e.preventDefault()}
+                      rightElement={
+                        walletAddress ? (
+                          <Text 
+                            fontSize="lg" 
+                            color="green.500" 
+                            pr={3}
+                            pointerEvents="none"
+                          >
+                            ✅
+                          </Text>
+                        ) : null
+                      }
                     />
+                    {/* Message informatif */}
+                    <Text 
+                      fontSize={{ base: "2xs", md: "xs" }} 
+                      color="gray.400" 
+                      mt={1}
+                      fontStyle="italic"
+                    >
+                      🔒 Ce champ se remplit automatiquement via MetaMask pour votre sécurité
+                    </Text>
                   </FormControl>
 
                   <Button
@@ -611,6 +801,26 @@ const LoginPage: React.FC = () => {
                         fontWeight="500"
                       >
                         {error}
+                      </Text>
+                    </Alert>
+                  )}
+
+                  {/* Message si pas d'adresse wallet */}
+                  {!walletAddress && (
+                    <Alert
+                      status="info"
+                      borderRadius="xl"
+                      bg="blue.50"
+                      border="1px solid"
+                      borderColor="blue.200"
+                    >
+                      <AlertIcon color="blue.500" />
+                      <Text 
+                        color="blue.700" 
+                        fontSize={{ base: "xs", md: "sm" }} 
+                        fontWeight="500"
+                      >
+                        Veuillez d'abord connecter votre wallet MetaMask en cliquant sur le bouton 🦊 en haut à droite
                       </Text>
                     </Alert>
                   )}
@@ -659,21 +869,21 @@ const LoginPage: React.FC = () => {
                   w="full"
                 >
                   <HStack spacing={3} align="start">
-                    <Text fontSize={{ base: "lg", md: "2xl" }}>🦊</Text>
+                    <Text fontSize={{ base: "lg", md: "2xl" }}>🔐</Text>
                     <VStack spacing={1} align="start" flex={1}>
                       <Text 
                         fontSize={{ base: "xs", md: "sm" }} 
                         fontWeight="600" 
                         color="orange.800"
                       >
-                        Connexion rapide
+                        Authentification sécurisée
                       </Text>
                       <Text 
                         fontSize={{ base: "2xs", md: "xs" }} 
                         color="orange.700" 
                         lineHeight={1.4}
                       >
-                        Cliquez sur le bouton MetaMask en haut à droite pour récupérer automatiquement votre adresse wallet.
+                        Le bouton MetaMask vous demande de signer un message cryptographique pour prouver que vous possédez réellement ce wallet.
                       </Text>
                     </VStack>
                   </HStack>
