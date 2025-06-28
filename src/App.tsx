@@ -28,6 +28,7 @@ import NFTPage from './pages/NFTPage';
 import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
 import PolitiqueEtConfidentialitePage from './pages/PolitiqueEtConfidentialitePage';
 import DivulgationDesRisquesPage from './pages/DivulgationDesRisquesPage';
+import StrategyManagement from './pages/StrategyManagement';
 
 // NOUVEAUX COMPOSANTS COMMUNAUTÉ
 import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
@@ -443,6 +444,9 @@ const AppContent: React.FC = () => {
                       <Route path="/nft-page" element={<NFTPage />} />
                       <Route path="/history" element={<TransactionHistoryUsers />} />
                       <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
+                      <Route path="/strategy-management" element={<StrategyManagement />} />
+                     
+                      {/* Routes de la communauté */}
                       
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
