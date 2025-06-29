@@ -450,7 +450,7 @@ const ContractMonitoring: React.FC = () => {
                 <SimpleGrid columns={3} spacing={4}>
                   <Box p={4} bg="green.50" borderRadius="lg" textAlign="center">
                     <Text fontWeight="bold" color="green.600">Volume Total</Text>
-                    <Text fontSize="2xl" fontWeight="bold">
+                    <Text fontSize="2xl" color="black" fontWeight="bold">
                       {formatValueWithUSD(report.userDeposits + report.userWithdrawals)}
                     </Text>
                     <Text fontSize="sm" color="gray.600">Activité du contrat</Text>
@@ -458,13 +458,13 @@ const ContractMonitoring: React.FC = () => {
                   
                   <Box p={4} bg="blue.50" borderRadius="lg" textAlign="center">
                     <Text fontWeight="bold" color="blue.600">Utilisateurs Actifs</Text>
-                    <Text fontSize="2xl" fontWeight="bold">{report.userCount}</Text>
+                    <Text fontSize="2xl" color="black" fontWeight="bold">{report.userCount}</Text>
                     <Text fontSize="sm" color="gray.600">Utilisateurs uniques</Text>
                   </Box>
                   
                   <Box p={4} bg="purple.50" borderRadius="lg" textAlign="center">
                     <Text fontWeight="bold" color="purple.600">Transactions</Text>
-                    <Text fontSize="2xl" fontWeight="bold">{report.transactionCount}</Text>
+                    <Text fontSize="2xl" color="black" fontWeight="bold">{report.transactionCount}</Text>
                     <Text fontSize="sm" color="gray.600">Token transfers</Text>
                   </Box>
                 </SimpleGrid>
