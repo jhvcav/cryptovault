@@ -30,7 +30,7 @@ import {
 import { useInvestment } from '../contexts/InvestmentContext';
 import { ethers } from 'ethers';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Settings, RefreshCw, PlusCircle, Copy, Check } from 'lucide-react';
+import { ArrowUpRight, Settings, RefreshCw, PlusCircle } from 'lucide-react';
 import { useWallet } from '../contexts/WalletContext';
 
 interface PlatformStats {
@@ -70,8 +70,6 @@ const AdminDashboard = () => {
   const [isOwnerView, setIsOwnerView] = useState(false);
   const [newAddress, setNewAddress] = useState('');
   const [knownUsers, setKnownUsers] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState('active'); // 'all', 'active', 'completed'
-  const [copiedAddress, setCopiedAddress] = useState(null);
   
   const navigate = useNavigate();
   const bgColor = 'transparent'; // Utiliser une couleur de fond transparente
@@ -114,7 +112,7 @@ const getUSDCBalance = async () => {
   }
 };
 
-// Fonction pour récupérer les données de retrait via les événements
+// Ajouter cette fonction dans AdminDashboard
 const getWithdrawalDataFromEvents = async (userAddress: string, stakeIndex: number) => {
   try {
     if (!stakingContract) return { withdrawnAmount: '0', totalWithdrawn: '0' };
@@ -246,45 +244,6 @@ const getWithdrawalDataFromEvents = async (userAddress: string, stakeIndex: numb
       withdrawnAmount: '0',
       totalWithdrawn: '0'
     };
-  }
-};
-
-const getFilteredStakes = () => {
-  switch (statusFilter) {
-    case 'active':
-      return stakes.filter(stake => stake.active);
-    case 'completed':
-      return stakes.filter(stake => !stake.active);
-    case 'all':
-    default:
-      return stakes;
-  }
-};
-
-// Fonction pour copier l'adresse dans le presse-papiers
-const copyToClipboard = async (address) => {
-  try {
-    await navigator.clipboard.writeText(address);
-    setCopiedAddress(address);
-    
-    // Remettre l'icône normale après 2 secondes
-    setTimeout(() => {
-      setCopiedAddress(null);
-    }, 2000);
-  } catch (error) {
-    console.error('Erreur lors de la copie:', error);
-    // Fallback pour les navigateurs plus anciens
-    const textArea = document.createElement('textarea');
-    textArea.value = address;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-    
-    setCopiedAddress(address);
-    setTimeout(() => {
-      setCopiedAddress(null);
-    }, 2000);
   }
 };
 
@@ -465,51 +424,11 @@ const copyToClipboard = async (address) => {
             console.log("Récupération des investissements pour tous les utilisateurs (mode admin)");
             
             // Liste des adresses connues pour avoir investi
-            let knownInvestors = [
-                "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
-                "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
+            const knownInvestors = [
+              "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",  // L'adresse du propriétaire
+              "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"   // Une autre adresse connue
+              // Ajoutez d'autres adresses ici
             ];
-
-            try {
-                console.log('🔍 Recherche des investisseurs via événements BSCScan...');
-  
-                const API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY;
-                if (API_KEY && stakingContract) {
-                    const contractAddress = stakingContract.target || stakingContract.address;
-    
-                    // Signature correcte de votre événement Staked
-                    const stakedEventTopic = ethers.id('Staked(address,uint256,uint256,uint256,uint256,address)');
-    
-                    const url = `https://api.bscscan.com/api?module=logs&action=getLogs&address=${contractAddress}&topic0=${stakedEventTopic}&fromBlock=0&toBlock=latest&apikey=${API_KEY}`;
-    
-                    const response = await fetch(url);
-                    const data = await response.json();
-    
-                    if (data.status === '1' && data.result && data.result.length > 0) {
-                    console.log(`📊 ${data.result.length} événements Staked trouvés`);
-      
-                    const eventAddresses = data.result.map(log => {
-                        try {
-                        const userAddress = ethers.AbiCoder.defaultAbiCoder().decode(['address'], log.topics[1])[0];
-                        return userAddress.toLowerCase();
-                        } catch (error) {
-                        return null;
-                        }
-                    }).filter(addr => addr !== null);
-      
-                    const uniqueEventAddresses = [...new Set(eventAddresses)];
-                    console.log(`✅ ${uniqueEventAddresses.length} nouvelles adresses trouvées via événements`);
-      
-                    // Ajouter les nouvelles adresses aux adresses connues
-                    knownInvestors = [...new Set([...knownInvestors, ...uniqueEventAddresses])];
-                    console.log(`🎯 Total: ${knownInvestors.length} adresses à tester`);
-                    } else {
-                    console.log('ℹ️ Aucun événement trouvé, utilisation des adresses hardcodées');
-                    }
-                }
-                } catch (eventError) {
-                console.error('❌ Erreur récupération événements, utilisation des adresses hardcodées:', eventError);
-                }
             
             // Récupérer les investissements pour chaque adresse connue
             for (const investorAddress of knownInvestors) {
@@ -769,7 +688,7 @@ try {
       </Box>
       
       {/* Total gains disponibles */}
-      <Box p={8}>
+      <Box p={4} bg="orange.100" borderRadius="lg" textAlign="center">
         <Text fontSize="sm" color="gray.800" mb={1}>Gains Disponibles (Actifs)</Text>
         <Text fontSize="xl" fontWeight="bold" color="orange.600">
           {stakes
@@ -929,58 +848,18 @@ try {
       )}
 
       {/* Tableau des investissements */}
-      <Card bg={bgColorCard} mb={8}>
+<Card bg={bgColorCard} mb={8}>
   <CardBody>
     <Flex justify="space-between" align="center" mb={4}>
-      <Heading size="md">
-        Investissements 
-        {statusFilter === 'active' && ' actifs'}
-        {statusFilter === 'completed' && ' terminés'}
-        {statusFilter === 'all' && ' (tous)'}
-      </Heading>
-      
-      <Flex gap={2} align="center">
-        <Text fontSize="sm" color="gray.600">
-          {getFilteredStakes().length} / {stakes.length} investissement(s)
-        </Text>
-        
-        {/* Boutons de filtre */}
-        <Flex gap={1}>
-          <Button
-            size="sm"
-            colorScheme={statusFilter === 'active' ? "green" : "gray"}
-            variant={statusFilter === 'active' ? "solid" : "outline"}
-            onClick={() => setStatusFilter('active')}
-          >
-            Actifs ({stakes.filter(stake => stake.active).length})
-          </Button>
-          
-          <Button
-            size="sm"
-            colorScheme={statusFilter === 'completed' ? "red" : "gray"}
-            variant={statusFilter === 'completed' ? "solid" : "outline"}
-            onClick={() => setStatusFilter('completed')}
-          >
-            Terminés ({stakes.filter(stake => !stake.active).length})
-          </Button>
-          
-          <Button
-            size="sm"
-            colorScheme={statusFilter === 'all' ? "blue" : "gray"}
-            variant={statusFilter === 'all' ? "solid" : "outline"}
-            onClick={() => setStatusFilter('all')}
-          >
-            Tous ({stakes.length})
-          </Button>
-        </Flex>
-      </Flex>
+      <Heading size="md">Investissements actifs</Heading>
+      <Text>{stakes.length} investissement(s) trouvé(s)</Text>
     </Flex>
     
     {loading ? (
       <Text>Chargement des données...</Text>
-    ) : getFilteredStakes().length > 0 ? (
-      <Box overflowX="auto" maxW="100%" pb={2}>
-        <Table variant="simple" size="sm" minW="1400px">
+    ) : stakes.length > 0 ? (
+      <Box overflowX="auto" maxW="100%" pb={2}>  {/* ← Scroll horizontal + padding bottom */}
+        <Table variant="simple" size="sm" minW="1400px">  {/* ← Largeur minimale ajustée */}
           <Thead>
             <Tr>
               {isOwnerView && <Th minW="100px">Utilisateur</Th>}
@@ -997,71 +876,62 @@ try {
             </Tr>
           </Thead>
           <Tbody>
-            {getFilteredStakes().map((stake, index) => {
+            {stakes.map((stake, index) => {
               const plan = plans ? plans.find(p => p.id === stake.planId) : null;
               
-              const stakeAmount = parseFloat(stake.amount) || 0;
-              const totalWithdrawn = parseFloat(stake.totalWithdrawn || '0');
-              const availableRewards = parseFloat(stake.availableRewards || '0');
+              // Calculer les gains réalisés selon le statut
+const stakeAmount = parseFloat(stake.amount) || 0;
+const totalWithdrawn = parseFloat(stake.totalWithdrawn || '0');
+const availableRewards = parseFloat(stake.availableRewards || '0');
 
-              let realizedGains;
-              if (stake.active) {
-                realizedGains = availableRewards;
-              } else {
-                realizedGains = totalWithdrawn - stakeAmount;
-              }
+let realizedGains;
+if (stake.active) {
+  // Plan ACTIF : gains en cours = récompenses disponibles
+  realizedGains = availableRewards;
+} else {
+  // Plan TERMINÉ : gains réalisés = total retiré - montant investi
+  realizedGains = totalWithdrawn - stakeAmount;
+}
 
-              const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) : 0;
+const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) : 0;
               
               return (
                 <Tr key={index}>
                   {isOwnerView && (
-                    <Td minW="140px">
-                        {stake.userAddress ? (
-                        <Flex align="center" gap={2}>
-                            <Text fontSize="sm">
-                            {`${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}`}
-                            </Text>
-                            <Button
-                            size="xs"
-                            variant="ghost"
-                            colorScheme={copiedAddress === stake.userAddress ? "green" : "gray"}
-                            onClick={() => copyToClipboard(stake.userAddress)}
-                            leftIcon={<Icon as={copiedAddress === stake.userAddress ? Check : Copy} />}
-                            title={copiedAddress === stake.userAddress ? "Copié !" : "Copier l'adresse complète"}
-                            >
-                            {copiedAddress === stake.userAddress ? "Copié" : ""}
-                            </Button>
-                        </Flex>
-                        ) : (
-                        <Text fontSize="sm" color="gray.400">N/A</Text>
-                        )}
+                    <Td minW="100px" fontSize="sm">
+                      {stake.userAddress ? 
+                        `${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}` : 
+                        'N/A'}
                     </Td>
-                    )}
+                  )}
                   <Td minW="80px" fontSize="sm">Plan {plan ? plan.name : stake.planId}</Td>
                   <Td minW="120px" fontSize="sm" fontWeight="medium">{stake.amount} {stake.token}</Td>
                   <Td minW="110px" fontSize="xs">{stake.startTime.toLocaleDateString()}</Td>
                   <Td minW="110px" fontSize="xs">{stake.endTime.toLocaleDateString()}</Td>
                   <Td minW="70px" fontSize="sm">{stake.token}</Td>
                   
+                  {/* Récompenses disponibles */}
                   <Td minW="120px">
                     <Text color="orange.500" fontWeight="medium" fontSize="sm">
                       {stake.availableRewards || '0'} {stake.token}
                     </Text>
                   </Td>
                   
+                  {/* Dernier retrait */}
                   <Td minW="120px">
                     <Text color="blue.500" fontWeight="medium" fontSize="sm">
                       {stake.withdrawnAmount || '0'} {stake.token}
                     </Text>
                   </Td>
                   
+                  {/* Total retiré */}
                   <Td minW="120px">
                     <Text color="green.500" fontWeight="bold" fontSize="sm">
                       {stake.totalWithdrawn || '0'} {stake.token}
                     </Text>
                   </Td>
                   
+                  {/* Gains réalisés */}
                   <Td minW="140px">
                     <VStack spacing={0} align="start">
                       <Text 
@@ -1081,6 +951,7 @@ try {
                     </VStack>
                   </Td>
                   
+                  {/* Statut */}
                   <Td minW="80px">
                     <Badge 
                       colorScheme={stake.active ? "green" : "red"} 
@@ -1096,13 +967,7 @@ try {
         </Table>
       </Box>
     ) : (
-      <Box textAlign="center" py={8} bg="gray.50" borderRadius="md">
-        <Text color="gray.600" fontSize="lg">
-          {statusFilter === 'active' && 'Aucun investissement actif trouvé'}
-          {statusFilter === 'completed' && 'Aucun investissement terminé trouvé'}
-          {statusFilter === 'all' && 'Aucun investissement trouvé'}
-        </Text>
-      </Box>
+      <Text>Aucun investissement actif trouvé</Text>
     )}
   </CardBody>
 </Card>
@@ -1145,7 +1010,7 @@ try {
             <Table variant="simple" size="sm" minW="900px">
               <Thead bg="orange.50">
                 <Tr>
-                  {isOwnerView && <Th minW="140px" color="black">Utilisateur</Th>}
+                  {isOwnerView && <Th minW="100px" color="black">Utilisateur</Th>}
                   <Th minW="80px" color="black">Plan</Th>
                   <Th minW="120px" color="black">Montant</Th>
                   <Th minW="110px" color="black">Date de début</Th>
