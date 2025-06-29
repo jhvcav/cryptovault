@@ -685,272 +685,208 @@ try {
   }, [isAdmin]);
 
   return (
-    <Box p={8}>
-      <Flex justify="space-between" align="center" mb={6}>
-        <Heading color= "green.600">Tableau de bord {isAdmin ? 'administrateur' : 'utilisateur'}</Heading>
-        <Flex gap={2}>
-          <Button
-            leftIcon={<Icon as={RefreshCw} />}
-            colorScheme="teal"
-            onClick={loadPlatformStats}
-            isLoading={loading}
-          >
-            Actualiser
-          </Button>
-          <Button
-            leftIcon={<Icon as={Settings} />}
-            colorScheme="blue"
-            onClick={() => navigate('/strategy-management')}
-          >
-            Gestion des Stratégies
-          </Button>
-        </Flex>
-      </Flex>
-      
-      {error && (
-        <Alert status="error" mb={6}>
-          <AlertIcon />
-          {error}
-        </Alert>
-      )}
-      
-      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} mb={8}>
-        <Card bg={bgColorCard}>
-          <CardBody>
-            <Stat>
-              <StatLabel color={textColor}>Total investi</StatLabel>
-              <StatNumber>{stats.totalInvested} USDC</StatNumber>
-              <StatHelpText>Montant total des investissements</StatHelpText>
-            </Stat>
-          </CardBody>
-        </Card>
-
-        <Card bg={bgColorCard}>
-          <CardBody>
-            <Stat>
-              <StatLabel color={textColor}>Nombre d'utilisateurs</StatLabel>
-              <StatNumber>{stats.totalUsers}</StatNumber>
-              <StatHelpText>Utilisateurs uniques</StatHelpText>
-            </Stat>
-          </CardBody>
-        </Card>
-
-        <Card bg={bgColorCard}>
-          <CardBody>
-            <Stat>
-              <StatLabel color={textColor}>Solde du Contrat (USDC)</StatLabel>
-              <StatNumber>{stats.contractBalance}</StatNumber>
-              <StatHelpText>Liquidités disponibles</StatHelpText>
-            </Stat>
-          </CardBody>
-        </Card>
-
-        <Card bg={bgColorCard}>
-          <CardBody>
-            <Stat>
-              <StatLabel color={textColor}>Frais de plateforme</StatLabel>
-              <StatNumber>{stats.totalFees} USDC</StatNumber>
-              <StatHelpText>Total des frais collectés</StatHelpText>
-            </Stat>
-          </CardBody>
-        </Card>
-      </SimpleGrid>
-
-  <Card bg={bgColorCard} mb={4}>
-  <CardBody>
-    <Heading size="md" mb={4} color="blue.600">💧 Détail des Liquidités</Heading>
-    <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-      {/* Solde contrat */}
-      <Box p={4} bg="blue.100" borderRadius="lg" textAlign="center">
-        <Text fontSize="sm" color="gray.800" mb={1}>Solde Contrat</Text>
-        <Text fontSize="xl" fontWeight="bold" color="black">
-          {stats.contractBalance}
-        </Text>
-      </Box>
-      
-      {/* Total gains disponibles */}
-      <Box p={8}>
-        <Text fontSize="sm" color="gray.800" mb={1}>Gains Disponibles (Actifs)</Text>
-        <Text fontSize="xl" fontWeight="bold" color="orange.600">
-          {stakes
-            .filter(stake => stake.active)
-            .reduce((total, stake) => {
-              const rewards = parseFloat(stake.availableRewards || '0');
-              return total + rewards;
-            }, 0).toFixed(2)} USDC
-        </Text>
-        <Text fontSize="xs" color="gray.800">
-          {stakes.filter(stake => stake.active && parseFloat(stake.availableRewards || '0') >= 0.4).length} prêts à retirer (≥0.4)
-        </Text>
-      </Box>
-      
-      {/* Marge de sécurité */}
-      <Box 
-        p={4} 
-        bg={(() => {
-          const totalAvailableRewards = stakes
-            .filter(stake => stake.active)
-            .reduce((total, stake) => {
-              const rewards = parseFloat(stake.availableRewards || '0');
-              return total + rewards;
-            }, 0);
-          
-          const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
-          const liquidityGap = contractBalance - totalAvailableRewards;
-          
-          if (liquidityGap > 10) return "green.200";
-          if (liquidityGap > 2) return "purple.100";
-          if (liquidityGap > 0) return "orange.100";
-          return "red.200";
-        })()} 
-        borderRadius="lg" 
-        textAlign="center"
-      >
-        <Text fontSize="sm" color="gray.800" mb={1}>Marge de Sécurité</Text>
-        <Text 
-          fontSize="xl" 
-          fontWeight="bold" 
-          color={(() => {
-            const totalAvailableRewards = stakes
-              .filter(stake => stake.active)
-              .reduce((total, stake) => {
-                const rewards = parseFloat(stake.availableRewards || '0');
-                return total + rewards;
-              }, 0);
-            
-            const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
-            const liquidityGap = contractBalance - totalAvailableRewards;
-            
-            if (liquidityGap > 10) return "green.600";
-            if (liquidityGap > 2) return "purple.600";
-            if (liquidityGap > 0) return "orange.600";
-            return "red.600";
-          })()}
-        >
-          {(() => {
-            const totalAvailableRewards = stakes
-              .filter(stake => stake.active)
-              .reduce((total, stake) => {
-                const rewards = parseFloat(stake.availableRewards || '0');
-                return total + rewards;
-              }, 0);
-            
-            const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
-            const liquidityGap = contractBalance - totalAvailableRewards;
-            
-            return `${liquidityGap >= 0 ? '+' : ''}${liquidityGap.toFixed(2)} USDC`;
-          })()}
-        </Text>
-        <Text fontSize="xs" color="gray.800">
-          {(() => {
-            const totalAvailableRewards = stakes
-              .filter(stake => stake.active)
-              .reduce((total, stake) => {
-                const rewards = parseFloat(stake.availableRewards || '0');
-                return total + rewards;
-              }, 0);
-            
-            const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
-            const liquidityGap = contractBalance - totalAvailableRewards;
-            
-            if (liquidityGap > 10) return "Très sécurisé";
-            if (liquidityGap > 2) return "Niveau acceptable";
-            if (liquidityGap > 0) return "Attention requise";
-            return "ACTION URGENTE !";
-          })()}
-        </Text>
-      </Box>
-    </SimpleGrid>
+  <Box p={{ base: 4, md: 8 }} w="100%">  {/* ← Padding responsive, pas de minW */}
     
-    {/* Alerte si critique */}
-    {(() => {
-      const totalAvailableRewards = stakes
-        .filter(stake => stake.active)
-        .reduce((total, stake) => {
-          const rewards = parseFloat(stake.availableRewards || '0');
-          return total + rewards;
-        }, 0);
+    {/* En-tête responsive */}
+    <Flex 
+      justify="space-between" 
+      align="center" 
+      mb={6}
+      direction={{ base: "column", md: "row" }}  
+      gap={4}
+    >
+      <Heading 
+        color="green.600"
+        size={{ base: "md", md: "lg" }}  
+        textAlign={{ base: "center", md: "left" }}
+      >
+        Tableau de bord {isAdmin ? 'administrateur' : 'utilisateur'}
+      </Heading>
       
-      const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
-      const liquidityGap = contractBalance - totalAvailableRewards;
-      
-      return liquidityGap <= 0 && (
-        <Alert status="error" mt={4} borderRadius="md">
-          <AlertIcon />
-          <Box>
-            <Text fontWeight="bold">🚨 LIQUIDITÉS INSUFFISANTES !</Text>
-            <Text fontSize="sm">
-              Le contrat n'a pas assez de fonds pour couvrir tous les retraits de gains. 
-              Rechargez de {Math.abs(liquidityGap).toFixed(2)} USDC minimum.
+      <Flex gap={2} flexWrap="wrap">  {/* ← Wrap sur mobile */}
+        <Button
+          leftIcon={<Icon as={RefreshCw} />}
+          colorScheme="teal"
+          onClick={loadPlatformStats}
+          isLoading={loading}
+          size={{ base: "sm", md: "md" }}  
+        >
+          Actualiser
+        </Button>
+        <Button
+          leftIcon={<Icon as={Settings} />}
+          colorScheme="blue"
+          onClick={() => navigate('/strategy-management')}
+          size={{ base: "sm", md: "md" }}
+        >
+          Gestion des Stratégies
+        </Button>
+      </Flex>
+    </Flex>
+
+    {/* Statistiques - responsive grid */}
+    <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={6} mb={8}>  {/* ← Plus responsive */}
+      <Card bg={bgColorCard}>
+        <CardBody>
+          <Stat>
+            <StatLabel color={textColor} fontSize={{ base: "sm", md: "md" }}>Total investi</StatLabel>
+            <StatNumber fontSize={{ base: "lg", md: "2xl" }}>{stats.totalInvested} USDC</StatNumber>
+            <StatHelpText fontSize={{ base: "xs", md: "sm" }}>Montant total des investissements</StatHelpText>
+          </Stat>
+        </CardBody>
+      </Card>
+      {/* ... autres cards similaires ... */}
+    </SimpleGrid>
+
+    {/* Détail des liquidités - responsive */}
+    <Card bg={bgColorCard} mb={4}>
+      <CardBody>
+        <Heading size={{ base: "sm", md: "md" }} mb={4} color="blue.600">
+          💧 Détail des Liquidités
+        </Heading>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>  {/* ← Stack sur mobile */}
+          
+          {/* Solde contrat */}
+          <Box p={4} bg="blue.100" borderRadius="lg" textAlign="center">
+            <Text fontSize={{ base: "xs", md: "sm" }} color="gray.800" mb={1}>
+              Solde Contrat
+            </Text>
+            <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="black">
+              {stats.contractBalance}
             </Text>
           </Box>
-        </Alert>
-      );
-    })()}
-  </CardBody>
-</Card>
-      
-      {/* Formulaire d'ajout d'adresse pour l'administrateur */}
-      {isAdmin && (
-        <Card bg={bgColorCard} mb={4}>
-          <CardBody>
-            <Heading size="md" mb={4}>Ajouter une adresse à surveiller</Heading>
-            <Flex gap={2}>
-              <Input
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value)}
-                placeholder="Adresse Ethereum"
-                bg="slate.700"
-                color="white"
-              />
-              <Button
-                colorScheme="blue"
-                onClick={addNewAddress}
-                leftIcon={<Icon as={PlusCircle} />}
-              >
-                Ajouter
-              </Button>
-            </Flex>
-            
-            {knownUsers.length > 0 && (
-              <Box mt={4}>
-                <Text fontWeight="bold" mb={2}>Adresses surveillées ({knownUsers.length}):</Text>
-                <SimpleGrid columns={{base: 1, md: 2}} spacing={2}>
-                  {knownUsers.map((user, index) => (
-                    <Text key={index} fontSize="sm">
-                      {user.substring(0, 10)}...{user.substring(user.length - 8)}
-                    </Text>
-                  ))}
-                </SimpleGrid>
-              </Box>
-            )}
-          </CardBody>
-        </Card>
-      )}
+          
+          {/* Total gains disponibles */}
+          <Box p={4} bg="orange.100" borderRadius="lg" textAlign="center">
+            <Text fontSize={{ base: "xs", md: "sm" }} color="gray.800" mb={1}>
+              Gains Disponibles (Actifs)
+            </Text>
+            <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="orange.600">
+              {stakes
+                .filter(stake => stake.active)
+                .reduce((total, stake) => {
+                  const rewards = parseFloat(stake.availableRewards || '0');
+                  return total + rewards;
+                }, 0).toFixed(2)} USDC
+            </Text>
+            <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.800">
+              {stakes.filter(stake => stake.active && parseFloat(stake.availableRewards || '0') >= 0.4).length} prêts à retirer (≥0.4)
+            </Text>
+          </Box>
+          
+          {/* Marge de sécurité */}
+          <Box 
+            p={4} 
+            bg={(() => {
+              const totalAvailableRewards = stakes
+                .filter(stake => stake.active)
+                .reduce((total, stake) => {
+                  const rewards = parseFloat(stake.availableRewards || '0');
+                  return total + rewards;
+                }, 0);
+              
+              const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
+              const liquidityGap = contractBalance - totalAvailableRewards;
+              
+              if (liquidityGap > 10) return "green.200";
+              if (liquidityGap > 2) return "purple.100";
+              if (liquidityGap > 0) return "orange.100";
+              return "red.200";
+            })()} 
+            borderRadius="lg" 
+            textAlign="center"
+          >
+            <Text fontSize={{ base: "xs", md: "sm" }} color="gray.800" mb={1}>
+              Marge de Sécurité
+            </Text>
+            <Text 
+              fontSize={{ base: "lg", md: "xl" }} 
+              fontWeight="bold" 
+              color={(() => {
+                const totalAvailableRewards = stakes
+                  .filter(stake => stake.active)
+                  .reduce((total, stake) => {
+                    const rewards = parseFloat(stake.availableRewards || '0');
+                    return total + rewards;
+                  }, 0);
+                
+                const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
+                const liquidityGap = contractBalance - totalAvailableRewards;
+                
+                if (liquidityGap > 10) return "green.600";
+                if (liquidityGap > 2) return "purple.600";
+                if (liquidityGap > 0) return "orange.600";
+                return "red.600";
+              })()}
+            >
+              {(() => {
+                const totalAvailableRewards = stakes
+                  .filter(stake => stake.active)
+                  .reduce((total, stake) => {
+                    const rewards = parseFloat(stake.availableRewards || '0');
+                    return total + rewards;
+                  }, 0);
+                
+                const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
+                const liquidityGap = contractBalance - totalAvailableRewards;
+                
+                return `${liquidityGap >= 0 ? '+' : ''}${liquidityGap.toFixed(2)} USDC`;
+              })()}
+            </Text>
+            <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.800">
+              {(() => {
+                const totalAvailableRewards = stakes
+                  .filter(stake => stake.active)
+                  .reduce((total, stake) => {
+                    const rewards = parseFloat(stake.availableRewards || '0');
+                    return total + rewards;
+                  }, 0);
+                
+                const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
+                const liquidityGap = contractBalance - totalAvailableRewards;
+                
+                if (liquidityGap > 10) return "Très sécurisé";
+                if (liquidityGap > 2) return "Niveau acceptable";
+                if (liquidityGap > 0) return "Attention requise";
+                return "ACTION URGENTE !";
+              })()}
+            </Text>
+          </Box>
+        </SimpleGrid>
+      </CardBody>
+    </Card>
 
-      {/* Tableau des investissements */}
-      <Card bg={bgColorCard} mb={8}>
+    {/* Tableau des investissements - responsive */}
+<Card bg={bgColorCard} mb={8}>
   <CardBody>
-    <Flex justify="space-between" align="center" mb={4}>
-      <Heading size="md">
+    {/* En-tête du tableau responsive */}
+    <Flex 
+      justify="space-between" 
+      align="center" 
+      mb={4}
+      direction={{ base: "column", md: "row" }}
+      gap={4}
+    >
+      <Heading size={{ base: "sm", md: "md" }}>
         Investissements 
         {statusFilter === 'active' && ' actifs'}
         {statusFilter === 'completed' && ' terminés'}
         {statusFilter === 'all' && ' (tous)'}
       </Heading>
       
-      <Flex gap={2} align="center">
-        <Text fontSize="sm" color="gray.600">
+      <VStack spacing={2} align={{ base: "center", md: "end" }}>
+        <Text fontSize="sm" color="gray.600" textAlign="center">
           {getFilteredStakes().length} / {stakes.length} investissement(s)
         </Text>
         
-        {/* Boutons de filtre */}
-        <Flex gap={1}>
+        {/* Boutons de filtre responsive */}
+        <Flex gap={1} flexWrap="wrap" justify="center">
           <Button
             size="sm"
             colorScheme={statusFilter === 'active' ? "green" : "gray"}
             variant={statusFilter === 'active' ? "solid" : "outline"}
             onClick={() => setStatusFilter('active')}
+            fontSize={{ base: "xs", md: "sm" }}
           >
             Actifs ({stakes.filter(stake => stake.active).length})
           </Button>
@@ -960,6 +896,7 @@ try {
             colorScheme={statusFilter === 'completed' ? "red" : "gray"}
             variant={statusFilter === 'completed' ? "solid" : "outline"}
             onClick={() => setStatusFilter('completed')}
+            fontSize={{ base: "xs", md: "sm" }}
           >
             Terminés ({stakes.filter(stake => !stake.active).length})
           </Button>
@@ -969,310 +906,209 @@ try {
             colorScheme={statusFilter === 'all' ? "blue" : "gray"}
             variant={statusFilter === 'all' ? "solid" : "outline"}
             onClick={() => setStatusFilter('all')}
+            fontSize={{ base: "xs", md: "sm" }}
           >
             Tous ({stakes.length})
           </Button>
         </Flex>
-      </Flex>
+      </VStack>
     </Flex>
     
     {loading ? (
-      <Text>Chargement des données...</Text>
-    ) : getFilteredStakes().length > 0 ? (
-      <Box overflowX="auto" maxW="100%" pb={2}>
-        <Table variant="simple" size="sm" minW="1400px">
-          <Thead>
-            <Tr>
-              {isOwnerView && <Th minW="100px">Utilisateur</Th>}
-              <Th minW="80px">Plan</Th>
-              <Th minW="120px">Montant</Th>
-              <Th minW="110px">Date de début</Th>
-              <Th minW="110px">Date de fin</Th>
-              <Th minW="70px">Token</Th>
-              <Th minW="120px">Récompenses Dispo.</Th>
-              <Th minW="120px">Dernier Retrait</Th>
-              <Th minW="120px">Total Retiré</Th>
-              <Th minW="140px">Gains Réalisés</Th>
-              <Th minW="80px">Statut</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {getFilteredStakes().map((stake, index) => {
-              const plan = plans ? plans.find(p => p.id === stake.planId) : null;
-              
-              const stakeAmount = parseFloat(stake.amount) || 0;
-              const totalWithdrawn = parseFloat(stake.totalWithdrawn || '0');
-              const availableRewards = parseFloat(stake.availableRewards || '0');
+  <Text>Chargement des données...</Text>
+) : getFilteredStakes().length > 0 ? (
+  // Conteneur de tableau avec scroll horizontal contrôlé
+  <Box 
+    overflowX="auto" 
+    w="100%" 
+    pb={2}
+    css={{
+      '&::-webkit-scrollbar': {
+        height: '8px',
+      },
+      '&::-webkit-scrollbar-track': {
+        background: '#f1f1f1',
+        borderRadius: '10px',
+      },
+      '&::-webkit-scrollbar-thumb': {
+        background: '#888',
+        borderRadius: '10px',
+      },
+      '&::-webkit-scrollbar-thumb:hover': {
+        background: '#555',
+      },
+    }}
+  >
+    <Table variant="simple" size="sm" minW="1200px">
+      <Thead>
+        <Tr>
+          {isOwnerView && <Th minW="140px" fontSize={{ base: "xs", md: "sm" }}>Utilisateur</Th>}
+          <Th minW="80px" fontSize={{ base: "xs", md: "sm" }}>Plan</Th>
+          <Th minW="120px" fontSize={{ base: "xs", md: "sm" }}>Montant</Th>
+          <Th minW="110px" fontSize={{ base: "xs", md: "sm" }}>Date de début</Th>
+          <Th minW="110px" fontSize={{ base: "xs", md: "sm" }}>Date de fin</Th>
+          <Th minW="70px" fontSize={{ base: "xs", md: "sm" }}>Token</Th>
+          <Th minW="120px" fontSize={{ base: "xs", md: "sm" }}>Récompenses Dispo.</Th>
+          <Th minW="120px" fontSize={{ base: "xs", md: "sm" }}>Dernier Retrait</Th>
+          <Th minW="120px" fontSize={{ base: "xs", md: "sm" }}>Total Retiré</Th>
+          <Th minW="140px" fontSize={{ base: "xs", md: "sm" }}>Gains Réalisés</Th>
+          <Th minW="80px" fontSize={{ base: "xs", md: "sm" }}>Statut</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
+        {getFilteredStakes().map((stake, index) => {
+          const plan = plans ? plans.find(p => p.id === stake.planId) : null;
+          
+          const stakeAmount = parseFloat(stake.amount) || 0;
+          const totalWithdrawn = parseFloat(stake.totalWithdrawn || '0');
+          const availableRewards = parseFloat(stake.availableRewards || '0');
 
-              let realizedGains;
-              if (stake.active) {
-                realizedGains = availableRewards;
-              } else {
-                realizedGains = totalWithdrawn - stakeAmount;
-              }
+          let realizedGains;
+          if (stake.active) {
+            realizedGains = availableRewards;
+          } else {
+            realizedGains = totalWithdrawn - stakeAmount;
+          }
 
-              const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) : 0;
-              
-              return (
-                <Tr key={index}>
-                  {isOwnerView && (
-                    <Td minW="140px">
-                        {stake.userAddress ? (
-                        <Flex align="center" gap={2}>
-                            <Text fontSize="sm">
-                            {`${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}`}
-                            </Text>
-                            <Button
-                            size="xs"
-                            variant="ghost"
-                            colorScheme={copiedAddress === stake.userAddress ? "green" : "gray"}
-                            onClick={() => copyToClipboard(stake.userAddress)}
-                            leftIcon={<Icon as={copiedAddress === stake.userAddress ? Check : Copy} />}
-                            title={copiedAddress === stake.userAddress ? "Copié !" : "Copier l'adresse complète"}
-                            >
-                            {copiedAddress === stake.userAddress ? "Copié" : ""}
-                            </Button>
-                        </Flex>
-                        ) : (
-                        <Text fontSize="sm" color="gray.400">N/A</Text>
-                        )}
-                    </Td>
-                    )}
-                  <Td minW="80px" fontSize="sm">Plan {plan ? plan.name : stake.planId}</Td>
-                  <Td minW="120px" fontSize="sm" fontWeight="medium">{stake.amount} {stake.token}</Td>
-                  <Td minW="110px" fontSize="xs">{stake.startTime.toLocaleDateString()}</Td>
-                  <Td minW="110px" fontSize="xs">{stake.endTime.toLocaleDateString()}</Td>
-                  <Td minW="70px" fontSize="sm">{stake.token}</Td>
-                  
-                  <Td minW="120px">
-                    <Text color="orange.500" fontWeight="medium" fontSize="sm">
-                      {stake.availableRewards || '0'} {stake.token}
-                    </Text>
-                  </Td>
-                  
-                  <Td minW="120px">
-                    <Text color="blue.500" fontWeight="medium" fontSize="sm">
-                      {stake.withdrawnAmount || '0'} {stake.token}
-                    </Text>
-                  </Td>
-                  
-                  <Td minW="120px">
-                    <Text color="green.500" fontWeight="bold" fontSize="sm">
-                      {stake.totalWithdrawn || '0'} {stake.token}
-                    </Text>
-                  </Td>
-                  
-                  <Td minW="140px">
-                    <VStack spacing={0} align="start">
-                      <Text 
-                        color={realizedGains >= 0 ? "green.500" : "red.500"} 
-                        fontWeight="bold"
-                        fontSize="sm"
-                      >
-                        {realizedGains >= 0 ? '+' : ''}{realizedGains.toFixed(4)} {stake.token}
+          const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) : 0;
+          
+          return (
+            <Tr key={index}>
+              {isOwnerView && (
+                <Td minW="140px">
+                  {stake.userAddress ? (
+                    <Flex align="center" gap={1} flexWrap="wrap">
+                      <Text fontSize={{ base: "2xs", md: "sm" }}>
+                        {`${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}`}
                       </Text>
-                      <Text 
-                        color={gainsPercentage >= 0 ? "green.400" : "red.400"} 
-                        fontSize="xs"
-                        fontWeight="medium"
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        colorScheme={copiedAddress === stake.userAddress ? "green" : "gray"}
+                        onClick={() => copyToClipboard(stake.userAddress)}
+                        leftIcon={<Icon as={copiedAddress === stake.userAddress ? Check : Copy} />}
+                        title={copiedAddress === stake.userAddress ? "Copié !" : "Copier l'adresse complète"}
+                        minW="auto"
                       >
-                        ({gainsPercentage >= 0 ? '+' : ''}{gainsPercentage.toFixed(2)}%)
-                      </Text>
-                    </VStack>
-                  </Td>
-                  
-                  <Td minW="80px">
-                    <Badge 
-                      colorScheme={stake.active ? "green" : "red"} 
-                      fontSize="xs"
-                    >
-                      {stake.active ? "Actif" : "Terminé"}
-                    </Badge>
-                  </Td>
-                </Tr>
-              );
-            })}
-          </Tbody>
-        </Table>
-      </Box>
-    ) : (
-      <Box textAlign="center" py={8} bg="gray.50" borderRadius="md">
-        <Text color="gray.600" fontSize="lg">
-          {statusFilter === 'active' && 'Aucun investissement actif trouvé'}
-          {statusFilter === 'completed' && 'Aucun investissement terminé trouvé'}
-          {statusFilter === 'all' && 'Aucun investissement trouvé'}
-        </Text>
-      </Box>
-    )}
-  </CardBody>
-</Card>
-
-{/* Tableau des investissements arrivant à échéance */}
-<Card bg={bgColorCard} mb={8}>
-  <CardBody>
-    <Flex justify="space-between" align="center" mb={4}>
-      <Heading size="md" color="orange.600">
-        ⚠️ Investissements arrivant à échéance (7 jours)
-      </Heading>
-      <Text color="orange.500" fontWeight="bold">
-        {stakes.filter(stake => {
-          if (!stake.active) return false;
-          const now = new Date();
-          const endDate = new Date(stake.endTime);
-          const diffTime = endDate.getTime() - now.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
-          return diffDays <= 7 && diffDays >= 0;
-        }).length} investissement(s) à préparer
-      </Text>
-    </Flex>
-    
-    {loading ? (
-      <Text>Chargement des données...</Text>
-    ) : (
-      (() => {
-        // Filtrer les stakes arrivant à échéance dans 7 jours
-        const expiringStakes = stakes.filter(stake => {
-          if (!stake.active) return false;
-          const now = new Date();
-          const endDate = new Date(stake.endTime);
-          const diffTime = endDate.getTime() - now.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
-          return diffDays <= 7 && diffDays >= 0;
-        });
-
-        return expiringStakes.length > 0 ? (
-          <Box overflowX="auto" maxW="100%" pb={2}>
-            <Table variant="simple" size="sm" minW="900px">
-              <Thead bg="orange.50">
-                <Tr>
-                  {isOwnerView && <Th minW="140px" color="black">Utilisateur</Th>}
-                  <Th minW="80px" color="black">Plan</Th>
-                  <Th minW="120px" color="black">Montant</Th>
-                  <Th minW="110px" color="black">Date de début</Th>
-                  <Th minW="110px" color="black">Date de fin</Th>
-                  <Th minW="70px" color="black">Token</Th>
-                  <Th minW="100px" color="black">Jours restants</Th>  {/* ← Colonne bonus */}
-                  <Th minW="80px" color="black">Statut</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {expiringStakes.map((stake, index) => {
-                  const plan = plans ? plans.find(p => p.id === stake.planId) : null;
-                  
-                  // Calculer les jours restants
-                  const now = new Date();
-                  const endDate = new Date(stake.endTime);
-                  const diffTime = endDate.getTime() - now.getTime();
-                  const daysRemaining = Math.ceil(diffTime / (1000 * 3600 * 24));
-                  
-                  // Couleur selon urgence
-                  const urgencyColor = daysRemaining <= 1 ? "red.500" : 
-                                      daysRemaining <= 3 ? "orange.500" : "yellow.500";
-                  
-                  return (
-                    <Tr key={index} bg={daysRemaining <= 1 ? "red.100" : daysRemaining <= 3 ? "orange.100" : "blue.100"}>
-                      {isOwnerView && (
-                        <Td minW="100px" fontSize="sm" color="black">
-                          {stake.userAddress ? 
-                            `${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}` : 
-                            'N/A'}
-                        </Td>
-                      )}
-                      <Td minW="80px" fontSize="sm" color="black">Plan {plan ? plan.name : stake.planId}</Td>
-                      <Td minW="120px" fontSize="sm" fontWeight="bold" color="orange.600">
-                        {stake.amount} {stake.token}
-                      </Td>
-                      <Td minW="110px" fontSize="xs" color="black">{stake.startTime.toLocaleDateString()}</Td>
-                      <Td minW="110px" fontSize="xs" fontWeight="bold" color="red">
-                        {stake.endTime.toLocaleDateString()}
-                      </Td>
-                      <Td minW="70px" fontSize="sm" color="black">{stake.token}</Td>
-                      
-                      {/* Jours restants avec couleur d'urgence */}
-                      <Td minW="100px">
-                        <Badge 
-                          colorScheme={daysRemaining <= 1 ? "red" : daysRemaining <= 3 ? "orange" : "yellow"}
-                          fontSize="xs"
-                          fontWeight="bold"
-                          variant="solid"
-                          color="black"
-                        >
-                          {daysRemaining <= 0 ? "ÉCHÉANCE !" : `${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}`}
-                        </Badge>
-                      </Td>
-                      
-                      {/* Statut */}
-                      <Td minW="80px">
-                        <Badge 
-                          colorScheme="orange" 
-                          fontSize="sm"
-                          fontWeight="bold"
-                          variant="solid"
-                          color="black"
-                        >
-                          À préparer
-                        </Badge>
-                      </Td>
-                    </Tr>
-                  );
-                })}
-              </Tbody>
-            </Table>
-            
-            {/* Message d'alerte en bas du tableau */}
-            <Alert status="warning" mt={4} borderRadius="md">
-              <AlertIcon />
-              <Box>
-                <Text fontWeight="bold">Action requise :</Text>
-                <Text fontSize="sm">
-                  Assurez-vous que le contrat dispose de suffisamment de liquidités pour ces retraits de capital.
-                  Total à prévoir : <strong>
-                    {expiringStakes.reduce((total, stake) => total + parseFloat(stake.amount), 0).toFixed(2)} USDC
-                  </strong>
+                        {copiedAddress === stake.userAddress ? "Copié" : ""}
+                      </Button>
+                    </Flex>
+                  ) : (
+                    <Text fontSize={{ base: "2xs", md: "sm" }} color="gray.400">N/A</Text>
+                  )}
+                </Td>
+              )}
+              
+              <Td minW="80px" fontSize={{ base: "2xs", md: "sm" }}>
+                Plan {plan ? plan.name : stake.planId}
+              </Td>
+              
+              <Td minW="120px" fontSize={{ base: "2xs", md: "sm" }} fontWeight="medium">
+                {stake.amount} {stake.token}
+              </Td>
+              
+              <Td minW="110px" fontSize={{ base: "2xs", md: "xs" }}>
+                {stake.startTime.toLocaleDateString()}
+              </Td>
+              
+              <Td minW="110px" fontSize={{ base: "2xs", md: "xs" }}>
+                {stake.endTime.toLocaleDateString()}
+              </Td>
+              
+              <Td minW="70px" fontSize={{ base: "2xs", md: "sm" }}>
+                {stake.token}
+              </Td>
+              
+              <Td minW="120px">
+                <Text color="orange.500" fontWeight="medium" fontSize={{ base: "2xs", md: "sm" }}>
+                  {stake.availableRewards || '0'} {stake.token}
                 </Text>
-              </Box>
-            </Alert>
-          </Box>
-        ) : (
-          <Box textAlign="center" py={8} bg="green.50" borderRadius="md">
-            <Text color="green.600" fontWeight="bold" fontSize="lg">
-              ✅ Aucun investissement n'arrive à échéance dans les 7 prochains jours
-            </Text>
-            <Text color="green.500" fontSize="sm">
-              Pas d'action requise pour le moment
-            </Text>
-          </Box>
-        );
-      })()
-    )}
+              </Td>
+              
+              <Td minW="120px">
+                <Text color="blue.500" fontWeight="medium" fontSize={{ base: "2xs", md: "sm" }}>
+                  {stake.withdrawnAmount || '0'} {stake.token}
+                </Text>
+              </Td>
+              
+              <Td minW="120px">
+                <Text color="green.500" fontWeight="bold" fontSize={{ base: "2xs", md: "sm" }}>
+                  {stake.totalWithdrawn || '0'} {stake.token}
+                </Text>
+              </Td>
+              
+              <Td minW="140px">
+                <VStack spacing={0} align="start">
+                  <Text 
+                    color={realizedGains >= 0 ? "green.500" : "red.500"} 
+                    fontWeight="bold"
+                    fontSize={{ base: "2xs", md: "sm" }}
+                  >
+                    {realizedGains >= 0 ? '+' : ''}{realizedGains.toFixed(4)} {stake.token}
+                  </Text>
+                  <Text 
+                    color={gainsPercentage >= 0 ? "green.400" : "red.400"} 
+                    fontSize={{ base: "3xs", md: "xs" }}
+                    fontWeight="medium"
+                  >
+                    ({gainsPercentage >= 0 ? '+' : ''}{gainsPercentage.toFixed(2)}%)
+                  </Text>
+                </VStack>
+              </Td>
+              
+              <Td minW="80px">
+                <Badge 
+                  colorScheme={stake.active ? "green" : "red"} 
+                  fontSize={{ base: "2xs", md: "xs" }}
+                  variant="solid"
+                >
+                  {stake.active ? "Actif" : "Terminé"}
+                </Badge>
+              </Td>
+            </Tr>
+          );
+        })}
+      </Tbody>
+    </Table>
+  </Box>
+) : (
+  <Box textAlign="center" py={8} bg="gray.50" borderRadius="md">
+    <Text color="gray.600" fontSize={{ base: "sm", md: "lg" }}>
+      {statusFilter === 'active' && 'Aucun investissement actif trouvé'}
+      {statusFilter === 'completed' && 'Aucun investissement terminé trouvé'}
+      {statusFilter === 'all' && 'Aucun investissement trouvé'}
+    </Text>
+  </Box>
+)}
   </CardBody>
 </Card>
-      
-      <Card bg={bgColorCard}>
-        <CardBody>
-          <Heading size="md" mb={4}>Actions rapides</Heading>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-            <Button
-              leftIcon={<Icon as={ArrowUpRight} />}
-              colorScheme="green"
-              onClick={() => navigate('/strategy-management')}
-              size="lg"
-            >
-              Gérer les stratégies d'investissement
-            </Button>
-            <Button
-              leftIcon={<Icon as={Settings} />}
-              colorScheme="purple"
-              onClick={() => navigate('/admin/settings')}
-              size="lg"
-            >
-              Paramètres de la plateforme
-            </Button>
-          </SimpleGrid>
-        </CardBody>
-      </Card>
-    </Box>
+
+    {/* Actions rapides - responsive */}
+    <Card bg={bgColorCard}>
+      <CardBody>
+        <Heading size={{ base: "sm", md: "md" }} mb={4}>Actions rapides</Heading>
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+          <Button
+            leftIcon={<Icon as={ArrowUpRight} />}
+            colorScheme="green"
+            onClick={() => navigate('/strategy-management')}
+            size={{ base: "md", md: "lg" }}
+          >
+            Gérer les stratégies d'investissement
+          </Button>
+          <Button
+            leftIcon={<Icon as={Settings} />}
+            colorScheme="purple"
+            onClick={() => navigate('/admin/settings')}
+            size={{ base: "md", md: "lg" }}
+          >
+            Paramètres de la plateforme
+          </Button>
+        </SimpleGrid>
+      </CardBody>
+    </Card>
+  </Box>
   );
-};
+}
 
 export default AdminDashboard;

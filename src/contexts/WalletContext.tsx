@@ -579,28 +579,48 @@ const diagnosticMetaMaskMobile = () => {
 }, [isAuthenticated, checkAddressSecurity, updateBalances]);
 
   // Effet pour récupérer le chainId initial
-  useEffect(() => {
-    const getCurrentChainId = async () => {
-      if (window.ethereum) {
-        try {
-          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-          const numericChainId = parseInt(chainId, 16);
-          
-          console.log('🔍 WalletContext ChainId Debug:', {
-            rawChainId: chainId,
-            numericChainId,
-            isBSC: numericChainId === 56
-          });
-          
-          setChainId(numericChainId);
-        } catch (error) {
-          console.error('Erreur récupération chainId:', error);
-        }
+  // Effet pour récupérer et maintenir le chainId synchronisé
+useEffect(() => {
+  const getCurrentChainId = async () => {
+    if (window.ethereum && isConnected) {
+      try {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const numericChainId = parseInt(chainId, 16);
+        
+        console.log('🔍 WalletContext ChainId Debug:', {
+          rawChainId: chainId,
+          numericChainId,
+          isBSC: numericChainId === 56,
+          isConnected
+        });
+        
+        setChainId(numericChainId);
+      } catch (error) {
+        console.error('Erreur récupération chainId:', error);
+        setChainId(null);
       }
-    };
-    
-    getCurrentChainId();
-  }, []);
+    } else {
+      // Si pas connecté, reset le chainId
+      setChainId(null);
+    }
+  };
+  
+  // Récupérer le chainId initial et à chaque changement de connexion
+  getCurrentChainId();
+  
+  // Vérification périodique du chainId quand connecté
+  let chainCheckInterval: NodeJS.Timeout;
+  
+  if (isConnected && window.ethereum) {
+    chainCheckInterval = setInterval(getCurrentChainId, 2000);
+  }
+  
+  return () => {
+    if (chainCheckInterval) {
+      clearInterval(chainCheckInterval);
+    }
+  };
+}, [isConnected]); // Dépendance sur isConnected
 
   // Effet pour les événements MetaMask avec sécurité
   useEffect(() => {

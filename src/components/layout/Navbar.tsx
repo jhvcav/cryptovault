@@ -8,6 +8,7 @@ import { useOwner } from '../../hooks/useOwner';
 import { useMetaMaskSecurityBSC } from '../../hooks/useMetaMaskSecurityBSC';
 import { Menu, X, Wallet, Moon, Sun, LogOut, AlertTriangle, Shield, Zap, ChevronDown, RefreshCw, Users } from 'lucide-react';
 import { Smartphone, Download, ExternalLink } from 'lucide-react';
+import { useMemo } from 'react';
 
 const BSC_CHAIN_ID = 56;
 
@@ -117,6 +118,18 @@ const Navbar = () => {
   const handleSwitchToBSC = async () => {
   try {
     console.log('🔄 Début du changement vers BSC...');
+    console.log('État actuel:', { isConnected, chainId, BSC_CHAIN_ID });
+    
+    // Double vérification avant de changer
+    if (chainId === BSC_CHAIN_ID) {
+      alert('Vous êtes déjà sur le réseau BSC !');
+      return;
+    }
+    
+    if (!isConnected) {
+      alert('Veuillez d\'abord connecter votre wallet !');
+      return;
+    }
     
     // Vérifier que MetaMask est disponible
     if (!window.ethereum) {
@@ -124,20 +137,19 @@ const Navbar = () => {
       return;
     }
 
-    // Appeler la fonction switchNetwork améliorée
-    await switchNetwork(BSC_CHAIN_ID); // BSC_CHAIN_ID = 56
+    await switchNetwork(BSC_CHAIN_ID);
     
     console.log('✅ Changement vers BSC terminé avec succès');
     
-    // Optionnel : afficher un message de succès
+    // Attendre un peu pour que le state se mette à jour
     setTimeout(() => {
-      alert('Vous êtes maintenant connecté au réseau BSC !');
-    }, 500);
+      if (chainId === BSC_CHAIN_ID) {
+        alert('✅ Vous êtes maintenant connecté au réseau BSC !');
+      }
+    }, 1000);
     
   } catch (error: any) {
     console.error('❌ Erreur handleSwitchToBSC:', error);
-    
-    // Afficher l'erreur à l'utilisateur
     alert(`Erreur: ${error.message}`);
   }
 };
@@ -152,8 +164,19 @@ const Navbar = () => {
     setShowBalances(!showBalances);
   };
 
-  // Vérifier si on est sur BSC
-  const isOnBSC = chainId === BSC_CHAIN_ID;
+  // Fonction améliorée pour vérifier si on est sur BSC
+const isOnBSC = useMemo(() => {
+  const result = isConnected && chainId === BSC_CHAIN_ID;
+  console.log('🔍 Navbar BSC Check:', {
+    isConnected,
+    chainId,
+    BSC_CHAIN_ID,
+    isOnBSC: result
+  });
+  return result;
+}, [isConnected, chainId]);
+
+  // Récupération du statut de sécurité
   const securityStatus = getSecurityStatus();
 
   // Formatage des balances
@@ -188,13 +211,13 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* Avertissement réseau BSC */}
-      {isConnected && !isOnBSC && (
+      {/* Avertissement réseau BSC - Seulement si vraiment pas sur BSC */}
+      {isConnected && chainId !== null && !isOnBSC && (
         <div className="bg-yellow-600 text-white px-2 sm:px-4 py-2 text-center">
           <div className="flex items-center justify-center space-x-2 sm:space-x-3">
             <Zap size={16} className="flex-shrink-0" />
             <span className="text-xs sm:text-sm font-medium truncate">
-              Vous n'êtes pas sur le réseau BSC
+              Réseau actuel: Chain {chainId} - Changez vers BSC (Chain 56)
             </span>
             <button
               onClick={handleSwitchToBSC}
@@ -277,218 +300,231 @@ const Navbar = () => {
             
             {/* 💼 SECTION DESKTOP DROITE - Visible uniquement sur desktop */}
             <div className="hidden xl:flex xl:items-center xl:space-x-4">
-              {/* Bouton thème */}
-              <button 
-                onClick={toggleTheme}
-                className="p-2 rounded-full text-slate-300 hover:text-white focus:outline-none"
-              >
-                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
+  {/* Bouton thème */}
+  <button 
+    onClick={toggleTheme}
+    className="p-2 rounded-full text-slate-300 hover:text-white focus:outline-none"
+  >
+    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+  </button>
 
-              {/* Informations utilisateur */}
+  {/* Informations utilisateur */}
+  <div className="flex items-center space-x-3">
+    <div className="flex items-center space-x-2">
+      <span className="text-slate-300 text-sm">
+        Bonjour, {user?.firstName}
+      </span>
+      {isOwner && (
+        <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+          👑 OWNER
+        </span>
+      )}
+    </div>
+    <button
+      onClick={handleLogout}
+      className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+    >
+      <LogOut size={16} />
+      <span>Déconnexion</span>
+    </button>
+  </div>
+
+{/* Section Wallet Desktop */}
+{isConnected ? (
+  <div className="relative">
+    <div className="flex items-center space-x-2">
+      {/* Indicateur de sécurité */}
+      <div className="flex items-center">
+        {securityStatus.isSecure ? (
+          <Shield className="w-4 h-4 text-green-400" title="Connexion sécurisée" />
+        ) : (
+          <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" title="Problème de sécurité" />
+        )}
+      </div>
+
+      {/* Bouton wallet principal */}
+      <button
+        onClick={toggleBalances}
+        className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
+      >
+        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span>{shortenAddress(address || '')}</span>
+        <ChevronDown size={16} className={`transform transition-transform ${showBalances ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Indicateur de réseau amélioré */}
+      <div className={`px-2 py-1 rounded text-xs font-medium transition-all duration-300 ${
+        !isConnected 
+          ? 'bg-gray-600 text-white' 
+          : chainId === null
+          ? 'bg-gray-600 text-white animate-pulse' 
+          : isOnBSC 
+          ? 'bg-green-600 text-white' 
+          : 'bg-orange-600 text-white animate-pulse'
+      }`}>
+        {!isConnected 
+          ? 'Non connecté'
+          : chainId === null 
+          ? 'Vérification...'
+          : isOnBSC 
+          ? '✅ BSC' 
+          : `⚠️ Chain ${chainId}`
+        }
+      </div>
+    </div>
+
+    {/* Menu déroulant des balances DESKTOP */}
+    {showBalances && (
+      <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 z-50">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              Balances BSC
+            </h3>
+            <button
+              onClick={handleRefreshBalances}
+              disabled={isRefreshing}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+              title="Actualiser les balances"
+            >
+              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {/* USDT Balance */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-slate-300 text-sm">
-                    Bonjour, {user?.firstName}
-                  </span>
-                  {isOwner && (
-                    <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
-                      👑 OWNER
-                    </span>
-                  )}
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">₮</span>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <LogOut size={16} />
-                  <span>Déconnexion</span>
-                </button>
+                <div>
+                  <p className="font-medium text-gray-800 dark:text-white">USDT</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tether USD</p>
+                </div>
               </div>
-
-              {/* Section Wallet Desktop */}
-              {isConnected ? (
-                <div className="relative">
-                  <div className="flex items-center space-x-2">
-                    {/* Indicateur de sécurité */}
-                    <div className="flex items-center">
-                      {securityStatus.isSecure ? (
-                        <Shield className="w-4 h-4 text-green-400" title="Connexion sécurisée" />
-                      ) : (
-                        <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" title="Problème de sécurité" />
-                      )}
-                    </div>
-
-                    {/* Bouton wallet principal */}
-                    <button
-                      onClick={toggleBalances}
-                      className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
-                    >
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      <span>{shortenAddress(address || '')}</span>
-                      <ChevronDown size={16} className={`transform transition-transform ${showBalances ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {/* Indicateur de réseau */}
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      isOnBSC 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-orange-600 text-white animate-pulse'
-                    }`}>
-                      {isOnBSC ? 'BSC' : `Chain ${chainId}`}
-                    </div>
-                  </div>
-
-                  {/* Menu déroulant des balances DESKTOP */}
-                  {showBalances && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 z-50">
-                      <div className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                            Balances BSC
-                          </h3>
-                          <button
-                            onClick={handleRefreshBalances}
-                            disabled={isRefreshing}
-                            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
-                            title="Actualiser les balances"
-                          >
-                            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-                          </button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {/* USDT Balance */}
-                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">₮</span>
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-800 dark:text-white">USDT</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Tether USD</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-gray-800 dark:text-white">
-                                {formatBalance(balance.usdt)}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">USDT</p>
-                            </div>
-                          </div>
-
-                          {/* USDC Balance */}
-                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">$</span>
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-800 dark:text-white">USDC</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">USD Coin</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-gray-800 dark:text-white">
-                                {formatBalance(balance.usdc)}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">USDC</p>
-                            </div>
-                          </div>
-
-                          {/* Total en USD */}
-                          <div className="border-t border-gray-200 dark:border-slate-600 pt-3">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                                Total USD
-                              </span>
-                              <span className="text-lg font-bold text-gray-800 dark:text-white">
-                                ${formatBalance(balance.usdt + balance.usdc)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-600">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={handleChangeAccount}
-                              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors flex items-center justify-center space-x-1"
-                              title="Changer de compte MetaMask"
-                            >
-                              <Users size={14} />
-                              <span>Changer</span>
-                            </button>
-    
-                            <button
-                              onClick={() => {
-                                handleRefreshBalances();
-                                setShowBalances(false);
-                              }}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
-                            >
-                              Actualiser
-                            </button>
-                            <button
-                              onClick={handleWalletDisconnect}
-                              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
-                            >
-                              Déconnecter
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Infos de sécurité */}
-                        <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                          <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
-                            <Shield size={12} />
-                            <span>
-                              Sécurité: {securityStatus.isSecure ? 'Vérifiée' : 'Attention'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <button
-                  onClick={handleWalletConnect}
-                  disabled={isConnecting}
-                  className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70"
-                >
-                  {isConnecting ? 'Connexion...' : 'Connecter Wallet'}
-                </button>
-              )}
-
-              {/* Bouton spécial mobile si MetaMask non détecté */}
-              {isMobileDevice() && !window.ethereum && (
-                <button
-                  onClick={openInMetaMask}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-1"
-                  title="Ouvrir dans MetaMask"
-                >
-                  <ExternalLink size={16} />
-                  <span className="hidden sm:inline">MetaMask</span>
-                </button>
-              )}
+              <div className="text-right">
+                <p className="font-semibold text-gray-800 dark:text-white">
+                  {formatBalance(balance.usdt)}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">USDT</p>
+              </div>
             </div>
-            
-            {/* 🍔 BOUTON HAMBURGER - MOBILE/TABLETTE UNIQUEMENT */}
-            <div className="xl:hidden flex items-center">
+
+            {/* USDC Balance */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">$</span>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-800 dark:text-white">USDC</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">USD Coin</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-gray-800 dark:text-white">
+                  {formatBalance(balance.usdc)}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">USDC</p>
+              </div>
+            </div>
+
+            {/* Total en USD */}
+            <div className="border-t border-gray-200 dark:border-slate-600 pt-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  Total USD
+                </span>
+                <span className="text-lg font-bold text-gray-800 dark:text-white">
+                  ${formatBalance(balance.usdt + balance.usdc)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-600">
+            <div className="flex space-x-2">
               <button
-                onClick={toggleMobileMenu}
-                className="inline-flex items-center justify-center p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none transition-colors border-2 border-slate-600 hover:border-slate-500"
-                aria-label="Menu de navigation"
+                onClick={handleChangeAccount}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+                title="Changer de compte MetaMask"
               >
-                {mobileMenuOpen ? (
-                  <X size={24} className="text-white" />
-                ) : (
-                  <Menu size={24} />
-                )}
+                <Users size={14} />
+                <span>Changer</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  handleRefreshBalances();
+                  setShowBalances(false);
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
+              >
+                Actualiser
+              </button>
+              <button
+                onClick={handleWalletDisconnect}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
+              >
+                Déconnecter
               </button>
             </div>
+          </div>
+
+          {/* Infos de sécurité */}
+          <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+            <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+              <Shield size={12} />
+              <span>
+                Sécurité: {securityStatus.isSecure ? 'Vérifiée' : 'Attention'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+) : (
+  <button
+    onClick={handleWalletConnect}
+    disabled={isConnecting}
+    className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70"
+  >
+    {isConnecting ? 'Connexion...' : 'Connecter Wallet'}
+  </button>
+)}
+
+{/* Bouton spécial mobile si MetaMask non détecté */}
+{isMobileDevice() && !window.ethereum && (
+  <button
+    onClick={openInMetaMask}
+    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-1"
+    title="Ouvrir dans MetaMask"
+  >
+    <ExternalLink size={16} />
+    <span className="hidden sm:inline">MetaMask</span>
+  </button>
+)}
+
+{/* FERMETURE DE LA SECTION DESKTOP DROITE - IMPORTANT ! */}
+</div>
+
+{/* BOUTON HAMBURGER - MOBILE/TABLETTE */}
+<div className="xl:hidden flex items-center">
+  <button
+    onClick={toggleMobileMenu}
+    className="inline-flex items-center justify-center p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none transition-colors border-2 border-slate-600 hover:border-slate-500"
+    aria-label="Menu de navigation"
+  >
+    {mobileMenuOpen ? (
+      <X size={24} className="text-white" />
+    ) : (
+      <Menu size={24} />
+    )}
+  </button>
+</div>
           </div>
         </div>
         
@@ -537,14 +573,26 @@ const Navbar = () => {
                       </div>
                     </div>
 
+                    {/* Statut réseau mobile */}
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-300">Réseau:</span>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        isOnBSC 
+                        !isConnected 
+                          ? 'bg-gray-600 text-white' 
+                          : chainId === null
+                          ? 'bg-gray-600 text-white' 
+                          : isOnBSC 
                           ? 'bg-green-600 text-white' 
                           : 'bg-orange-600 text-white'
                       }`}>
-                        {isOnBSC ? 'BSC' : `Chain ${chainId}`}
+                        {!isConnected 
+                          ? 'Non connecté'
+                          : chainId === null 
+                          ? 'Vérification...'
+                          : isOnBSC 
+                          ? '✅ BSC' 
+                          : `⚠️ Chain ${chainId}`
+                        }
                       </span>
                     </div>
 
@@ -709,8 +757,8 @@ const Navbar = () => {
                   </button>
                 )}
 
-                {/* Avertissement réseau si pas sur BSC */}
-                {isConnected && !isOnBSC && (
+                {/* Avertissement réseau mobile - seulement si pas sur BSC */}
+                {isConnected && chainId !== null && !isOnBSC && (
                   <button
                     onClick={() => {
                       handleSwitchToBSC();
@@ -719,7 +767,7 @@ const Navbar = () => {
                     className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-base font-medium bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
                   >
                     <Zap size={20} />
-                    <span>Changer vers BSC</span>
+                    <span>Changer vers BSC (Chain {chainId} → 56)</span>
                   </button>
                 )}
               </div>
