@@ -458,209 +458,234 @@ const copyToClipboard = async (address) => {
 
         // Récupérer les investissements - traiter dans un bloc try/catch séparé
         try {
-          let allStakes = [];
-          
-          if (isOwner) {
-            // Si c'est le propriétaire, récupérer les adresses des investisseurs
-            console.log("Récupération des investissements pour tous les utilisateurs (mode admin)");
-            
-            // Liste des adresses connues pour avoir investi
-            let knownInvestors = [
-                "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
-                "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
-            ];
-
-            try {
-                console.log('🔍 Recherche des investisseurs via événements BSCScan...');
+  let allStakes = [];
   
-                const API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY;
-                if (API_KEY && stakingContract) {
-                    const contractAddress = stakingContract.target || stakingContract.address;
+  if (isOwner) {
+    // Si c'est le propriétaire, récupérer les adresses des investisseurs
+    console.log("Récupération des investissements pour tous les utilisateurs (mode admin)");
     
-                    // Signature correcte de votre événement Staked
-                    const stakedEventTopic = ethers.id('Staked(address,uint256,uint256,uint256,uint256,address)');
-    
-                    const url = `https://api.bscscan.com/api?module=logs&action=getLogs&address=${contractAddress}&topic0=${stakedEventTopic}&fromBlock=0&toBlock=latest&apikey=${API_KEY}`;
-    
-                    const response = await fetch(url);
-                    const data = await response.json();
-    
-                    if (data.status === '1' && data.result && data.result.length > 0) {
-                    console.log(`📊 ${data.result.length} événements Staked trouvés`);
-      
-                    const eventAddresses = data.result.map(log => {
-                        try {
-                        const userAddress = ethers.AbiCoder.defaultAbiCoder().decode(['address'], log.topics[1])[0];
-                        return userAddress.toLowerCase();
-                        } catch (error) {
-                        return null;
-                        }
-                    }).filter(addr => addr !== null);
-      
-                    const uniqueEventAddresses = [...new Set(eventAddresses)];
-                    console.log(`✅ ${uniqueEventAddresses.length} nouvelles adresses trouvées via événements`);
-      
-                    // Ajouter les nouvelles adresses aux adresses connues
-                    knownInvestors = [...new Set([...knownInvestors, ...uniqueEventAddresses])];
-                    console.log(`🎯 Total: ${knownInvestors.length} adresses à tester`);
-                    } else {
-                    console.log('ℹ️ Aucun événement trouvé, utilisation des adresses hardcodées');
-                    }
-                }
-                } catch (eventError) {
-                console.error('❌ Erreur récupération événements, utilisation des adresses hardcodées:', eventError);
-                }
-            
-            // Récupérer les investissements pour chaque adresse connue
-            for (const investorAddress of knownInvestors) {
-              try {
-                console.log(`Récupération directe des stakes pour ${investorAddress}`);
-                const investorStakes = await stakingContract.getUserStakes(investorAddress);
-                console.log(`${investorAddress} stake results:`, investorStakes);
-                
-                if (investorStakes && investorStakes.length > 0) {
-                  // Ajouter l'adresse de l'investisseur à chaque stake
-                  for (let i = 0; i < investorStakes.length; i++) {
-                    const stakeWithAddress = {
-                      ...investorStakes[i],
-                      userAddress: investorAddress // Ajouter l'adresse
-                    };
-                    allStakes.push(stakeWithAddress);
-                  }
-                  console.log(`${investorStakes.length} stakes trouvés pour ${investorAddress}`);
-                }
-              } catch (investorError) {
-                console.error(`Erreur pour ${investorAddress}:`, investorError);
-              }
-            }
-            
-            console.log(`Total de ${allStakes.length} stakes récupérés pour tous les investisseurs connus`);
-          } else {
-            // Récupérer uniquement les investissements de l'utilisateur connecté
-            const currentAddress = address || "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF";
-            
-            console.log('Tentative de récupération des investissements pour:', currentAddress);
-            const userStakes = await stakingContract.getUserStakes(currentAddress);
-            console.log('Investissements récupérés du contrat (brut):', userStakes);
-            
-            if (userStakes && userStakes.length > 0) {
-              allStakes = userStakes;
-            }
-          }
-          
-          // Formater tous les stakes récupérés
-          if (allStakes.length > 0) {
-            console.log('Nombre d\'investissements trouvés:', allStakes.length);
-            console.log('Investissements bruts:', allStakes);
-            
-            // Formater les stakes sans conditions de filtrage
-            const formattedStakes = [];
-            
-            for (let i = 0; i < allStakes.length; i++) {
-              const stake = allStakes[i];
-              console.log(`Formatage du stake ${i}:`, stake);
-              
-              try {
-                // Détecter et manipuler différentes structures possibles
-                const planId = stake.planId !== undefined ? Number(stake.planId) : 
-                              stake[0] !== undefined ? Number(stake[0]) : 0;
-                              
-                const amount = stake.amount !== undefined ? stake.amount : 
-                              stake[1] !== undefined ? stake[1] : 0;
-                              
-                const startTime = stake.startTime !== undefined ? Number(stake.startTime) : 
-                                  stake[2] !== undefined ? Number(stake[2]) : Date.now()/1000 - 86400;
-                                  
-                const endTime = stake.endTime !== undefined ? Number(stake.endTime) : 
-                                stake[3] !== undefined ? Number(stake[3]) : Date.now()/1000 + 86400*30;
-                                
-                const lastRewardTime = stake.lastRewardTime !== undefined ? Number(stake.lastRewardTime) : 
-                                      stake[4] !== undefined ? Number(stake[4]) : Date.now()/1000;
-                                      
-                const token = stake.token !== undefined ? stake.token : 
-                              stake[5] !== undefined ? stake[5] : "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
-                              
-                const active = stake.active !== undefined ? Boolean(stake.active) : 
-                              stake[6] !== undefined ? Boolean(stake[6]) : true;
-                
-                // Récupérer l'adresse de l'utilisateur (si disponible)
-                const userAddress = stake.userAddress || (isOwner ? undefined : address);
-                
-                // Formater le montant correctement
-                let withdrawalData = { withdrawnAmount: '0', totalWithdrawn: '0' };
-let availableRewards = '0';
+    // Liste des adresses connues pour avoir investi
+    let knownInvestors = [
+        "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
+        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd",
+        "0xce1a17c4c2e1e2cc0586c451952a073a82fa2bf0"
+    ];
 
-if (userAddress) {
-  // Récupérer l'historique des retraits
-  withdrawalData = await getWithdrawalDataFromEvents(userAddress, i);
-  
-  // Calculer les récompenses disponibles
-  try {
-    const rewards = await stakingContract.calculateRewards(userAddress, i);
-    availableRewards = ethers.formatUnits(rewards, 18);
-  } catch (error) {
-    console.error('Erreur calcul récompenses:', error);
-  }
-}
+    try {
+        console.log('🔍 Recherche des investisseurs via événements BSCScan...');
 
-// Formater le montant correctement
-let formattedAmount;
-try {
-  formattedAmount = ethers.formatUnits(amount, 18);
-  console.log(`Montant formaté: ${formattedAmount}`);
-} catch (amountError) {
-  console.error('Erreur de formatage du montant:', amountError);
-  formattedAmount = '0';
-}
-                
-                // Convertir l'adresse du token en symbole
-                const tokenSymbol = token === "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" ? "USDC" : 
-                                    token === "0x55d398326f99059fF775485246999027B3197955" ? "USDT" : 
-                                    token && token.substring && token.length > 10 ? token.substring(0, 6) + "..." : "UNKNOWN";
-                
-                // Créer l'objet stake formaté
-                const formattedStake = {
-                  planId,
-                  amount: formattedAmount,
-                  startTime: new Date(startTime * 1000),
-                  endTime: new Date(endTime * 1000),
-                  lastRewardTime: new Date(lastRewardTime * 1000),
-                  token: tokenSymbol,
-                  active,
-                  userAddress,
-                  withdrawnAmount: withdrawalData.withdrawnAmount,        // ← NOUVEAU
-                  totalWithdrawn: withdrawalData.totalWithdrawn,          // ← NOUVEAU
-                  availableRewards: parseFloat(availableRewards).toFixed(4) // ← NOUVEAU
-                };
-                
-                formattedStakes.push(formattedStake);
-                console.log('Stake formaté ajouté:', formattedStake);
-              } catch (formatError) {
-                console.error(`Erreur lors du formatage du stake ${i}:`, formatError);
-              }
+        const API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY;
+        if (API_KEY && stakingContract) {
+            const contractAddress = stakingContract.target || stakingContract.address;
+
+            // Signature correcte de votre événement Staked
+            const stakedEventTopic = ethers.id('Staked(address,uint256,uint256,uint256,uint256,address)');
+
+            const url = `https://api.bscscan.com/api?module=logs&action=getLogs&address=${contractAddress}&topic0=${stakedEventTopic}&fromBlock=0&toBlock=latest&apikey=${API_KEY}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.status === '1' && data.result && data.result.length > 0) {
+            console.log(`📊 ${data.result.length} événements Staked trouvés`);
+
+            const eventAddresses = data.result.map(log => {
+                try {
+                const userAddress = ethers.AbiCoder.defaultAbiCoder().decode(['address'], log.topics[1])[0];
+                return userAddress.toLowerCase();
+                } catch (error) {
+                return null;
+                }
+            }).filter(addr => addr !== null);
+
+            const uniqueEventAddresses = [...new Set(eventAddresses)];
+            console.log(`✅ ${uniqueEventAddresses.length} nouvelles adresses trouvées via événements`);
+
+            // Ajouter les nouvelles adresses aux adresses connues
+            knownInvestors = [...new Set([...knownInvestors, ...uniqueEventAddresses])];
+            console.log(`🎯 Total: ${knownInvestors.length} adresses à tester`);
+            } else {
+            console.log('ℹ️ Aucun événement trouvé, utilisation des adresses hardcodées');
             }
-            
-            console.log('Nombre de stakes formatés:', formattedStakes.length);
-            console.log('Stakes formatés final:', formattedStakes);
-            setStakes(formattedStakes);
-            setIsOwnerView(isOwner); // Sauvegarder l'état du propriétaire pour l'interface
-          } else {
-            console.log('Aucun investissement trouvé');
-          }
-        } catch (stakesError) {
-          console.error('Erreur lors de la récupération des investissements:', stakesError);
         }
-      } else {
-        console.log('stakingContract non disponible, impossible d\'appeler les méthodes du contrat');
-        setError('Contract non disponible. Veuillez vous connecter à votre portefeuille.');
+        } catch (eventError) {
+        console.error('❌ Erreur récupération événements, utilisation des adresses hardcodées:', eventError);
+        }
+    
+    // CORRECTION MAJEURE : Récupérer les investissements avec mapping correct
+    for (const investorAddress of knownInvestors) {
+      try {
+        console.log(`📊 Récupération des stakes pour ${investorAddress}`);
+        const investorStakes = await stakingContract.getUserStakes(investorAddress);
+        console.log(`${investorAddress} stake results:`, investorStakes);
+        
+        if (investorStakes && investorStakes.length > 0) {
+          // IMPORTANT : Ajouter chaque stake avec son index USER SPÉCIFIQUE
+          for (let userStakeIndex = 0; userStakeIndex < investorStakes.length; userStakeIndex++) {
+            const stakeWithAddress = {
+              ...investorStakes[userStakeIndex],
+              userAddress: investorAddress,
+              userStakeIndex: userStakeIndex // ← INDEX SPÉCIFIQUE À L'UTILISATEUR
+            };
+            allStakes.push(stakeWithAddress);
+            console.log(`✅ Ajouté stake ${userStakeIndex} pour ${investorAddress}`);
+          }
+          console.log(`${investorStakes.length} stakes trouvés pour ${investorAddress}`);
+        }
+      } catch (investorError) {
+        console.error(`Erreur pour ${investorAddress}:`, investorError);
       }
-    } catch (error) {
-      console.error("Erreur lors du chargement des statistiques:", error);
-      setError(`Erreur générale: ${error.message}`);
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    console.log(`Total de ${allStakes.length} stakes récupérés pour tous les investisseurs connus`);
+  } else {
+    // Récupérer uniquement les investissements de l'utilisateur connecté
+    const currentAddress = address || "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF";
+    
+    console.log('Tentative de récupération des investissements pour:', currentAddress);
+    const userStakes = await stakingContract.getUserStakes(currentAddress);
+    console.log('Investissements récupérés du contrat (brut):', userStakes);
+    
+    if (userStakes && userStakes.length > 0) {
+      // Ajouter l'index utilisateur à chaque stake
+      for (let userStakeIndex = 0; userStakeIndex < userStakes.length; userStakeIndex++) {
+        allStakes.push({
+          ...userStakes[userStakeIndex],
+          userAddress: currentAddress,
+          userStakeIndex: userStakeIndex
+        });
+      }
+    }
+  }
+  
+  // SECTION FORMATAGE CORRIGÉE
+  if (allStakes.length > 0) {
+    console.log('Nombre d\'investissements trouvés:', allStakes.length);
+    console.log('Investissements bruts:', allStakes);
+    
+    const formattedStakes = [];
+    
+    for (let i = 0; i < allStakes.length; i++) {
+      const stake = allStakes[i];
+      console.log(`Formatage du stake ${i}:`, stake);
+      
+      try {
+        // Détecter et manipuler différentes structures possibles
+        const planId = stake.planId !== undefined ? Number(stake.planId) : 
+                      stake[0] !== undefined ? Number(stake[0]) : 0;
+                      
+        const amount = stake.amount !== undefined ? stake.amount : 
+                      stake[1] !== undefined ? stake[1] : 0;
+                      
+        const startTime = stake.startTime !== undefined ? Number(stake.startTime) : 
+                          stake[2] !== undefined ? Number(stake[2]) : Date.now()/1000 - 86400;
+                          
+        const endTime = stake.endTime !== undefined ? Number(stake.endTime) : 
+                        stake[3] !== undefined ? Number(stake[3]) : Date.now()/1000 + 86400*30;
+                        
+        const lastRewardTime = stake.lastRewardTime !== undefined ? Number(stake.lastRewardTime) : 
+                              stake[4] !== undefined ? Number(stake[4]) : Date.now()/1000;
+                              
+        const token = stake.token !== undefined ? stake.token : 
+                      stake[5] !== undefined ? stake[5] : "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
+                      
+        const active = stake.active !== undefined ? Boolean(stake.active) : 
+                      stake[6] !== undefined ? Boolean(stake[6]) : true;
+        
+        // Récupérer l'adresse de l'utilisateur et l'index spécifique
+        const userAddress = stake.userAddress || (isOwner ? undefined : address);
+        const userStakeIndex = stake.userStakeIndex !== undefined ? stake.userStakeIndex : 0;
+        
+        // CORRECTION MAJEURE : Utiliser l'index spécifique à l'utilisateur
+        let withdrawalData = { withdrawnAmount: '0', totalWithdrawn: '0' };
+        let availableRewards = '0';
+
+        if (userAddress) {
+          console.log(`🔍 Traitement du stake ${userStakeIndex} pour ${userAddress} (global index: ${i})`);
+          
+          // Récupérer l'historique des retraits avec l'index utilisateur correct
+          withdrawalData = await getWithdrawalDataFromEvents(userAddress, userStakeIndex);
+          
+          // Calculer les récompenses disponibles avec l'index utilisateur correct
+          try {
+            console.log(`🎯 Tentative calculateRewards(${userAddress}, ${userStakeIndex})`);
+            const rewards = await stakingContract.calculateRewards(userAddress, userStakeIndex);
+            availableRewards = ethers.formatUnits(rewards, 18);
+            console.log(`✅ Récompenses calculées: ${availableRewards} USDC`);
+          } catch (rewardsError) {
+            console.error(`❌ Erreur calcul récompenses pour ${userAddress}, userStakeIndex ${userStakeIndex}:`, rewardsError);
+            
+            // Diagnostic détaillé
+            console.log(`🔍 Diagnostic pour ${userAddress}:`);
+            console.log(`  - User Stake Index: ${userStakeIndex}`);
+            console.log(`  - Global Index: ${i}`);
+            console.log(`  - Stake actif: ${active}`);
+            console.log(`  - StartTime: ${new Date(startTime * 1000)}`);
+            console.log(`  - EndTime: ${new Date(endTime * 1000)}`);
+            console.log(`  - PlanId: ${planId}`);
+          }
+        }
+
+        // Formater le montant correctement
+        let formattedAmount;
+        try {
+          formattedAmount = ethers.formatUnits(amount, 18);
+          console.log(`Montant formaté: ${formattedAmount}`);
+        } catch (amountError) {
+          console.error('Erreur de formatage du montant:', amountError);
+          formattedAmount = '0';
+        }
+        
+        // Convertir l'adresse du token en symbole
+        const tokenSymbol = token === "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d" ? "USDC" : 
+                            token === "0x55d398326f99059fF775485246999027B3197955" ? "USDT" : 
+                            token && token.substring && token.length > 10 ? token.substring(0, 6) + "..." : "UNKNOWN";
+        
+        // Créer l'objet stake formaté
+        const formattedStake = {
+          planId,
+          amount: formattedAmount,
+          startTime: new Date(startTime * 1000),
+          endTime: new Date(endTime * 1000),
+          lastRewardTime: new Date(lastRewardTime * 1000),
+          token: tokenSymbol,
+          active,
+          userAddress,
+          withdrawnAmount: withdrawalData.withdrawnAmount,
+          totalWithdrawn: withdrawalData.totalWithdrawn,
+          availableRewards: parseFloat(availableRewards).toFixed(4),
+          userStakeIndex: userStakeIndex, // Index spécifique à l'utilisateur
+          globalIndex: i // Index global pour debug
+        };
+        
+        formattedStakes.push(formattedStake);
+        console.log('✅ Stake formaté ajouté:', formattedStake);
+      } catch (formatError) {
+        console.error(`❌ Erreur lors du formatage du stake ${i}:`, formatError);
+      }
+    }
+    
+    console.log('✅ Nombre de stakes formatés:', formattedStakes.length);
+    console.log('✅ Stakes formatés final:', formattedStakes);
+    setStakes(formattedStakes);
+    setIsOwnerView(isOwner);
+  } else {
+    console.log('ℹ️ Aucun investissement trouvé');
+  }
+} catch (stakesError) {
+  console.error('Erreur lors de la récupération des investissements:', stakesError);
+}
+} else {
+      console.log('stakingContract non disponible, impossible d\'appeler les méthodes du contrat');
+      setError('Contract non disponible. Veuillez vous connecter à votre portefeuille.');
+    }
+  } catch (error) {
+    console.error("Erreur lors du chargement des statistiques:", error);
+    setError(`Erreur générale: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Charger les données au montage et quand les dépendances changent
   useEffect(() => {
@@ -735,6 +760,97 @@ try {
           </Stat>
         </CardBody>
       </Card>
+      {/* Somme Total des Récompenses en cours*/}
+      <Card bg={bgColorCard}>
+      <CardBody>
+        <Stat>
+          <StatLabel color={textColor} fontSize={{ base: "sm", md: "md" }}>Total récompenses en cours</StatLabel>
+          <StatNumber fontSize={{ base: "lg", md: "2xl" }} color="orange.500">
+            {stakes
+              .filter(stake => stake.active)
+              .reduce((total, stake) => {
+                const rewards = parseFloat(stake.availableRewards || '0');
+                return total + rewards;
+              }, 0).toFixed(4)} USDC
+          </StatNumber>
+          <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+            <StatArrow type="increase" />
+            {stakes.filter(stake => stake.active && parseFloat(stake.availableRewards || '0') > 0).length} plans actifs avec récompenses
+          </StatHelpText>
+        </Stat>
+      </CardBody>
+    </Card>
+
+    {/* Alerte solde contrat insuffisant contre solde des récompenses en cours */}
+      <Card bg={bgColorCard}>
+      <CardBody>
+        <Stat>
+          <StatLabel color={textColor} fontSize={{ base: "sm", md: "md" }}>Alerte Liquidité</StatLabel>
+          <StatNumber 
+            fontSize={{ base: "lg", md: "2xl" }} 
+            color={(() => {
+              const totalRewards = stakes
+                .filter(stake => stake.active)
+                .reduce((total, stake) => {
+                  const rewards = parseFloat(stake.availableRewards || '0');
+                  return total + rewards;
+                }, 0);
+          
+              const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
+          
+              if (totalRewards <= contractBalance) return "green.500";
+              return "red.500";
+            })()}
+            >
+            {(() => {
+              const totalRewards = stakes
+                .filter(stake => stake.active)
+                .reduce((total, stake) => {
+                  const rewards = parseFloat(stake.availableRewards || '0');
+                  return total + rewards;
+                }, 0);
+          
+              const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
+          
+              if (totalRewards <= contractBalance) {
+                return "✅ SÉCURISÉ";
+              } else {
+                return "⚠️ LIQUIDITÉ INSUFFISANTE";
+              }
+            })()}
+          </StatNumber>
+          <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+            {(() => {
+              const totalRewards = stakes
+                .filter(stake => stake.active)
+                .reduce((total, stake) => {
+                  const rewards = parseFloat(stake.availableRewards || '0');
+                  return total + rewards;
+                }, 0);
+          
+              const contractBalance = parseFloat(stats.contractBalance.replace(' USDC', '') || '0');
+              const gap = contractBalance - totalRewards;
+          
+              if (totalRewards <= contractBalance) {
+                return (
+                  <>
+                    <StatArrow type="increase" />
+                    Excédent de {gap.toFixed(2)} USDC
+                  </>
+                );
+              } else {
+                return (
+                  <>
+                    <StatArrow type="decrease" />
+                    Déficit de {Math.abs(gap).toFixed(2)} USDC - Action requise !
+                  </>
+                );
+              }
+            })()}
+          </StatHelpText>
+        </Stat>
+      </CardBody>
+    </Card>
       {/* ... autres cards similaires ... */}
     </SimpleGrid>
 
@@ -972,116 +1088,257 @@ try {
 
           const gainsPercentage = stakeAmount > 0 ? ((realizedGains / stakeAmount) * 100) : 0;
           
-          return (
-            <Tr key={index}>
-              {isOwnerView && (
-                <Td minW="140px">
-                  {stake.userAddress ? (
-                    <Flex align="center" gap={1} flexWrap="wrap">
-                      <Text fontSize={{ base: "2xs", md: "sm" }}>
-                        {`${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}`}
+                return (
+                  <Tr key={index}>
+                    {isOwnerView && (
+                      <Td minW="140px">
+                        {stake.userAddress ? (
+                          <Flex align="center" gap={1} flexWrap="wrap">
+                            <Text fontSize={{ base: "2xs", md: "sm" }}>
+                              {`${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}`}
+                            </Text>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              colorScheme={copiedAddress === stake.userAddress ? "green" : "gray"}
+                              onClick={() => copyToClipboard(stake.userAddress)}
+                              leftIcon={<Icon as={copiedAddress === stake.userAddress ? Check : Copy} />}
+                              title={copiedAddress === stake.userAddress ? "Copié !" : "Copier l'adresse complète"}
+                              minW="auto"
+                            >
+                              {copiedAddress === stake.userAddress ? "Copié" : ""}
+                            </Button>
+                          </Flex>
+                        ) : (
+                          <Text fontSize={{ base: "2xs", md: "sm" }} color="gray.400">N/A</Text>
+                        )}
+                      </Td>
+                    )}
+              
+                    <Td minW="80px" fontSize={{ base: "2xs", md: "sm" }}>
+                      Plan {plan ? plan.name : stake.planId}
+                    </Td>
+              
+                    <Td minW="120px" fontSize={{ base: "2xs", md: "sm" }} fontWeight="medium">
+                      {stake.amount} {stake.token}
+                    </Td>
+              
+                    <Td minW="110px" fontSize={{ base: "2xs", md: "xs" }}>
+                      {stake.startTime.toLocaleDateString()}
+                    </Td>
+              
+                    <Td minW="110px" fontSize={{ base: "2xs", md: "xs" }}>
+                      {stake.endTime.toLocaleDateString()}
+                    </Td>
+              
+                    <Td minW="70px" fontSize={{ base: "2xs", md: "sm" }}>
+                      {stake.token}
+                    </Td>
+              
+                    <Td minW="120px">
+                      <Text color="orange.500" fontWeight="medium" fontSize={{ base: "2xs", md: "sm" }}>
+                        {stake.availableRewards || '0'} {stake.token}
                       </Text>
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        colorScheme={copiedAddress === stake.userAddress ? "green" : "gray"}
-                        onClick={() => copyToClipboard(stake.userAddress)}
-                        leftIcon={<Icon as={copiedAddress === stake.userAddress ? Check : Copy} />}
-                        title={copiedAddress === stake.userAddress ? "Copié !" : "Copier l'adresse complète"}
-                        minW="auto"
+                    </Td>
+              
+                    <Td minW="120px">
+                      <Text color="blue.500" fontWeight="medium" fontSize={{ base: "2xs", md: "sm" }}>
+                        {stake.withdrawnAmount || '0'} {stake.token}
+                      </Text>
+                    </Td>
+              
+                    <Td minW="120px">
+                      <Text color="green.500" fontWeight="bold" fontSize={{ base: "2xs", md: "sm" }}>
+                        {stake.totalWithdrawn || '0'} {stake.token}
+                      </Text>
+                    </Td>
+              
+                    <Td minW="140px">
+                      <VStack spacing={0} align="start">
+                        <Text 
+                          color={realizedGains >= 0 ? "green.500" : "red.500"} 
+                          fontWeight="bold"
+                          fontSize={{ base: "2xs", md: "sm" }}
+                        >
+                          {realizedGains >= 0 ? '+' : ''}{realizedGains.toFixed(4)} {stake.token}
+                        </Text>
+                        <Text 
+                          color={gainsPercentage >= 0 ? "green.400" : "red.400"} 
+                          fontSize={{ base: "3xs", md: "xs" }}
+                          fontWeight="medium"
+                        >
+                          ({gainsPercentage >= 0 ? '+' : ''}{gainsPercentage.toFixed(2)}%)
+                        </Text>
+                      </VStack>
+                    </Td>
+              
+                    <Td minW="80px">
+                      <Badge 
+                        colorScheme={stake.active ? "green" : "red"} 
+                        fontSize={{ base: "2xs", md: "xs" }}
+                        variant="solid"
                       >
-                        {copiedAddress === stake.userAddress ? "Copié" : ""}
-                      </Button>
-                    </Flex>
-                  ) : (
-                    <Text fontSize={{ base: "2xs", md: "sm" }} color="gray.400">N/A</Text>
-                  )}
-                </Td>
-              )}
-              
-              <Td minW="80px" fontSize={{ base: "2xs", md: "sm" }}>
-                Plan {plan ? plan.name : stake.planId}
-              </Td>
-              
-              <Td minW="120px" fontSize={{ base: "2xs", md: "sm" }} fontWeight="medium">
-                {stake.amount} {stake.token}
-              </Td>
-              
-              <Td minW="110px" fontSize={{ base: "2xs", md: "xs" }}>
-                {stake.startTime.toLocaleDateString()}
-              </Td>
-              
-              <Td minW="110px" fontSize={{ base: "2xs", md: "xs" }}>
-                {stake.endTime.toLocaleDateString()}
-              </Td>
-              
-              <Td minW="70px" fontSize={{ base: "2xs", md: "sm" }}>
-                {stake.token}
-              </Td>
-              
-              <Td minW="120px">
-                <Text color="orange.500" fontWeight="medium" fontSize={{ base: "2xs", md: "sm" }}>
-                  {stake.availableRewards || '0'} {stake.token}
+                        {stake.active ? "Actif" : "Terminé"}
+                      </Badge>
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </Tbody>
+          </Table>
+        </Box>
+      ) : (
+        <Box textAlign="center" py={8} bg="gray.50" borderRadius="md">
+          <Text color="gray.600" fontSize={{ base: "sm", md: "lg" }}>
+            {statusFilter === 'active' && 'Aucun investissement actif trouvé'}
+            {statusFilter === 'completed' && 'Aucun investissement terminé trouvé'}
+            {statusFilter === 'all' && 'Aucun investissement trouvé'}
+          </Text>
+        </Box>
+      )}
+      </CardBody>
+    </Card>
+
+    {/* Tableau des investissements arrivant à échéance */}
+    <Card bg={bgColorCard} mb={8}>
+      <CardBody>
+        <Flex justify="space-between" align="center" mb={4}>
+          <Heading size="md" color="orange.600">
+            ⚠️ Investissements arrivant à échéance (7 jours)
+          </Heading>
+          <Text color="orange.500" fontWeight="bold">
+            {stakes.filter(stake => {
+              if (!stake.active) return false;
+              const now = new Date();
+              const endDate = new Date(stake.endTime);
+              const diffTime = endDate.getTime() - now.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+              return diffDays <= 7 && diffDays >= 0;
+            }).length} investissement(s) à préparer
+          </Text>
+        </Flex>
+    
+        {loading ? (
+          <Text>Chargement des données...</Text>
+        ) : (
+          (() => {
+            // Filtrer les stakes arrivant à échéance dans 7 jours
+            const expiringStakes = stakes.filter(stake => {
+              if (!stake.active) return false;
+              const now = new Date();
+              const endDate = new Date(stake.endTime);
+              const diffTime = endDate.getTime() - now.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+              return diffDays <= 7 && diffDays >= 0;
+            });
+
+            return expiringStakes.length > 0 ? (
+              <Box overflowX="auto" maxW="100%" pb={2}>
+                <Table variant="simple" size="sm" minW="900px">
+                  <Thead bg="orange.50">
+                    <Tr>
+                      {isOwnerView && <Th minW="100px" color="black">Utilisateur</Th>}
+                      <Th minW="80px" color="black">Plan</Th>
+                      <Th minW="120px" color="black">Montant</Th>
+                      <Th minW="110px" color="black">Date de début</Th>
+                      <Th minW="110px" color="black">Date de fin</Th>
+                      <Th minW="70px" color="black">Token</Th>
+                      <Th minW="100px" color="black">Jours restants</Th>  {/* ← Colonne bonus */}
+                      <Th minW="80px" color="black">Statut</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {expiringStakes.map((stake, index) => {
+                      const plan = plans ? plans.find(p => p.id === stake.planId) : null;
+                  
+                      // Calculer les jours restants
+                      const now = new Date();
+                      const endDate = new Date(stake.endTime);
+                      const diffTime = endDate.getTime() - now.getTime();
+                      const daysRemaining = Math.ceil(diffTime / (1000 * 3600 * 24));
+                  
+                      // Couleur selon urgence
+                      const urgencyColor = daysRemaining <= 1 ? "red.500" : 
+                                          daysRemaining <= 3 ? "orange.500" : "yellow.500";
+                  
+                      return (
+                        <Tr key={index} bg={daysRemaining <= 1 ? "red.100" : daysRemaining <= 3 ? "orange.100" : "blue.100"}>
+                          {isOwnerView && (
+                            <Td minW="100px" fontSize="sm" color="black">
+                              {stake.userAddress ? 
+                                `${stake.userAddress.substring(0, 6)}...${stake.userAddress.substring(stake.userAddress.length - 4)}` : 
+                                'N/A'}
+                            </Td>
+                          )}
+                          <Td minW="80px" fontSize="sm" color="black">Plan {plan ? plan.name : stake.planId}</Td>
+                          <Td minW="120px" fontSize="sm" fontWeight="bold" color="orange.600">
+                            {stake.amount} {stake.token}
+                          </Td>
+                          <Td minW="110px" fontSize="xs" color="black">{stake.startTime.toLocaleDateString()}</Td>
+                          <Td minW="110px" fontSize="xs" fontWeight="bold" color="red">
+                            {stake.endTime.toLocaleDateString()}
+                          </Td>
+                          <Td minW="70px" fontSize="sm" color="black">{stake.token}</Td>
+                      
+                          {/* Jours restants avec couleur d'urgence */}
+                          <Td minW="100px">
+                            <Badge 
+                              colorScheme={daysRemaining <= 1 ? "red" : daysRemaining <= 3 ? "orange" : "yellow"}
+                              fontSize="xs"
+                              fontWeight="bold"
+                              variant="solid"
+                              color="black"
+                            >
+                              {daysRemaining <= 0 ? "ÉCHÉANCE !" : `${daysRemaining} jour${daysRemaining > 1 ? 's' : ''}`}
+                            </Badge>
+                          </Td>
+                      
+                          {/* Statut */}
+                          <Td minW="80px">
+                            <Badge 
+                              colorScheme="orange" 
+                              fontSize="sm"
+                              fontWeight="bold"
+                              variant="solid"
+                              color="black"
+                            >
+                              À préparer
+                            </Badge>
+                          </Td>
+                        </Tr>
+                      );
+                    })}
+                  </Tbody>
+                </Table>
+            
+                {/* Message d'alerte en bas du tableau */}
+                <Alert status="warning" mt={4} borderRadius="md">
+                  <AlertIcon />
+                  <Box>
+                    <Text fontWeight="bold">Action requise :</Text>
+                    <Text fontSize="sm">
+                      Assurez-vous que le contrat dispose de suffisamment de liquidités pour ces retraits de capital.
+                      Total à prévoir : <strong>
+                        {expiringStakes.reduce((total, stake) => total + parseFloat(stake.amount), 0).toFixed(2)} USDC
+                      </strong>
+                    </Text>
+                  </Box>
+                </Alert>
+              </Box>
+            ) : (
+              <Box textAlign="center" py={8} bg="green.50" borderRadius="md">
+                <Text color="green.600" fontWeight="bold" fontSize="lg">
+                  ✅ Aucun investissement n'arrive à échéance dans les 7 prochains jours
                 </Text>
-              </Td>
-              
-              <Td minW="120px">
-                <Text color="blue.500" fontWeight="medium" fontSize={{ base: "2xs", md: "sm" }}>
-                  {stake.withdrawnAmount || '0'} {stake.token}
+                <Text color="green.500" fontSize="sm">
+                  Pas d'action requise pour le moment
                 </Text>
-              </Td>
-              
-              <Td minW="120px">
-                <Text color="green.500" fontWeight="bold" fontSize={{ base: "2xs", md: "sm" }}>
-                  {stake.totalWithdrawn || '0'} {stake.token}
-                </Text>
-              </Td>
-              
-              <Td minW="140px">
-                <VStack spacing={0} align="start">
-                  <Text 
-                    color={realizedGains >= 0 ? "green.500" : "red.500"} 
-                    fontWeight="bold"
-                    fontSize={{ base: "2xs", md: "sm" }}
-                  >
-                    {realizedGains >= 0 ? '+' : ''}{realizedGains.toFixed(4)} {stake.token}
-                  </Text>
-                  <Text 
-                    color={gainsPercentage >= 0 ? "green.400" : "red.400"} 
-                    fontSize={{ base: "3xs", md: "xs" }}
-                    fontWeight="medium"
-                  >
-                    ({gainsPercentage >= 0 ? '+' : ''}{gainsPercentage.toFixed(2)}%)
-                  </Text>
-                </VStack>
-              </Td>
-              
-              <Td minW="80px">
-                <Badge 
-                  colorScheme={stake.active ? "green" : "red"} 
-                  fontSize={{ base: "2xs", md: "xs" }}
-                  variant="solid"
-                >
-                  {stake.active ? "Actif" : "Terminé"}
-                </Badge>
-              </Td>
-            </Tr>
-          );
-        })}
-      </Tbody>
-    </Table>
-  </Box>
-) : (
-  <Box textAlign="center" py={8} bg="gray.50" borderRadius="md">
-    <Text color="gray.600" fontSize={{ base: "sm", md: "lg" }}>
-      {statusFilter === 'active' && 'Aucun investissement actif trouvé'}
-      {statusFilter === 'completed' && 'Aucun investissement terminé trouvé'}
-      {statusFilter === 'all' && 'Aucun investissement trouvé'}
-    </Text>
-  </Box>
-)}
-  </CardBody>
-</Card>
+              </Box>
+            );
+          })()
+        )}
+      </CardBody>
+    </Card>
 
     {/* Actions rapides - responsive */}
     <Card bg={bgColorCard}>
