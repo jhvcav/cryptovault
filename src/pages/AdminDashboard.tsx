@@ -781,6 +781,27 @@ const copyToClipboard = async (address) => {
       </CardBody>
     </Card>
 
+    {/* Somme total des plans investits en cours*/}
+    <Card bg={bgColorCard}>
+  <CardBody>
+    <Stat>
+      <StatLabel color={textColor} fontSize={{ base: "sm", md: "md" }}>Total investi actif</StatLabel>
+      <StatNumber fontSize={{ base: "lg", md: "2xl" }} color="blue.500">
+        {stakes
+          .filter(stake => stake.active)
+          .reduce((total, stake) => {
+            const amount = parseFloat(stake.amount || '0');
+            return total + amount;
+          }, 0).toFixed(2)} USDC
+      </StatNumber>
+      <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
+        <StatArrow type="increase" />
+        {stakes.filter(stake => stake.active).length} investissements actifs en cours
+      </StatHelpText>
+    </Stat>
+  </CardBody>
+</Card>
+
     {/* Alerte solde contrat insuffisant contre solde des récompenses en cours */}
       <Card bg={bgColorCard}>
       <CardBody>
