@@ -629,13 +629,13 @@ const LoginPage: React.FC = () => {
   mt={{ base: 6, md: 9 }}
   _hover={{ transform: 'scale(1.05)' }}
   transition="transform 0.3s ease"
-  w="250px"
-  h="250px"
+  w="150px"
+  h="150px"
   display="flex"
   alignItems="center"
   justifyContent="center"
 >
-  <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <svg width="150" height="150" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
   <defs>
     {/*Dégradé violet pour le fond*/}
     <radialGradient id="bgGradient" cx="30%" cy="30%">
