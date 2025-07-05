@@ -13,7 +13,7 @@ const InvestmentChart = ({ data }: InvestmentChartProps) => {
   
   return (
     <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
-      <h3 className="text-white font-medium mb-4">Rendements des Investissements</h3>
+      <h3 className="text-white font-medium mb-4">Résultat des récompenses</h3>
       
       <div className="relative h-60">
         {/* Étiquettes de l'axe Y */}

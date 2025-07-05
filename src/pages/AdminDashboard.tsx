@@ -467,8 +467,6 @@ const copyToClipboard = async (address) => {
     // Liste des adresses connues pour avoir investi
     let knownInvestors = [
         "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
-        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd",
-        "0xce1a17c4c2e1e2cc0586c451952a073a82fa2bf0"
     ];
 
     try {

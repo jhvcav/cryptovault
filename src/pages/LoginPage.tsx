@@ -626,21 +626,22 @@ const LoginPage: React.FC = () => {
               {/* En-tête avec logo et titre */}
               <VStack spacing={0}>
                 <Box
-                  mt={{ base: 6, md: 9 }}
-                  p={{ base: 4, md: 6 }}
-                  bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                  rounded="full"
-                  shadow="xl"
-                  _hover={{ transform: 'scale(1.05)' }}
-                  transition="transform 0.3s ease"
-                  w={logoSize}
-                  h={logoSize}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Text fontSize={logoFontSize} fontWeight="bold" color="white">CV</Text>
-                </Box>
+  mt={{ base: 6, md: 9 }}
+  _hover={{ transform: 'scale(1.05)' }}
+  transition="transform 0.3s ease"
+  w={{ base: "120px", md: "150px" }}
+  h={{ base: "120px", md: "150px" }}
+  display="flex"
+  alignItems="center"
+  justifyContent="center"
+>
+  <img
+    src="/src/images/logo/cv_logo.svg" 
+    alt="CV Logo"
+    w={{ base: "120px", md: "150px" }} 
+    h={{ base: "120px", md: "150px" }}
+  />
+</Box>
                 
                 <VStack spacing={1}>
                   <Heading

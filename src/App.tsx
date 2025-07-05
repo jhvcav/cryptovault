@@ -565,7 +565,7 @@ const App: React.FC = () => {
       }
     }
 
-    document.title = 'CryptoVault - Plateforme d\'investissement sécurisée';
+    document.title = 'CryptocaVault - Plateforme de récompense sécurisée';
     
     // Cleanup
     return () => {

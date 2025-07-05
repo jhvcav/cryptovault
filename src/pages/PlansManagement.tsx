@@ -99,8 +99,7 @@ const PlansManagement: React.FC = () => {
       
       // Fallback vers utilisateurs par défaut
       const fallbackUsers = [
-        "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
-        "0xec0cf7505c86e0ea33a2f2de4660e6a06abe92dd"
+        "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8rf",
       ];
       console.log('🔄 Utilisation des utilisateurs par défaut:', fallbackUsers);
       return fallbackUsers;
