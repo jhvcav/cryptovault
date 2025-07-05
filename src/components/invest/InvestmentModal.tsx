@@ -159,12 +159,12 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Investir dans {plan.name}</ModalHeader>
+        <ModalHeader>Faire un dépôt dans {plan.name}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch" pb={4}>
             <Text>
-              APR: {plan.apr}% | Durée: {plan.duration} jours
+              Récompenses: {plan.apr}% | Durée: {plan.duration} jours
             </Text>
             <Text>
               Montant minimum: {plan.minAmount} $
@@ -224,7 +224,7 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
             </FormControl>
 
             <FormControl>
-              <FormLabel>Montant à investir</FormLabel>
+              <FormLabel>Montant à déposer</FormLabel>
               <Input
                 type="text"
                 value={amount}
@@ -268,7 +268,7 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
               isLoading={isInvesting || loading}
               isDisabled={!amount || parseFloat(amount) <= 0}
             >
-              Investir
+              Dépôt
             </Button>
           </VStack>
         </ModalBody>
