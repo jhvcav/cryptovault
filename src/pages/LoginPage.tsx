@@ -629,18 +629,74 @@ const LoginPage: React.FC = () => {
   mt={{ base: 6, md: 9 }}
   _hover={{ transform: 'scale(1.05)' }}
   transition="transform 0.3s ease"
-  w={{ base: "120px", md: "150px" }}
-  h={{ base: "120px", md: "150px" }}
+  w="250px"
+  h="250px"
   display="flex"
   alignItems="center"
   justifyContent="center"
 >
-  <img
-    src="/src/images/logo/cv_logo.svg" 
-    alt="CV Logo"
-    w={{ base: "120px", md: "150px" }} 
-    h={{ base: "120px", md: "150px" }}
-  />
+  <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    {/*Dégradé violet pour le fond*/}
+    <radialGradient id="bgGradient" cx="30%" cy="30%">
+      <stop offset="0%" style={{stopColor:"#a855f7", stopOpacity:1}} />
+      <stop offset="100%" style={{stopColor:"#6b21a8", stopOpacity:1}} />
+    </radialGradient>
+    
+    {/*Dégradé pour le demi-cercle*/}
+    <linearGradient id="arcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style={{stopColor:"#ffffff", stopOpacity:0.9}} />
+      <stop offset="50%" style={{stopColor:"#f8fafc", stopOpacity:0.8}} />
+      <stop offset="100%" style={{stopColor:"#e2e8f0", stopOpacity:0.7}} />
+    </linearGradient>
+    
+    {/*Ombre portée*/}
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.3"/>
+    </filter>
+    
+    {/*Effet de brillance pour les lettres*/}
+    <filter id="letterGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#ffffff" floodOpacity="0.4"/>
+    </filter>
+  </defs>
+  
+  {/*Cercle de fond avec dégradé et ombre*/}
+  <circle cx="100" cy="100" r="90" fill="url(#bgGradient)" stroke="#000000" strokeWidth="3" filter="url(#shadow)"/>
+  
+  {/*Demi-cercle ouvert avec effet dégradé*/}
+  <path d="M 112 40 A 65 65 0 1 0 112 160" fill="none" stroke="url(#arcGradient)" strokeWidth="14" strokeLinecap="round"/>
+  
+  {/*Étoiles décoratives de différents formats*/}
+  {/*Étoile 5 branches en haut à droite*/}
+  <path d="M 155 45 L 158 54 L 167 54 L 160 60 L 163 69 L 155 63 L 147 69 L 150 60 L 143 54 L 152 54 Z" fill="#ffffff" opacity="0.7"/>
+  
+  {/*Petite étoile 4 branches à gauche*/}
+  <path d="M 35 75 L 37 82 L 44 80 L 37 87 L 35 94 L 33 87 L 26 80 L 33 82 Z" fill="#ffffff" opacity="0.5"/>
+  
+  {/*Étoile simple (diamant) en bas à droite*/}
+  <path d="M 165 150 L 169 154 L 165 158 L 161 154 Z" fill="#ffffff" opacity="0.6"/>
+  
+  {/*Petite étoile 6 branches en haut à gauche*/}
+  <path d="M 45 50 L 46 53 L 49 52 L 47 55 L 50 58 L 46 57 L 45 60 L 44 57 L 41 58 L 43 55 L 40 52 L 44 53 Z" fill="#ffffff" opacity="0.4"/>
+  
+  {/*Étoile brillante (croix) en bas à gauche*/}
+  <path d="M 50 165 L 52 163 L 54 165 L 52 167 Z M 50 163 L 54 167 M 54 163 L 50 167" stroke="#ffffff" strokeWidth="1.5" fill="none" opacity="0.6"/>
+  
+  {/*Petite étoile simple en bas*/}
+  <circle cx="100" cy="175" r="1.5" fill="#ffffff" opacity="0.5"/>
+  
+  {/*Lettres avec effet de brillance*/}
+  <text x="70" y="130" fontFamily="Arial, sans-serif" fontSize="76" fontWeight="bold" fill="#ffffff" textAnchor="middle" filter="url(#letterGlow)">C</text>
+  <text x="130" y="130" fontFamily="Arial, sans-serif" fontSize="76" fontWeight="bold" fill="#ffffff" textAnchor="middle" filter="url(#letterGlow)">V</text>
+  
+  {/*Effet de brillance subtil sur le contour*/}
+  <circle cx="100" cy="100" r="87" fill="none" stroke="url(#bgGradient)" strokeWidth="1" opacity="0.3"/>
+  
+  {/*Point de lumière décoratif*/}
+  <circle cx="75" cy="65" r="3" fill="#ffffff" opacity="0.6"/>
+  <circle cx="75" cy="65" r="1.5" fill="#ffffff" opacity="0.9"/>
+  </svg>
 </Box>
                 
                 <VStack spacing={1}>
