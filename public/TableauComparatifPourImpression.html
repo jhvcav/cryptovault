@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparatif des NFT</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 20mm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            color: #333;
+            border-radius: 10px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95em;
+            border-bottom: 3px solid #1a202c;
+        }
+        
+        .comparison-table th:first-child {
+            text-align: left;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        }
+        
+        .comparison-table th.fidelite {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        }
+        
+        .comparison-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            background-color: #f7fafc;
+            border-right: 2px solid #e2e8f0;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .comparison-table tr:hover {
+            background-color: #e6fffa;
+        }
+        
+        .fidelite-cell {
+            background: transparent !important;
+            color: #333 !important;
+            font-weight: 600;
+        }
+        
+        .price-free {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+        
+        .bonus-percentage {
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .supply-count {
+            color: #0d9488;
+            font-weight: 600;
+        }
+        
+        .checkmark {
+            color: #10b981;
+            font-size: 1.2em;
+        }
+        
+        .cross {
+            color: #ef4444;
+            font-size: 1.2em;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+        
+        .tier-bronze { color: #cd7f32; }
+        .tier-silver { color: #c0c0c0; }
+        .tier-gold { color: #ffd700; }
+        .tier-diamond { color: #b9f2ff; }
+        .tier-loyalty { color: #10b981; }
+        
+        @media print {
+            body {
+                background-color: white;
+            }
+            
+            .header {
+                break-inside: avoid;
+            }
+            
+            .comparison-table {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Comparatif des NFT</h1>
+        <p>Analyse détaillée des différents tiers et de leurs avantages</p>
+    </div>
+    
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Caractéristiques</th>
+                <th><span class="tier-bronze">🥉 Bronze</span></th>
+                <th><span class="tier-silver">🥈 Argent</span></th>
+                <th><span class="tier-gold">🥇 Or</span></th>
+                <th><span class="tier-diamond">💎 Privilège</span></th>
+                <th class="fidelite"><span class="tier-loyalty">🎁 Fidélité</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Prix</td>
+                <td>50 USDC</td>
+                <td>150 USDC</td>
+                <td>500 USDC</td>
+                <td>2000 USDC</td>
+                <td class="fidelite-cell price-free">GRATUIT</td>
+            </tr>
+            <tr>
+                <td>Bonus Récompenses</td>
+                <td class="bonus-percentage">+20%</td>
+                <td class="bonus-percentage">+50%</td>
+                <td class="bonus-percentage">+100%</td>
+                <td class="bonus-percentage">+150%</td>
+                <td class="fidelite-cell bonus-percentage">+20%</td>
+            </tr>
+            <tr>
+                <td>Accès Plans</td>
+                <td>Starter</td>
+                <td>Starter + Standard</td>
+                <td>Starter + Standard + Premium</td>
+                <td>Tous les plans</td>
+                <td class="fidelite-cell">Starter</td>
+            </tr>
+            <tr>
+                <td>Périodes de Blocage</td>
+                <td>30j</td>
+                <td>30-90j</td>
+                <td>30-180j</td>
+                <td>30-360j</td>
+                <td class="fidelite-cell">30j</td>
+            </tr>
+            <tr>
+                <td>Dépôt Minimum</td>
+                <td>100$</td>
+                <td>500$</td>
+                <td>1000$</td>
+                <td>2000$</td>
+                <td class="fidelite-cell">Communautaire</td>
+            </tr>
+            <tr>
+                <td>Support</td>
+                <td>Communautaire</td>
+                <td>Prioritaire</td>
+                <td>VIP</td>
+                <td>Dédié</td>
+                <td class="fidelite-cell">Communautaire</td>
+            </tr>
+            <tr>
+                <td>Sessions 1-on-1</td>
+                <td class="cross">❌</td>
+                <td class="cross">❌</td>
+                <td class="checkmark">✅</td>
+                <td class="checkmark">✅ Illimité</td>
+                <td class="fidelite-cell cross">❌</td>
+            </tr>
+            <tr>
+                <td>Gouvernance</td>
+                <td class="cross">❌</td>
+                <td class="cross">❌</td>
+                <td class="cross">❌</td>
+                <td class="checkmark">✅</td>
+                <td class="fidelite-cell cross">❌</td>
+            </tr>
+            <tr>
+                <td>Supply Restant</td>
+                <td class="supply-count">1000</td>
+                <td class="supply-count">500</td>
+                <td class="supply-count">200</td>
+                <td class="supply-count">50</td>
+                <td class="fidelite-cell supply-count">12</td>
+            </tr>
+            <tr>
+                <td>Éligibilité</td>
+                <td>💰 Achat</td>
+                <td>💰 Achat</td>
+                <td>💰 Achat</td>
+                <td>💰 Achat</td>
+                <td class="fidelite-cell">
+                    <strong>🎁 Fidélité Uniquement</strong>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>Document généré le <span id="date"></span></p>
+    </div>
+    
+    <script>
+        // Afficher la date actuelle
+        document.getElementById('date').textContent = new Date().toLocaleDateString('fr-FR');
+        
+        // Fonction pour générer le PDF
+        function generatePDF() {
+            window.print();
+        }
+        
+        // Bouton pour générer le PDF (optionnel)
+        document.addEventListener('DOMContentLoaded', function() {
+            const button = document.createElement('button');
+            button.textContent = 'Générer PDF';
+            button.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                background: #4f46e5;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: 600;
+                z-index: 1000;
+            `;
+            button.onclick = generatePDF;
+            document.body.appendChild(button);
+        });
+    </script>
+</body>
+</html>

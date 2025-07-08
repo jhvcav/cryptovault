@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
 import { useFidelityStatus } from '../hooks/useFidelityStatus';
 import { useNFT } from '../hooks/useNFT';
+import OpenHTMLButton from '../components/OpenHTMLButton'
 import { 
   ShoppingCart, 
   Check, 
@@ -943,6 +944,14 @@ const NFTMarketplace: React.FC = () => {
                   <td className="p-4 text-center">30-180j</td>
                   <td className="p-4 text-center">30-360j</td>
                   <td className="p-4 text-center bg-emerald-900/20">30j</td>
+                </tr>
+                <tr className="border-t border-slate-600">
+                  <td className="p-4 font-medium">Dépôt Minimum</td>
+                  <td className="p-4 text-center">100$</td>
+                  <td className="p-4 text-center">500$</td>
+                  <td className="p-4 text-center">1000$</td>
+                  <td className="p-4 text-center">2000$</td>
+                  <td className="p-4 text-center bg-emerald-900/20">Communautaire</td>
                 </tr>
                 <tr className="border-t border-slate-600">
                   <td className="p-4 font-medium">Support</td>

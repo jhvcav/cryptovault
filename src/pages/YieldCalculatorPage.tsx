@@ -50,9 +50,9 @@ const NFT_CONFIG = {
     price: 1000,
     multiplier: 2.5,
     plans: [
-      { id: 'starter', name: 'Starter', apr: 10, duration: 30 },
-      { id: 'standard', name: 'Standard', apr: 15, duration: 60 },
-      { id: 'premium', name: 'Premium', apr: 20, duration: 90 }
+      { id: 'starter', name: 'Starter', apr: 12, duration: 30 },
+      { id: 'standard', name: 'Standard', apr: 15, duration: 90 },
+      { id: 'premium', name: 'Premium', apr: 20, duration: 180 }
     ]
   }
 };
@@ -77,7 +77,7 @@ const YieldCalculatorPage: React.FC = () => {
     selectedNFT: 'bronze',
     selectedPlan: 'starter',
     investmentAmount: 1000,
-    numberOfUsers: 100
+    numberOfUsers: 1
   });
 
   const [results, setResults] = useState<CalculationResult | null>(null);

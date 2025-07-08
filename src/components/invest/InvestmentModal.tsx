@@ -177,7 +177,7 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
                 <VStack spacing={2} fontSize="sm" align="stretch">
                   <Flex justifyContent="space-between">
                     <Text color="gray.300">Plan</Text>
-                    <Text color="white">{plan.name} ({plan.apr}% APR)</Text>
+                    <Text color="white">{plan.name} ({plan.apr}% Récompense)</Text>
                   </Flex>
                   <Flex justifyContent="space-between">
                     <Text color="gray.300">Durée</Text>
