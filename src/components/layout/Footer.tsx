@@ -81,6 +81,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/compound-interest-Simulator" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  Calculateur de récompense NFT/Plans Composés
+                </Link>
+              </li>
+              <li>
                 <Link to="/calculator-multi-critere" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Calculateur des plans décompenses
                 </Link>

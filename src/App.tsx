@@ -30,6 +30,7 @@ import PolitiqueEtConfidentialitePage from './pages/PolitiqueEtConfidentialitePa
 import DivulgationDesRisquesPage from './pages/DivulgationDesRisquesPage';
 import StrategyManagement from './pages/StrategyManagement';
 import InvestmentCalculatorMultiCritere from './pages/InvestmentCalculatorMultiCritere';
+import CompoundInterestSimulator from './pages/CompoundingInterestSimulator';
 
 // NOUVEAUX COMPOSANTS COMMUNAUTÉ
 import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
@@ -447,6 +448,7 @@ const AppContent: React.FC = () => {
                       <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
                       <Route path="/calculator-multi-critere" element={<InvestmentCalculatorMultiCritere />} />
                       <Route path="/strategy-management" element={<StrategyManagement />} />
+                      <Route path="/compound-interest-Simulator" element={<CompoundInterestSimulator />} />
                      
                       {/* Routes de la communauté */}
                       
