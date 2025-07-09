@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
 import { useFidelityStatus } from '../hooks/useFidelityStatus';
 import { useNFT } from '../hooks/useNFT';
-import OpenHTMLButton from '../components/OpenHTMLButton'
 import { 
   ShoppingCart, 
   Check, 
@@ -208,7 +207,8 @@ const NFTMarketplace: React.FC = () => {
           'Support VIP',
           'Périodes : 30-180 jours',
           'Sessions stratégie 1-on-1',
-          'Accès beta nouvelles fonctionnalités'
+          'Accès beta nouvelles fonctionnalités',
+          'Insights mensuels'
         ],
         bgGradient: 'from-yellow-500 to-yellow-700',
         borderColor: 'border-yellow-500',
@@ -230,6 +230,7 @@ const NFTMarketplace: React.FC = () => {
           'Accès exclusif toutes stratégies',
           'Bonus 150% sur récompenses',
           'Toutes périodes disponibles',
+          'Périodes : 30-360 jours',
           'Consultations stratégiques illimitées',
           'Accès anticipé nouveaux produits',
           'Participation gouvernance plateforme',

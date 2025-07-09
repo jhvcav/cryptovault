@@ -4,10 +4,10 @@ import { Link } from 'react-router-dom';
 
 // Définition des plans d'investissement
 const INVESTMENT_PLANS = [
-  { id: 'starter', name: 'Plan Starter', apr: 10, duration: 30 },
+  { id: 'starter', name: 'Plan Starter', apr: 12, duration: 30 },
   { id: 'standard', name: 'Plan Standard', apr: 15, duration: 90 },
   { id: 'premium', name: 'Plan Premium', apr: 20, duration: 180 },
-  { id: 'privilege', name: 'Plan Privilege', apr: 150, duration: 360}
+  { id: 'enterprise', name: 'Plan Enterprise', apr: 25, duration: 360}
 ];
 
 const InvestmentCalculator = () => {

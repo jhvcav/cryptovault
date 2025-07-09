@@ -55,7 +55,8 @@ const NFT_CONFIG = {
     plans: [
       { id: 'starter', name: 'Starter', apr: 12, duration: 30 },
       { id: 'standard', name: 'Standard', apr: 15, duration: 90 },
-      { id: 'premium', name: 'Premium', apr: 20, duration: 180 }
+      { id: 'premium', name: 'Premium', apr: 20, duration: 180 },
+      { id: 'enterprise', name: 'Enterprise', apr: 25, duration: 360 }
     ]
   }
 };

@@ -6,7 +6,8 @@ const InvestmentCalculatorMultiCritere = () => {
   const [investments, setInvestments] = useState([
     { id: 1, apr: '', amount: '', duration: '', name: 'Investissement 1' },
     { id: 2, apr: '', amount: '', duration: '', name: 'Investissement 2' },
-    { id: 3, apr: '', amount: '', duration: '', name: 'Investissement 3' }
+    { id: 3, apr: '', amount: '', duration: '', name: 'Investissement 3' },
+    { id: 4, apr: '', amount: '', duration: '', name: 'Investissement 4' }
   ]);
 
   // État pour stocker les résultats combinés

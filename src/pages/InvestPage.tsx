@@ -81,6 +81,8 @@ const InvestPage: React.FC = () => {
         return { tier: 2, name: 'NFT Argent', icon: '🥈' };
       case 2: // Premium
         return { tier: 3, name: 'NFT Or', icon: '🥇' };
+      case 3: // Privilège
+        return { tier: 4, name: 'NFT Privilège', icon: '💎' };
       default:
         return { tier: 1, name: 'NFT Bronze', icon: '🥉' };
     }

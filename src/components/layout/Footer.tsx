@@ -86,6 +86,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/strategy-recommender" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                  Recommandateur de stratégie
+                </Link>
+              </li>
+              <li>
                 <Link to="/calculator-multi-critere" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Calculateur des plans décompenses
                 </Link>

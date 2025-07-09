@@ -31,6 +31,7 @@ import DivulgationDesRisquesPage from './pages/DivulgationDesRisquesPage';
 import StrategyManagement from './pages/StrategyManagement';
 import InvestmentCalculatorMultiCritere from './pages/InvestmentCalculatorMultiCritere';
 import CompoundInterestSimulator from './pages/CompoundingInterestSimulator';
+import StrategyRecommender from './pages/StrategyRecommender';
 
 // NOUVEAUX COMPOSANTS COMMUNAUTÉ
 import CommunityRegistrationPage from './pages/CommunityRegistrationPage';
@@ -449,7 +450,7 @@ const AppContent: React.FC = () => {
                       <Route path="/calculator-multi-critere" element={<InvestmentCalculatorMultiCritere />} />
                       <Route path="/strategy-management" element={<StrategyManagement />} />
                       <Route path="/compound-interest-Simulator" element={<CompoundInterestSimulator />} />
-                     
+                      <Route path="/strategy-recommender" element={<StrategyRecommender />} />
                       {/* Routes de la communauté */}
                       
                       <Route path="*" element={<Navigate to="/" replace />} />
