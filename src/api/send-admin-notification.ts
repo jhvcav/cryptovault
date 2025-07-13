@@ -4,8 +4,8 @@ import nodemailer from 'nodemailer';
 // Interface pour les données du membre
 interface MemberData {
   username: string;
-  last_name: string;
-  first_name: string;
+  lastName: string;
+  firstName: string;
   email: string;
   phone?: string;
   referrer_name?: string;
@@ -84,11 +84,11 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom :</td>
-                <td style="padding: 12px 0; color: #333;">${memberData.last_name}</td>
+                <td style="padding: 12px 0; color: #333;">${memberData.lastName}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Prénom:</td>
-                <td style="padding: 12px 0; color: #333;">${memberData.first_name}</td>
+                <td style="padding: 12px 0; color: #333;">${memberData.firstName}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom contact:</td>
