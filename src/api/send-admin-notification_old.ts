@@ -39,23 +39,7 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
       });
     }
 
-    // 🔍 DEBUG - Vérifier les données reçues
-    console.log('📋 Données reçues dans l\'API:', {
-      username: memberData.username,
-      first_name: memberData.first_name,
-      last_name: memberData.last_name,
-      referrer_name: memberData.referrer_name,
-      email: memberData.email,
-      phone: memberData.phone
-    });
-
-    // 🔍 Vérifier si les champs sont undefined
-    console.log('🔍 Vérification des champs:');
-    console.log('first_name:', memberData.first_name, typeof memberData.first_name);
-    console.log('last_name:', memberData.last_name, typeof memberData.last_name);
-    console.log('referrer_name:', memberData.referrer_name, typeof memberData.referrer_name);
-
-    // Configuration SMTP
+    // Configuration SMTP Ionos
     const transporter = nodemailer.createTransporter({
       host: 'smtp.ionos.fr',
       port: 587,
@@ -78,23 +62,7 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
       });
     }
 
-    // 🔧 Préparer les valeurs avec fallback
-    const firstName = memberData.first_name || 'Non renseigné';
-    const lastName = memberData.last_name || 'Non renseigné';
-    const referrerName = memberData.referrer_name || 'Non renseigné';
-    const phone = memberData.phone || 'Non renseigné';
-    const registrationIP = memberData.registrationIP || 'Inconnue';
-
-    // 🔍 DEBUG - Vérifier les valeurs préparées
-    console.log('📋 Valeurs pour l\'email:', {
-      firstName,
-      lastName,
-      referrerName,
-      phone,
-      registrationIP
-    });
-
-    // Contenu de l'email avec variables explicites
+    // Contenu de l'email
     const mailOptions = {
       from: '"CryptocaVault" <jean@jhc-developpement.fr>',
       to: 'jean@jhc-developpement.fr',
@@ -115,16 +83,16 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
                 <td style="padding: 12px 0; color: #333;">${memberData.username}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom :</td>
+                <td style="padding: 12px 0; color: #333;">${memberData.last_name}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Prénom:</td>
-                <td style="padding: 12px 0; color: #333;">${firstName}</td>
+                <td style="padding: 12px 0; color: #333;">${memberData.first_name}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom:</td>
-                <td style="padding: 12px 0; color: #333;">${lastName}</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👥 Référent:</td>
-                <td style="padding: 12px 0; color: #333;">${referrerName}</td>
+                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom contact:</td>
+                <td style="padding: 12px 0; color: #333;">${memberData.referrer_name}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 12px 0; font-weight: bold; color: #555;">📧 Email:</td>
@@ -132,7 +100,7 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 12px 0; font-weight: bold; color: #555;">📞 Téléphone:</td>
-                <td style="padding: 12px 0; color: #333;">${phone}</td>
+                <td style="padding: 12px 0; color: #333;">${memberData.phone || 'Non renseigné'}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 12px 0; font-weight: bold; color: #555;">📅 Date d'inscription:</td>
@@ -140,7 +108,7 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
               </tr>
               <tr>
                 <td style="padding: 12px 0; font-weight: bold; color: #555;">🌐 Adresse IP:</td>
-                <td style="padding: 12px 0; color: #333;">${registrationIP}</td>
+                <td style="padding: 12px 0; color: #333;">${memberData.registrationIP || 'Inconnue'}</td>
               </tr>
             </table>
           </div>
@@ -161,28 +129,18 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
       `
     };
 
-    // 🔍 DEBUG - Log du HTML généré (première partie)
-    console.log('📧 Début du HTML généré:', mailOptions.html.substring(0, 500));
-
     // Envoyer l'email
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email envoyé:', info.messageId);
+    console.log('Email envoyé:', info.messageId);
 
     return res.status(200).json({ 
       success: true, 
       message: 'Email envoyé avec succès',
-      messageId: info.messageId,
-      // 🔍 Retourner les données pour debug
-      debugData: {
-        firstName,
-        lastName,
-        referrerName,
-        receivedData: memberData
-      }
+      messageId: info.messageId 
     });
 
   } catch (error) {
-    console.error('❌ Erreur envoi email:', error);
+    console.error('Erreur envoi email:', error);
     return res.status(500).json({ 
       error: 'Erreur lors de l\'envoi de l\'email',
       details: error.message 
