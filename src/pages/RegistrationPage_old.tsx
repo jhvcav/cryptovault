@@ -46,7 +46,6 @@ interface RegistrationForm {
   lastName: string;
   email: string;
   phone: string;
-  referrerName: string; // Nouveau champ pour le nom de la personne qui a conduit ici
 }
 
 interface FormErrors {
@@ -54,7 +53,6 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   phone?: string;
-  referrerName?: string; // Nouveau champ d'erreur
 }
 
 const RegistrationPage: React.FC = () => {
@@ -62,8 +60,7 @@ const RegistrationPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    referrerName: '' // Initialisation du nouveau champ
+    phone: ''
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -143,13 +140,6 @@ const RegistrationPage: React.FC = () => {
       errors.phone = 'Format de téléphone invalide';
     }
 
-    // Validation nom du référent
-    if (!formData.referrerName.trim()) {
-      errors.referrerName = 'Le nom de la personne qui vous a conduit ici est requis';
-    } else if (formData.referrerName.trim().length < 2) {
-      errors.referrerName = 'Le nom doit contenir au moins 2 caractères';
-    }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -199,7 +189,6 @@ const RegistrationPage: React.FC = () => {
             last_name: formData.lastName.trim(),
             email: formData.email.trim().toLowerCase(),
             phone: formData.phone.trim(),
-            referrer_name: formData.referrerName.trim(), // Nouveau champ dans la base
             registration_ip: userIP,
             status: 'pending'
         }])
@@ -218,8 +207,7 @@ const RegistrationPage: React.FC = () => {
           registrationId: data.id,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          email: formData.email,
-          referrerName: formData.referrerName 
+          email: formData.email 
         },
         ip_address: userIP
       });
@@ -231,8 +219,7 @@ const RegistrationPage: React.FC = () => {
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
-        referrerName: ''
+        phone: ''
       });
 
     } catch (error: any) {
@@ -429,16 +416,16 @@ const RegistrationPage: React.FC = () => {
                 {/* Formulaire d'inscription */}
                 {!success && (
                   <Box as="form" onSubmit={handleSubmit}>
-                    <VStack spacing={5}>
+                    <VStack spacing={4}>
                       <Heading size="md" color="white" textAlign="center">
                         📝 Vos informations
                       </Heading>
                       
-                      {/* Prénom et Nom sur la même ligne */}
-                      <HStack spacing={4} w="full">
+                      {/* Prénom et Nom */}
+                      <HStack spacing={3} w="full">
                         <FormControl isRequired isInvalid={!!formErrors.firstName}>
                           <FormLabel color="orange" fontWeight="600" fontSize="sm">
-                            Prénom *
+                            Prénom
                           </FormLabel>
                           <Input
                             value={formData.firstName}
@@ -447,34 +434,34 @@ const RegistrationPage: React.FC = () => {
                             borderRadius="xl"
                             bg="white"
                             borderColor="gray.200"
-                            size="md"
+                            size="sm"
                             _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
                           />
-                          <FormErrorMessage fontSize="xs">{formErrors.firstName}</FormErrorMessage>
+                          <FormErrorMessage>{formErrors.firstName}</FormErrorMessage>
                         </FormControl>
 
                         <FormControl isRequired isInvalid={!!formErrors.lastName}>
                           <FormLabel color="orange" fontWeight="600" fontSize="sm">
-                            Nom *
+                            Nom
                           </FormLabel>
                           <Input
                             value={formData.lastName}
                             onChange={(e) => handleInputChange('lastName', e.target.value)}
-                            placeholder="Votre nom de famille"
+                            placeholder="Votre nom"
                             borderRadius="xl"
                             bg="white"
                             borderColor="gray.200"
-                            size="md"
+                            size="sm"
                             _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
                           />
-                          <FormErrorMessage fontSize="xs">{formErrors.lastName}</FormErrorMessage>
+                          <FormErrorMessage>{formErrors.lastName}</FormErrorMessage>
                         </FormControl>
                       </HStack>
 
                       {/* Email */}
                       <FormControl isRequired isInvalid={!!formErrors.email}>
                         <FormLabel color="orange" fontWeight="600" fontSize="sm">
-                          Email *
+                          Email
                         </FormLabel>
                         <Input
                           type="email"
@@ -484,16 +471,16 @@ const RegistrationPage: React.FC = () => {
                           borderRadius="xl"
                           bg="white"
                           borderColor="gray.200"
-                          size="md"
+                          size="sm"
                           _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
                         />
-                        <FormErrorMessage fontSize="xs">{formErrors.email}</FormErrorMessage>
+                        <FormErrorMessage>{formErrors.email}</FormErrorMessage>
                       </FormControl>
 
                       {/* Téléphone */}
                       <FormControl isRequired isInvalid={!!formErrors.phone}>
                         <FormLabel color="orange" fontWeight="600" fontSize="sm">
-                          Téléphone *
+                          Téléphone
                         </FormLabel>
                         <Input
                           type="tel"
@@ -503,28 +490,10 @@ const RegistrationPage: React.FC = () => {
                           borderRadius="xl"
                           bg="white"
                           borderColor="gray.200"
-                          size="md"
+                          size="sm"
                           _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
                         />
-                        <FormErrorMessage fontSize="xs">{formErrors.phone}</FormErrorMessage>
-                      </FormControl>
-
-                      {/* Nom de la personne qui vous a conduit ici */}
-                      <FormControl isRequired isInvalid={!!formErrors.referrerName}>
-                        <FormLabel color="orange" fontWeight="600" fontSize="sm">
-                          👤 Nom de la personne qui vous a conduit ici *
-                        </FormLabel>
-                        <Input
-                          value={formData.referrerName}
-                          onChange={(e) => handleInputChange('referrerName', e.target.value)}
-                          placeholder="Prénom et nom de votre référent"
-                          borderRadius="xl"
-                          bg="white"
-                          borderColor="gray.200"
-                          size="md"
-                          _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
-                        />
-                        <FormErrorMessage fontSize="xs">{formErrors.referrerName}</FormErrorMessage>
+                        <FormErrorMessage>{formErrors.phone}</FormErrorMessage>
                       </FormControl>
 
                       {/* Informations importantes */}

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparatif des Plans de Récompenses</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 20mm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            color: #333;
+            border-radius: 10px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 600;
+            color: #2563eb;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+            color: #64748b;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95em;
+            border-bottom: 3px solid #0f172a;
+        }
+        
+        .comparison-table th:first-child {
+            text-align: left;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        
+        .comparison-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            background-color: #f7fafc;
+            border-right: 2px solid #e2e8f0;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .comparison-table tr:hover {
+            background-color: #e6f2ff;
+        }
+        
+        .plan-starter {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+        
+        .plan-standard {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        }
+        
+        .plan-premium {
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+        }
+        
+        .plan-privilege {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        }
+        
+        .apr-value {
+            color: #059669;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+        
+        .duration-value {
+            color: #2563eb;
+            font-weight: 600;
+        }
+        
+        .amount-value {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        
+        .nft-required {
+            color: #7c3aed;
+            font-weight: 600;
+        }
+        
+        .checkmark {
+            color: #10b981;
+            font-size: 1.2em;
+        }
+        
+        .cross {
+            color: #ef4444;
+            font-size: 1.2em;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+        
+        .bonus-info {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #92400e;
+        }
+        
+        .bonus-info h3 {
+            margin: 0 0 10px 0;
+            color: #b45309;
+            font-size: 1.1em;
+        }
+        
+        .calculation-example {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .calculation-example h3 {
+            margin: 0 0 10px 0;
+            color: #1d4ed8;
+            font-size: 1.1em;
+        }
+        
+        @media print {
+            body {
+                background-color: white !important;
+            }
+            
+            .header {
+                break-inside: avoid;
+            }
+            
+            .comparison-table {
+                break-inside: avoid;
+            }
+            
+            @page {
+                margin: 15mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Comparatif des Plans de Récompenses</h1>
+        <p>Analyse détaillée des différents plans d'investissement et leurs avantages NFT</p>
+    </div>
+    
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Caractéristiques</th>
+                <th class="plan-starter">🚀 Starter</th>
+                <th class="plan-standard">⭐ Standard</th>
+                <th class="plan-premium">💎 Premium</th>
+                <th class="plan-privilege">💎 Enterprise</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Taux de Récompenses (variable)</td>
+                <td class="apr-value">10%</td>
+                <td class="apr-value">15%</td>
+                <td class="apr-value">20%</td>
+                <td class="apr-value">25%</td>
+            </tr>
+            <tr>
+                <td>Durée de Blocage</td>
+                <td class="duration-value">30 jours</td>
+                <td class="duration-value">90 jours</td>
+                <td class="duration-value">180 jours</td>
+                <td class="duration-value">360 jours</td>
+            </tr>
+            <tr>
+                <td>Montant Minimum</td>
+                <td class="amount-value">100 USDT/USDC</td>
+                <td class="amount-value">500 USDT/USDC</td>
+                <td class="amount-value">1000 USDT/USDC</td>
+                <td class="amount-value">2000 USDT/USDC</td>
+            </tr>
+            <tr>
+                <td>Montant Maximum</td>
+                <td class="amount-value">10 000 USDT/USDC</td>
+                <td class="amount-value">50 000 USDT/USDC</td>
+                <td class="amount-value">100 000 USDT/USDC</td>
+                <td class="amount-value">Illimité</td>
+            </tr>
+            <tr>
+                <td>NFT Requis pour Accès</td>
+                <td class="nft-required">🥉 Bronze</td>
+                <td class="nft-required">🥈 Argent</td>
+                <td class="nft-required">🥇 Or</td>
+                <td class="nft-required">💎 Privilège</td>
+            </tr>
+            <tr>
+                <td>Multiplicateur NFT</td>
+                <td>1.2x</td>
+                <td>1.5x</td>
+                <td>2x</td>
+                <td>2.5x</td>
+            </tr>
+            <tr>
+                <td>Récompenses Quotidiennes</td>
+                <td class="checkmark">✅</td>
+                <td class="checkmark">✅</td>
+                <td class="checkmark">✅</td>
+                <td class="checkmark">✅</td>
+            </tr>
+            <tr>
+                <td>Retrait Anticipé</td>
+                <td class="cross">❌</td>
+                <td class="cross">❌</td>
+                <td class="cross">❌</td>
+                <td class="cross">❌</td>
+            </tr>
+            <tr>
+                <td>Retrait d'Urgence</td>
+                <td class="checkmark">✅ (frais 2%)</td>
+                <td class="checkmark">✅ (frais 2%)</td>
+                <td class="checkmark">✅ (frais 2%)</td>
+                <td class="checkmark">✅ (frais 2%)</td>
+            </tr>
+            <tr>
+                <td>Frais de Plateforme</td>
+                <td>2% à l'investissement</td>
+                <td>2% à l'investissement</td>
+                <td>2% à l'investissement</td>
+                <td>2% à l'investissement</td>
+            </tr>
+            <tr>
+                <td>Support Prioritaire</td>
+                <td class="cross">❌</td>
+                <td class="checkmark">✅</td>
+                <td class="checkmark">✅</td>
+                <td class="checkmark">✅ VIP</td>
+            </tr>
+            <tr>
+                <td>Sessions 1-on-1</td>
+                <td class="cross">❌</td>
+                <td class="cross">❌</td>
+                <td class="checkmark">✅ (1/mois)</td>
+                <td class="checkmark">✅ Illimité</td>
+            </tr>
+            <tr>
+                <td>Bonus NFT Maximum</td>
+                <td>+20% (Bronze)</td>
+                <td>+50% (Argent)</td>
+                <td>+100% (Or)</td>
+                <td>+150% (Privilège)</td>
+            </tr>
+            <tr>
+                <td>Récompenses avec Bonus NFT</td>
+                <td class="apr-value">12% (10% × 1.2x)</td>
+                <td class="apr-value">22.5% (15% × 1.5x)</td>
+                <td class="apr-value">40% (20% × 2x)</td>
+                <td class="apr-value">62.5% (25% × 2.5x)</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="bonus-info">
+        <h3>🎁 Système de Bonus NFT</h3>
+        <p><strong>Les NFT multiplient vos récompenses :</strong></p>
+        <ul style="margin: 5px 0; padding-left: 20px;">
+            <li>🥉 <strong>NFT Bronze :</strong> +20% de récompenses (multiplier 1.2x)</li>
+            <li>🥈 <strong>NFT Argent :</strong> +50% de récompenses (multiplier 1.5x)</li>
+            <li>🥇 <strong>NFT Or :</strong> +100% de récompenses (multiplier 2x)</li>
+            <li>💎 <strong>NFT Privilège :</strong> +150% de récompenses (multiplier 2.5x)</li>
+        </ul>
+    </div>
+    
+    <div class="calculation-example">
+        <h3>📊 Exemple de Calcul : Investissement de 1000 USDT</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background: #1e40af; color: white;">
+                    <th style="padding: 8px; text-align: left;">Plan</th>
+                    <th style="padding: 8px; text-align: center;">Sans NFT</th>
+                    <th style="padding: 8px; text-align: center;">Avec NFT Privilège</th>
+                    <th style="padding: 8px; text-align: center;">Gain Bonus</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 8px; font-weight: 600;">Starter (30j)</td>
+                    <td style="padding: 8px; text-align: center;">12.33 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #059669; font-weight: 600;">30.82 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #dc2626; font-weight: 600;">+18.49 USDT</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td style="padding: 8px; font-weight: 600;">Standard (60j)</td>
+                    <td style="padding: 8px; text-align: center;">41.10 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #059669; font-weight: 600;">102.74 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #dc2626; font-weight: 600;">+61.64 USDT</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: 600;">Premium (90j)</td>
+                    <td style="padding: 8px; text-align: center;">86.30 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #059669; font-weight: 600;">172.60 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #dc2626; font-weight: 600;">+86.30 USDT</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td style="padding: 8px; font-weight: 600;">Enterprise (180j)</td>
+                    <td style="padding: 8px; text-align: center;">246.58 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #059669; font-weight: 600;">616.44 USDT</td>
+                    <td style="padding: 8px; text-align: center; color: #dc2626; font-weight: 600;">+369.86 USDT</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>Document généré le <span id="date"></span> • Les taux sont indicatifs et peuvent varier</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Afficher la date actuelle
+            const dateElement = document.getElementById('date');
+            if (dateElement) {
+                dateElement.textContent = new Date().toLocaleDateString('fr-FR');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -30,7 +30,6 @@ import {
   ModalCloseButton,
   useDisclosure,
   Icon,
-  FormErrorMessage,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { supabase } from '../lib/supabase';
@@ -38,39 +37,25 @@ import { useNavigate } from 'react-router-dom';
 
 // Types
 interface CommunityRegistrationForm {
-  firstName: string;       // Nouveau champ prénom
-  lastName: string;        // Nouveau champ nom
   username: string;
   email: string;
   phone: string;
-  referrerName: string;    // Nouveau champ référent
   charterAccepted: boolean;
   participationConfirmed: boolean;
   responsibilityAccepted: boolean;
   respectConfirmed: boolean;
 }
 
-interface FormErrors {
-  firstName?: string;
-  lastName?: string;
-  referrerName?: string;
-  [key: string]: string | undefined;
-}
-
 const CommunityRegistrationPage: React.FC = () => {
   const [formData, setFormData] = useState<CommunityRegistrationForm>({
-    firstName: '',           // Initialisation prénom
-    lastName: '',            // Initialisation nom
     username: '',
     email: '',
     phone: '',
-    referrerName: '',        // Initialisation référent
     charterAccepted: false,
     participationConfirmed: false,
     responsibilityAccepted: false,
     respectConfirmed: false
   });
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
@@ -173,53 +158,13 @@ const CommunityRegistrationPage: React.FC = () => {
       ...prev,
       [field]: value
     }));
-
-    // Effacer l'erreur du champ modifié
-    if (formErrors[field]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: undefined
-      }));
-    }
-  };
-
-  // Validation du formulaire
-  const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-
-    // Validation prénom
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'Le prénom est requis';
-    } else if (formData.firstName.trim().length < 2) {
-      errors.firstName = 'Le prénom doit contenir au moins 2 caractères';
-    }
-
-    // Validation nom
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Le nom est requis';
-    } else if (formData.lastName.trim().length < 2) {
-      errors.lastName = 'Le nom doit contenir au moins 2 caractères';
-    }
-
-    // Validation nom du référent
-    if (!formData.referrerName.trim()) {
-      errors.referrerName = 'Le nom de la personne qui vous a conduit ici est requis';
-    } else if (formData.referrerName.trim().length < 2) {
-      errors.referrerName = 'Le nom doit contenir au moins 2 caractères';
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
   };
 
   // Vérifier si le formulaire est valide
   const isFormValid = (): boolean => {
     return (
-      formData.firstName.trim() !== '' &&
-      formData.lastName.trim() !== '' &&
       formData.username.trim() !== '' &&
       formData.email.trim() !== '' &&
-      formData.referrerName.trim() !== '' &&
       formData.charterAccepted &&
       formData.participationConfirmed &&
       formData.responsibilityAccepted &&
@@ -232,12 +177,6 @@ const CommunityRegistrationPage: React.FC = () => {
     try {
       setIsLoading(true);
       setError('');
-
-      // Valider le formulaire
-      if (!validateForm()) {
-        setError('Veuillez corriger les erreurs dans le formulaire.');
-        return;
-      }
 
       // Vérifier si l'email n'est pas déjà utilisé
       const { data: existingEmailData, error: checkEmailError } = await supabase
@@ -275,19 +214,14 @@ const CommunityRegistrationPage: React.FC = () => {
         }
       }
 
-      const userIP = await getUserIP();
-
       // Créer l'inscription
       const { data, error: insertError } = await supabase
         .from('community_members')
         .insert([{
-          first_name: formData.firstName.trim(),      // Nouveau champ
-          last_name: formData.lastName.trim(),       // Nouveau champ
           username: formData.username.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone.trim() || null,
-          referrer_name: formData.referrerName.trim(), // Nouveau champ
-          acceptance_ip: userIP,
+          acceptance_ip: null,
           charter_accepted: true,
           charter_version: '1.0',
           acceptance_timestamp: new Date().toISOString(),
@@ -530,7 +464,7 @@ const CommunityRegistrationPage: React.FC = () => {
                     w="full"
                     h={buttonHeight}
                     fontSize={buttonFontSize}
-                    mt={4}
+                    mt={4}  // ← Ajouter cette ligne (marge top)
                   >
                     Retour à la connexion
                   </Button>
@@ -545,49 +479,10 @@ const CommunityRegistrationPage: React.FC = () => {
                   </Heading>
                   
                   <VStack spacing={{ base: 4, md: 6 }}>
-                    {/* Prénom et Nom */}
-                    <HStack spacing={4} w="full">
-                      <FormControl isRequired isInvalid={!!formErrors.firstName}>
-                        <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
-                          Prénom *
-                        </FormLabel>
-                        <Input
-                          value={formData.firstName}
-                          onChange={(e) => handleInputChange('firstName', e.target.value)}
-                          placeholder="Votre prénom"
-                          borderRadius="xl"
-                          bg="white"
-                          color="black"
-                          borderColor="gray.200"
-                          _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
-                          size={{ base: "md", md: "lg" }}
-                        />
-                        <FormErrorMessage fontSize="xs">{formErrors.firstName}</FormErrorMessage>
-                      </FormControl>
-
-                      <FormControl isRequired isInvalid={!!formErrors.lastName}>
-                        <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
-                          Nom *
-                        </FormLabel>
-                        <Input
-                          value={formData.lastName}
-                          onChange={(e) => handleInputChange('lastName', e.target.value)}
-                          placeholder="Votre nom de famille"
-                          borderRadius="xl"
-                          bg="white"
-                          color="black"
-                          borderColor="gray.200"
-                          _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
-                          size={{ base: "md", md: "lg" }}
-                        />
-                        <FormErrorMessage fontSize="xs">{formErrors.lastName}</FormErrorMessage>
-                      </FormControl>
-                    </HStack>
-
-                    {/* Nom d'utilisateur */}
+                    {/* Informations utilisateur */}
                     <FormControl isRequired>
                       <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
-                        Nom d'utilisateur *
+                        Nom d'utilisateur
                       </FormLabel>
                       <Input
                         value={formData.username}
@@ -602,10 +497,9 @@ const CommunityRegistrationPage: React.FC = () => {
                       />
                     </FormControl>
 
-                    {/* Email */}
                     <FormControl isRequired>
                       <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
-                        Email de contact *
+                        Email de contact
                       </FormLabel>
                       <Input
                         type="email"
@@ -621,7 +515,6 @@ const CommunityRegistrationPage: React.FC = () => {
                       />
                     </FormControl>
 
-                    {/* Téléphone */}
                     <FormControl>
                       <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
                         Téléphone (pour signalement absences)
@@ -638,25 +531,6 @@ const CommunityRegistrationPage: React.FC = () => {
                         _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
                         size={{ base: "md", md: "lg" }}
                       />
-                    </FormControl>
-
-                    {/* Nom de la personne qui vous a conduit ici */}
-                    <FormControl isRequired isInvalid={!!formErrors.referrerName}>
-                      <FormLabel color="white" fontWeight="600" fontSize={{ base: "sm", md: "md" }}>
-                        👤 Nom de la personne qui vous a conduit ici *
-                      </FormLabel>
-                      <Input
-                        value={formData.referrerName}
-                        onChange={(e) => handleInputChange('referrerName', e.target.value)}
-                        placeholder="Prénom et nom de votre référent"
-                        borderRadius="xl"
-                        bg="white"
-                        color="black"
-                        borderColor="gray.200"
-                        _focus={{ borderColor: 'purple.500', boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)' }}
-                        size={{ base: "md", md: "lg" }}
-                      />
-                      <FormErrorMessage fontSize="xs">{formErrors.referrerName}</FormErrorMessage>
                     </FormControl>
 
                     {/* Acceptations obligatoires */}
@@ -726,7 +600,7 @@ const CommunityRegistrationPage: React.FC = () => {
                           <Text fontWeight="bold" color="blue.800" fontSize={{ base: "xs", md: "sm" }}>
                             Canaux de Communication
                           </Text>
-                          <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.5">
+                          <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
                             Pour signaler vos absences, utilisez : WhatsApp, SMS, Téléphone, 
                             Email, Telegram ou Messenger. Les contacts vous seront fournis 
                             après votre inscription.
@@ -820,23 +694,23 @@ const CommunityRegistrationPage: React.FC = () => {
                     </Box>
 
                     <Button
-                      variant="outline"
-                      size={buttonSize}
-                      onClick={() => navigate('/login')}
-                      bg="purple.300"
-                      borderColor="blue.500"
-                      color="orange.800"
-                      _hover={{
-                        bg: "blue.400"
-                      }}
-                      borderRadius="xl"
-                      w="full"
-                      h={buttonHeight}
-                      fontSize={buttonFontSize}
-                      mt={4}
-                    >
-                      Retour à la connexion
-                    </Button>
+                    variant="outline"
+                    size={buttonSize}
+                    onClick={() => navigate('/login')}
+                    bg="purple.300"
+                    borderColor="blue.500"
+                    color="orange.800"
+                    _hover={{
+                      bg: "blue.400"
+                    }}
+                    borderRadius="xl"
+                    w="full"
+                    h={buttonHeight}
+                    fontSize={buttonFontSize}
+                    mt={4}  // ← Ajouter cette ligne (marge top)
+                  >
+                    Retour à la connexion
+                  </Button>
                   </Box>
                 </Box>
               )}

@@ -69,6 +69,13 @@ const Footer = () => {
                   Sécurité
                 </Link>
               </li>
+              <a 
+                href="/TableauComparatifPlans.html" 
+                target="_blank"
+                className="text-slate-400 hover:text-blue-400 transition-colors text-sm mt-4 block"
+              >
+                Tableau comparatif des plans
+              </a>
             </ul>
           </div>
 

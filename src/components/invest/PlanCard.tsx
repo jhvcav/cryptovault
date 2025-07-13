@@ -23,7 +23,7 @@ interface InvestmentPlan {
   minInvestment: number;
   maxInvestment: number;
   lockPeriodDays: number;
-  category: 'starter' | 'standard' | 'premium' | 'privilege';
+  category: 'starter' | 'standard' | 'premium' | 'enterprise';
   features: string[];
   risks: string[];
   requiredNFTTier: number;
@@ -73,13 +73,13 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onInvest }) => {
           icon: '🥇',
           badge: 'Premium'
         };
-      case 'privilege':
+      case 'enterprise':
         return {
           gradient: 'from-purple-500 to-pink-600',
           border: 'border-purple-500/30',
           glow: 'shadow-purple-500/20',
           icon: '💎',
-          badge: 'Privilège'
+          badge: 'Enterprise'
         };
       default:
         return {
