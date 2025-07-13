@@ -105,8 +105,11 @@ const CommunityRegistrationPage: React.FC = () => {
         body: JSON.stringify({
           memberData: {
             username: memberData.username,
+            first_name: memberData.first_name,
+            last_name: memberData.last_name, 
             email: memberData.email,
             phone: memberData.phone,
+            referrer_name: memberData.referrer_name,
             registrationDate: memberData.acceptance_timestamp,
             registrationIP: memberData.acceptance_ip
           }

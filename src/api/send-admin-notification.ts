@@ -83,15 +83,15 @@ export const sendAdminNotificationHandler = async (req: ApiRequest, res: ApiResp
                 <td style="padding: 12px 0; color: #333;">${memberData.username}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom d'utilisateur:</td>
+                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom :</td>
                 <td style="padding: 12px 0; color: #333;">${memberData.last_name}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom d'utilisateur:</td>
+                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Prénom:</td>
                 <td style="padding: 12px 0; color: #333;">${memberData.first_name}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom d'utilisateur:</td>
+                <td style="padding: 12px 0; font-weight: bold; color: #555; width: 30%;">👤 Nom contact:</td>
                 <td style="padding: 12px 0; color: #333;">${memberData.referrer_name}</td>
               </tr>
               <tr style="border-bottom: 1px solid #eee;">
