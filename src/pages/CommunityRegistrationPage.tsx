@@ -401,17 +401,17 @@ const CommunityRegistrationPage: React.FC = () => {
                   mb={2}
                   px={{ base: 2, md: 0 }}
                 >
-                  Rejoindre la Communauté RMR-M
+                  Rejoindre notre Communauté
                 </Heading>
                 
                 <Text
                   fontSize={{ base: "xs", md: "sm", lg: "lg" }}
-                  color="gray.600"
+                  color="white.600"
                   textAlign="center"
                   px={{ base: 2, md: 0 }}
                   lineHeight={{ base: "1.3", md: "1.5" }}
                 >
-                  Vous avez été invité(e) à rejoindre notre communauté privée d'éducation crypto
+                  Notre communauté privée d'éducation crypto, est accessible uniquement sur invitation. Dans le cas contraire, votre invitation sera rejetée.
                 </Text>
               </Box>
 
@@ -852,12 +852,12 @@ const CommunityRegistrationPage: React.FC = () => {
       <Modal isOpen={isCharterOpen} onClose={onCharterClose} size={{ base: "full", md: "xl" }}>
         <ModalOverlay />
         <ModalContent maxH="80vh" mx={{ base: 2, md: 0 }}>
-          <ModalHeader fontSize={{ base: "md", md: "lg" }} color="orange.600">Charte de la Communauté RMR</ModalHeader>
+          <ModalHeader fontSize={{ base: "md", md: "lg" }} color="orange.600">Charte de notre Communauté</ModalHeader>
           <ModalCloseButton />
           <ModalBody overflow="auto">
             <VStack spacing={4} align="start">
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2} color="black">1. Participation aux Formations</Heading>
+                <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">1. Participation aux Formations</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" lineHeight="1.4">
                   • Horaire : Tous les soirs à 21h30 (GMT+3)<br/>
                   • Tolérance : 4 absences maximum sur 6 sessions<br/>
@@ -866,7 +866,7 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
               
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2} color="black">2. Respect et Comportement</Heading>
+                <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">2. Respect et Comportement</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" lineHeight="1.4">
                   • Aucune insulte, provocation ou menace tolérée<br/>
                   • Bienveillance et entraide privilégiées<br/>
@@ -875,7 +875,7 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
               
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2} color="black">3. Responsabilité</Heading>
+                <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">3. Responsabilité</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" lineHeight="1.4">
                   • Vous êtes responsable de toutes vos décisions d'investissement<br/>
                   • Aucune garantie de résultat financier<br/>
@@ -884,7 +884,7 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
 
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2} color="black">4. Sanctions</Heading>
+                <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">4. Sanctions</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" lineHeight="1.4">
                   • Avertissement pour manquements mineurs<br/>
                   • Suspension temporaire pour récidive<br/>
@@ -902,7 +902,7 @@ const CommunityRegistrationPage: React.FC = () => {
               <Divider />
 
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2} color="black">5. Formations et Éducation</Heading>
+                <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">5. Formations et Éducation</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" mb={3} lineHeight="1.4">
                   Notre communauté propose des formations régulières sur :
                 </Text>
@@ -917,7 +917,7 @@ const CommunityRegistrationPage: React.FC = () => {
               </Box>
 
               <Box>
-                <Heading size={{ base: "sm", md: "md" }} mb={2} color="black">6. Communication et Support</Heading>
+                <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">6. Communication et Support</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" lineHeight="1.4">
                   • Canaux officiels : WhatsApp, Telegram, Discord<br/>
                   • Support prioritaire pour les membres actifs<br/>
@@ -962,7 +962,7 @@ const CommunityRegistrationPage: React.FC = () => {
               >
                 J'ai lu et compris la charte
               </Button>
-              <Text fontSize={{ base: "xs", md: "xs" }} color="gray.500" textAlign="center">
+              <Text fontSize={{ base: "xs", md: "xs" }} color="blue.500" textAlign="center">
                 La charte complète est également disponible sur notre site web
               </Text>
             </VStack>
