@@ -975,7 +975,7 @@ const PrivacyPolicyPage: React.FC = () => {
                         <HStack spacing={2}>
                           <EmailIcon />
                           <Link href="mailto:support@cryptocavault.com" fontFamily="'Inter', sans-serif">
-                            jean@jhc-developpement.fr
+                            support@cryptocavault.com
                           </Link>
                         </HStack>
                         <Text fontSize="sm" opacity={0.9} fontFamily="'Inter', sans-serif">

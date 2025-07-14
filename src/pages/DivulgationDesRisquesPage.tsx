@@ -996,7 +996,7 @@ const DivulgationDesRisquesPage: React.FC = () => {
                       </Text>
                     </HStack>
                     <Link 
-                      href="mailto:jean@jhc-developpement.fr" 
+                      href="mailto:support@cryptocavault.com" 
                       fontSize="xl" 
                       fontWeight="bold"
                       p={4}
@@ -1006,7 +1006,7 @@ const DivulgationDesRisquesPage: React.FC = () => {
                       fontFamily="'Inter', sans-serif"
                       border="1px solid rgba(255,255,255,0.3)"
                     >
-                      jean@jhc-developpement.fr
+                      support@cryptocavault.com
                     </Link>
                   </VStack>
                 </Box>
