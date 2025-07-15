@@ -458,13 +458,13 @@ const CommunityRegistrationPage: React.FC = () => {
                       <HStack align="start">
                         <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>🕘</Text>
                         <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
-                          <Text as="span" fontWeight="bold">Formations quotidiennes</Text> : Tous les soirs à 21h30 (GMT+3)
+                          <Text as="span" fontWeight="bold">Formations périodiques hebdomadaires</Text> : Suivant le planning, à 21h30 (GMT+3)
                         </Text>
                       </HStack>
                       <HStack align="start">
                         <Text fontSize={{ base: "md", md: "lg", lg: "xl" }}>📅</Text>
                         <Text fontSize={{ base: "xs", md: "sm" }} color="blue.700" lineHeight="1.4">
-                          <Text as="span" fontWeight="bold">Règle d'absence</Text> : Maximum 4 absences sur 6 sessions
+                          <Text as="span" fontWeight="bold">Règle d'absence</Text> : Prévenir quand vous serez absent aux formations
                         </Text>
                       </HStack>
                       <HStack align="start">
@@ -690,8 +690,8 @@ const CommunityRegistrationPage: React.FC = () => {
                           size={{ base: "sm", md: "md" }}
                         >
                           <Text fontSize={{ base: "xs", md: "sm" }} color="white" lineHeight="1.4">
-                            Je m'engage à participer aux formations quotidiennes (21h30 GMT+3) 
-                            et à respecter la règle des absences (max 4/6 sessions)
+                            Je m'engage à participer aux formations hebdomadaires (21h30 GMT+3) 
+                            et à respecter la règle de prévenance
                           </Text>
                         </Checkbox>
 
@@ -817,8 +817,8 @@ const CommunityRegistrationPage: React.FC = () => {
                       <VStack spacing={2} fontSize={{ base: "xs", md: "sm" }} color="blue.700">
                         <Text>1. Attendre l'email de confirmation avec les détails</Text>
                         <Text>2. Rejoindre le groupe WhatsApp</Text>
-                        <Text>3. Participer à la prochaine formation webinaire (21h30 GMT+4)</Text>
-                        <Text>4. Une fois formé, voir comment accéder à la plateforme de récompense</Text>
+                        <Text>3. Participer à la prochaine formation webinaire (21h30 GMT+3)</Text>
+                        <Text>4. Une fois formé et en mesure de comprendre, voir comment accéder à la plateforme de récompense</Text>
                       </VStack>
                     </Box>
 
@@ -859,8 +859,8 @@ const CommunityRegistrationPage: React.FC = () => {
               <Box>
                 <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">1. Participation aux Formations</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" lineHeight="1.4">
-                  • Horaire : Tous les soirs à 21h30 (GMT+3)<br/>
-                  • Tolérance : 4 absences maximum sur 6 sessions<br/>
+                  • Horaire : selon le planning hebdomadaire, à 21h30 (GMT+3)<br/>
+                  • Tolérance : les absences sont tolérées, moyennant le signalement<br/>
                   • Signalement obligatoire des absences
                 </Text>
               </Box>
@@ -904,7 +904,7 @@ const CommunityRegistrationPage: React.FC = () => {
               <Box>
                 <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">5. Formations et Éducation</Heading>
                 <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" mb={3} lineHeight="1.4">
-                  Notre communauté propose des formations régulières sur :
+                  Notre communauté donne des formations régulières sur :
                 </Text>
                 <VStack spacing={1} align="start" fontSize={{ base: "xs", md: "sm" }} color="white.600">
                   <Text>• Fondamentaux des cryptomonnaies</Text>
@@ -923,6 +923,16 @@ const CommunityRegistrationPage: React.FC = () => {
                   • Support prioritaire pour les membres actifs<br/>
                   • Partage d'expériences encouragé<br/>
                   • Questions bienvenues pendant les sessions
+                </Text>
+              </Box>
+
+              <Box>
+                <Heading size={{ base: "sm", md: "md" }} mb={2} color="blue.600">7. Amélioration et mise à jour de la charte</Heading>
+                <Text fontSize={{ base: "xs", md: "sm" }} color="white.600" lineHeight="1.4">
+                  • Cette charte n'est pas figé et peut être amené à faire l'objet de mise à jour<br/>
+                  • Nous nous réservons donc le droit d'apporter ces mises à jour si nécessaire<br/>
+                  • Les mises à jour vous seront informés<br/>
+                  • De même pour l'évolution des règles, formations et autres aspects de la communauté
                 </Text>
               </Box>
 

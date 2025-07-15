@@ -1,4 +1,4 @@
-// src/pages/WalletMonitoring.tsx - VERSION COMPLÈTE AVEC SMART CONTRACT
+// src/pages/WalletMonitoring.tsx - VERSION PROPRE ET CORRIGÉE
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -120,7 +120,6 @@ interface TokenTransfer {
   confirmations: string;
 }
 
-// Nouvelle interface pour les transactions du smart contrat
 interface SmartContractTransaction {
   blockNumber: string;
   timeStamp: string;
@@ -161,16 +160,18 @@ interface SmartContractSummary {
   totalWithdrawals: number;
   totalFees: number;
   totalCapitalWithdrawals: number;
-  transactionCount: number;
-  totalAdminDeposits: number;
+  totalPancakeRewards: number;
   totalToStrategies: number;
+  totalOwnerReturns: number;
+  transactionCount: number;
   byMethod: {
     deposits: number;
     withdrawals: number;
     fees: number;
     capitalWithdrawals: number;
-    adminDeposits: number;
+    pancakeRewards: number;
     toStrategies: number;
+    ownerReturns: number;
   };
 }
 
@@ -186,43 +187,23 @@ const WalletMonitoring: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [walletAddress, setWalletAddress] = useState('0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF');
   const [showReport, setShowReport] = useState(false);
-  const [reportPeriod, setReportPeriod] = useState('current-month');
+  const [contractUSDCBalance, setContractUSDCBalance] = useState('0');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
-  const [contractUSDCBalance, setContractUSDCBalance] = useState('0');
 
   const API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY;
   const BNB_PRICE_USD = 670;
-  const SMART_CONTRACT_ADDRESS = "0x719fd9F511DDc561D03801161742D84ECb9445e9"; // Votre contrat
+  const SMART_CONTRACT_ADDRESS = "0x719fd9F511DDc561D03801161742D84ECb9445e9";
+  
+  // Wallets spécifiques pour les critères
+  const FEES_WALLET = "0x7558cBa3b60F11FBbEcc9CcAB508afA65d88B3d2";
+  const PANCAKE_REWARDS_WALLET = "0xEa47e1ca0486871D905A62752fd44a1fFd8cE71a";
+  const STRATEGIES_WALLET = "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF";
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
-  // Fonction pour décoder les méthodes du smart contrat depuis les token transfers
-  const decodeSmartContractMethod = (tx: TokenTransfer): string => {
-    // Récupérer les détails de la transaction normale pour obtenir functionName
-    // Pour l'instant, on se base sur la direction et le pattern des montants
-    
-    const isFromContract = tx.from.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase();
-    const isToContract = tx.to.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase();
-    
-    // Analyser les token transfers USDC
-    if (tx.tokenSymbol === 'USDC') {
-      if (isToContract) {
-        // USDC entrant dans le contrat = Dépôt
-        return 'Dépôt plan';
-      } else if (isFromContract) {
-        // USDC sortant du contrat = Retrait
-        // Pour distinguer entre gains et capital, on pourrait analyser le montant
-        // ou récupérer la méthode depuis la transaction normale
-        return 'Retrait gains'; // Par défaut, à affiner
-      }
-    }
-    
-    return 'Méthode inconnue';
-  };
-
-  // Fonction pour récupérer les transactions du smart contrat (Token Transfers)
+  // Fonction pour récupérer les transactions du smart contrat
   const fetchSmartContractData = async () => {
     if (!API_KEY) {
       setError('Clé API BSCScan non configurée');
@@ -241,7 +222,7 @@ const WalletMonitoring: React.FC = () => {
       );
       const tokenTxsData = await tokenTxsResponse.json();
 
-      console.log('Token transfers du smart contract:', tokenTxsData);
+      console.log('🔍 Token transfers du smart contract:', tokenTxsData);
 
       if (tokenTxsData.status === '1' && tokenTxsData.result) {
         // Récupérer les transactions normales pour obtenir les méthodes
@@ -250,7 +231,7 @@ const WalletMonitoring: React.FC = () => {
         );
         const normalTxsData = await normalTxsResponse.json();
         
-        console.log('Transactions normales du smart contract:', normalTxsData);
+        console.log('🔍 Transactions normales du smart contract:', normalTxsData);
 
         // Créer un mapping hash -> functionName
         const txMethodMap: { [key: string]: string } = {};
@@ -262,73 +243,208 @@ const WalletMonitoring: React.FC = () => {
           });
         }
 
-        // Traiter les token transfers avec décodage des méthodes
+        console.log('🔍 Mapping des méthodes:', txMethodMap);
+
+        // Traiter les token transfers avec les critères
         const processedTxs: SmartContractTransaction[] = tokenTxsData.result
-          .filter((tx: TokenTransfer) => tx.tokenSymbol === 'USDC') // Filtrer seulement USDC
+          .filter((tx: TokenTransfer) => {
+            const isUSDC = tx.tokenSymbol === 'USDC';
+            const isSmartContractRelated = 
+              tx.to.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase() || 
+              tx.from.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase();
+            
+            console.log(`🔍 Tx ${tx.hash.slice(0, 10)}... - USDC: ${isUSDC}, SmartContract: ${isSmartContractRelated}`);
+            
+            return isUSDC && isSmartContractRelated;
+          })
           .map((tx: TokenTransfer) => {
-  const functionName = txMethodMap[tx.hash] || '';
-  let decodedMethod = '';
-  let direction: 'in' | 'out' = 'in';
+            const functionName = txMethodMap[tx.hash] || '';
+            let decodedMethod = '';
+            let direction: 'in' | 'out' = 'in';
 
-  // Décoder selon vos spécifications EXACTES
-  if (functionName.toLowerCase().includes('claimrewards')) {
-    decodedMethod = 'Retrait gains';
-    direction = 'out';
-  } else if (functionName.toLowerCase().includes('endstake')) {
-    decodedMethod = 'Retrait Capital';
-    direction = 'out';
-  } else if (functionName.toLowerCase().includes('adminwithdraw')) {
-    decodedMethod = 'Vers Stratégies';
-    direction = 'out';
-  } else if (functionName.toLowerCase().includes('stake')) {
-    if (tx.to.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase()) {
-      decodedMethod = 'Dépôt plan';
-      direction = 'in';
-    } else if (tx.from.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase()) {
-      decodedMethod = '2% Frais';
-      direction = 'out';
-    }
-  } else if (functionName.toLowerCase().includes('transfer') || functionName === '') {
-    // Transfer ou pas de functionName détectée
-    if (tx.to.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase()) {
-      decodedMethod = 'Dépôt Admin';  // ← NOUVEAU : Transfer IN
-      direction = 'in';
-    } else if (tx.from.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase()) {
-      decodedMethod = 'Autre'; // Transfer OUT = retrait gains
-      direction = 'out';
-    }
-  } else {
-    // Autres cas
-    if (tx.to.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase()) {
-      decodedMethod = 'Dépôt Admin';
-      direction = 'in';
-    } else {
-      decodedMethod = 'Retrait gains';
-      direction = 'out';
-    }
-  }
+            // Variables pour les vérifications d'adresses
+            const isToContract = tx.to.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase();
+            const isFromContract = tx.from.toLowerCase() === SMART_CONTRACT_ADDRESS.toLowerCase();
+            const isFromFeesWallet = tx.from.toLowerCase() === FEES_WALLET.toLowerCase();
+            const isToFeesWallet = tx.to.toLowerCase() === FEES_WALLET.toLowerCase();
+            const isFromPancakeWallet = tx.from.toLowerCase() === PANCAKE_REWARDS_WALLET.toLowerCase();
+            const isToStrategiesWallet = tx.to.toLowerCase() === STRATEGIES_WALLET.toLowerCase();
+            const isFromOwnerWallet = tx.from.toLowerCase() === STRATEGIES_WALLET.toLowerCase();
 
-  const amountUSDC = (parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal))).toFixed(2);
+            console.log(`🔍 Analyse tx ${tx.hash.slice(0, 10)}...:`);
+            console.log(`   - functionName: "${functionName}"`);
+            console.log(`   - from: ${tx.from.slice(0, 10)}...`);
+            console.log(`   - to: ${tx.to.slice(0, 10)}...`);
+            console.log(`   - isToContract: ${isToContract}`);
+            console.log(`   - isFromContract: ${isFromContract}`);
 
-  return {
-    ...tx,
-    decodedMethod,
-    direction,
-    amountUSDC,
-    functionName
-  };
-})
-          .filter((tx: SmartContractTransaction) => 
-            ['Retrait gains', 'Retrait Capital', 'Dépôt plan', '2% Frais', 'Dépôt Admin', 'Vers Stratégies'].includes(tx.decodedMethod)
-          );
+            // LOGIQUE DE DÉCODAGE
+            
+            // 1. Méthode "stake" - Dépôts utilisateurs
+            if (functionName.toLowerCase().includes('stake') && !functionName.toLowerCase().includes('end')) {
+              if (isToContract) {
+                decodedMethod = 'Dépôt Plans';
+                direction = 'in';
+                console.log(`   ✅ Détecté: Dépôt Plans (stake IN)`);
+              } else if (isFromContract && isToFeesWallet) {
+                decodedMethod = 'Frais 2%';
+                direction = 'out';
+                console.log(`   ✅ Détecté: Frais 2% (stake fees OUT)`);
+              }
+            }
+            
+            // 2. Méthode "endStake" - Retrait du capital + récompenses
+            else if ((functionName.toLowerCase().includes('endstake') || functionName.toLowerCase().includes('end')) && isFromContract) {
+              decodedMethod = 'Retrait capitaux';
+              direction = 'out';
+              console.log(`   ✅ Détecté: Retrait capitaux (${functionName} OUT)`);
+            }
+            
+            // 3. Méthode "claimRewards" - Retrait des récompenses
+            else if (functionName.toLowerCase().includes('claimrewards') && isFromContract) {
+              decodedMethod = 'Retrait récompense Plans';
+              direction = 'out';
+              console.log(`   ✅ Détecté: Retrait récompense Plans (claimRewards OUT)`);
+            }
+            
+            // 4. Méthodes "adminWithdraw" - Vers stratégies
+            else if ((functionName.toLowerCase().includes('adminwithdraw')) && isFromContract && isToStrategiesWallet) {
+              decodedMethod = 'Vers Stratégies';
+              direction = 'out';
+              console.log(`   ✅ Détecté: Vers Stratégies (adminWithdraw OUT vers stratégies)`);
+            }
+            
+            // 5. Transfers depuis Pancake
+            else if (isFromPancakeWallet && isToContract) {
+              decodedMethod = 'Récompenses Pancake';
+              direction = 'in';
+              console.log(`   ✅ Détecté: Récompenses Pancake (Transfer IN depuis Pancake)`);
+            }
+            
+            // 6. Transfer depuis Owner vers smart contract
+            else if (isFromOwnerWallet && isToContract) {
+              decodedMethod = 'Retour récompense Owner';
+              direction = 'in';
+              console.log(`   ✅ Détecté: Retour récompense Owner (Transfer IN depuis Owner)`);
+            }
+            
+            // 7. emergencyWithdraw
+            else if (functionName.toLowerCase().includes('emergencywithdraw') && isFromContract) {
+              decodedMethod = 'Retrait d\'urgence';
+              direction = 'out';
+              console.log(`   ✅ Détecté: Retrait d'urgence (emergencyWithdraw OUT)`);
+            }
+            
+            // 8. Cas génériques avec analyse des adresses
+            else {
+              console.log(`   ⚠️ Analyse fallback pour functionName: "${functionName}"`);
+              
+              if (isToContract) {
+                if (isFromPancakeWallet) {
+                  decodedMethod = 'Récompenses Pancake';
+                  direction = 'in';
+                  console.log(`   🔄 Fallback: Récompenses Pancake (IN depuis Pancake)`);
+                } else if (isFromOwnerWallet) {
+                  decodedMethod = 'Retour récompense Owner';
+                  direction = 'in';
+                  console.log(`   🔄 Fallback: Retour récompense Owner (IN depuis Owner)`);
+                } else {
+                  decodedMethod = 'Dépôt Plans';
+                  direction = 'in';
+                  console.log(`   🔄 Fallback: Dépôt Plans (Transfer IN générique)`);
+                }
+              } else if (isFromContract) {
+                if (isToFeesWallet) {
+                  decodedMethod = 'Frais 2%';
+                  direction = 'out';
+                  console.log(`   🔄 Fallback: Frais 2% (OUT vers ${FEES_WALLET.slice(0, 10)}...)`);
+                } else if (isToStrategiesWallet) {
+                  decodedMethod = 'Vers Stratégies';
+                  direction = 'out';
+                  console.log(`   🔄 Fallback: Vers Stratégies (OUT vers ${STRATEGIES_WALLET.slice(0, 10)}...)`);
+                } else {
+                  // Analyse avancée par montant
+                  const amount = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+                  if (amount > 100) {
+                    decodedMethod = 'Retrait capitaux';
+                    direction = 'out';
+                    console.log(`   🔄 Fallback: Retrait capitaux (OUT grosse somme: ${amount.toFixed(2)} USDC)`);
+                  } else {
+                    decodedMethod = 'Retrait récompense Plans';
+                    direction = 'out';
+                    console.log(`   🔄 Fallback: Retrait récompense Plans (OUT petite somme: ${amount.toFixed(2)} USDC)`);
+                  }
+                }
+              } else {
+                decodedMethod = 'Transaction externe';
+                direction = 'out';
+                console.log(`   🔄 Fallback: Transaction externe`);
+              }
+            }
 
-        console.log('Transactions filtrées et décodées:', processedTxs);
-        setSmartContractTxs(processedTxs);
+            const amountUSDC = (parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal))).toFixed(2);
+
+            const result = {
+              ...tx,
+              decodedMethod,
+              direction,
+              amountUSDC,
+              functionName
+            };
+
+            console.log(`   🎯 Résultat final: ${decodedMethod} (${direction}) - ${amountUSDC} USDC`);
+
+            return result;
+          });
+
+        console.log('🎯 Transactions traitées avant filtrage:', processedTxs.length);
+        
+        // Filtrer les transactions selon nos critères
+        const finalTxs = processedTxs.filter((tx: SmartContractTransaction) => {
+          const validMethods = [
+            'Dépôt Plans', 
+            'Frais 2%', 
+            'Récompenses Pancake', 
+            'Vers Stratégies', 
+            'Retrait récompense Plans', 
+            'Retrait capitaux',
+            'Retrait d\'urgence',
+            'Retour récompense Owner'
+          ];
+          const isValid = validMethods.includes(tx.decodedMethod);
+          
+          if (!isValid) {
+            console.log(`❌ Transaction filtrée: ${tx.decodedMethod} (hash: ${tx.hash.slice(0, 10)}...)`);
+          }
+          
+          return isValid;
+        });
+
+        console.log('🎯 Transactions finales après filtrage:', finalTxs.length);
+        console.log('🎯 Répartition:', finalTxs.reduce((acc, tx) => {
+          acc[tx.decodedMethod] = (acc[tx.decodedMethod] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>));
+
+        setSmartContractTxs(finalTxs);
+        
+        if (finalTxs.length === 0) {
+          console.log('ℹ️ Aucune transaction trouvée. Vérifiez:');
+          console.log('  - Le smart contract a-t-il des transactions USDC ?');
+          console.log('  - Les adresses des wallets sont-elles correctes ?');
+          console.log('  - La clé API BSCScan fonctionne-t-elle ?');
+        }
+
+      } else {
+        console.log('❌ Aucune donnée de token transfer reçue ou erreur API');
+        console.log('Response status:', tokenTxsData.status);
+        console.log('Response message:', tokenTxsData.message);
+        setSmartContractTxs([]);
       }
 
     } catch (err) {
       setError('Erreur lors de la récupération des données du smart contract');
-      console.error('Smart Contract API Error:', err);
+      console.error('❌ Smart Contract API Error:', err);
     } finally {
       setSmartContractLoading(false);
     }
@@ -366,7 +482,7 @@ const WalletMonitoring: React.FC = () => {
     try {
       if (!API_KEY) return;
       
-      const usdcAddress = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"; // USDC BSC
+      const usdcAddress = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
       
       const response = await fetch(
         `https://api.bscscan.com/api?module=account&action=tokenbalance&contractaddress=${usdcAddress}&address=${SMART_CONTRACT_ADDRESS}&tag=latest&apikey=${API_KEY}`
@@ -383,7 +499,7 @@ const WalletMonitoring: React.FC = () => {
     }
   };
 
-  // Fonction pour récupérer les données BSCScan (Monitoring Wallet - inchangé)
+  // Fonction pour récupérer les données BSCScan (Monitoring Wallet)
   const fetchBSCScanData = async () => {
     if (!API_KEY) {
       setError('Clé API BSCScan non configurée');
@@ -433,30 +549,40 @@ const WalletMonitoring: React.FC = () => {
     if (isValidAddress(walletAddress)) {
       fetchBSCScanData();
     }
-    // Charger automatiquement les données du smart contract
     fetchSmartContractData();
     getContractUSDCBalance();
   }, []);
 
-  const filterByDate = (timestamp: string): boolean => {
-    const txDate = new Date(parseInt(timestamp) * 1000);
-    const now = new Date();
-    const diffTime = now.getTime() - txDate.getTime();
-    const diffDays = diffTime / (1000 * 3600 * 24);
+  const filterByDateUnified = (timestamp: string): boolean => {
+  const txDate = new Date(parseInt(timestamp) * 1000);
+  
+  // Si on a des dates custom ET que dateFilter est 'custom'
+  if (dateFilter === 'custom' && customStartDate && customEndDate) {
+    const startDate = new Date(customStartDate);
+    const endDate = new Date(customEndDate);
+    endDate.setHours(23, 59, 59, 999); // Fin de journée
+    return txDate >= startDate && txDate <= endDate;
+  }
+  
+  // Sinon, utiliser le filtre standard
+  const now = new Date();
+  const diffTime = now.getTime() - txDate.getTime();
+  const diffDays = diffTime / (1000 * 3600 * 24);
 
-    switch (dateFilter) {
-      case '1d': return diffDays <= 1;
-      case '7d': return diffDays <= 7;
-      case '30d': return diffDays <= 30;
-      case '90d': return diffDays <= 90;
-      default: return true;
-    }
-  };
+  switch (dateFilter) {
+    case '1d': return diffDays <= 1;
+    case '7d': return diffDays <= 7;
+    case '30d': return diffDays <= 30;
+    case '90d': return diffDays <= 90;
+    case 'all': return true;
+    default: return true;
+  }
+};
 
   const calculateSummary = (): WalletSummary => {
-    const filteredNormal = transactions.filter(tx => filterByDate(tx.timeStamp));
-    const filteredInternal = internalTxs.filter(tx => filterByDate(tx.timeStamp));
-    const filteredTokens = tokenTransfers.filter(tx => filterByDate(tx.timeStamp));
+    const filteredNormal = transactions.filter(tx => filterByDateUnified(tx.timeStamp));
+    const filteredInternal = internalTxs.filter(tx => filterByDateUnified(tx.timeStamp));
+    const filteredTokens = tokenTransfers.filter(tx => filterByDateUnified(tx.timeStamp));
 
     let totalIn = 0, totalOut = 0, totalFees = 0;
 
@@ -496,68 +622,73 @@ const WalletMonitoring: React.FC = () => {
   };
 
   const calculateSmartContractSummary = (): SmartContractSummary => {
-  const filteredTxs = smartContractTxs.filter(tx => filterByDate(tx.timeStamp));
+    const filteredTxs = smartContractTxs.filter(tx => filterByDateUnified(tx.timeStamp));
 
-  let totalDeposits = 0;
-  let totalWithdrawals = 0;
-  let totalFees = 0;
-  let totalCapitalWithdrawals = 0;
-  let totalAdminDeposits = 0;
-  let totalToStrategies = 0;
-  let adminDeposits = 0;
+    let totalDeposits = 0;
+    let totalWithdrawals = 0;
+    let totalFees = 0;
+    let totalCapitalWithdrawals = 0;
+    let totalPancakeRewards = 0;
+    let totalToStrategies = 0;
+    let totalOwnerReturns = 0;
 
-  const byMethod = {
-    deposits: 0,
-    withdrawals: 0,
-    fees: 0,
-    capitalWithdrawals: 0,
-    adminDeposits: 0,
-    toStrategies: 0,
+    const byMethod = {
+      deposits: 0,
+      withdrawals: 0,
+      fees: 0,
+      capitalWithdrawals: 0,
+      pancakeRewards: 0,
+      toStrategies: 0,
+      ownerReturns: 0,
+    };
+
+    filteredTxs.forEach(tx => {
+      const amount = parseFloat(tx.amountUSDC);
+      
+      switch (tx.decodedMethod) {
+        case 'Dépôt Plans':
+          totalDeposits += amount;
+          byMethod.deposits++;
+          break;
+        case 'Retrait récompense Plans':
+          totalWithdrawals += amount;
+          byMethod.withdrawals++;
+          break;
+        case 'Frais 2%':
+          totalFees += amount;
+          byMethod.fees++;
+          break;
+        case 'Retrait capitaux':
+          totalCapitalWithdrawals += amount;
+          byMethod.capitalWithdrawals++;
+          break;
+        case 'Récompenses Pancake':
+          totalPancakeRewards += amount;
+          byMethod.pancakeRewards++;
+          break;
+        case 'Vers Stratégies':
+          totalToStrategies += amount;
+          byMethod.toStrategies++;
+          break;
+        case 'Retour récompense Owner':
+          totalOwnerReturns += amount;
+          byMethod.ownerReturns++;
+          break;
+      }
+    });
+
+    return {
+      totalDeposits,
+      totalWithdrawals,
+      totalFees,
+      totalCapitalWithdrawals,
+      totalPancakeRewards,
+      totalToStrategies,
+      totalOwnerReturns,
+      transactionCount: filteredTxs.length,
+      byMethod,
+    };
   };
-
-  filteredTxs.forEach(tx => {
-    const amount = parseFloat(tx.amountUSDC);
-    
-    switch (tx.decodedMethod) {
-      case 'Dépôt plan':
-        totalDeposits += amount;
-        byMethod.deposits++;
-        break;
-      case 'Retrait gains':
-        totalWithdrawals += amount;
-        byMethod.withdrawals++;
-        break;
-      case '2% Frais':
-        totalFees += amount;
-        byMethod.fees++;
-        break;
-      case 'Retrait Capital':
-        totalCapitalWithdrawals += amount;
-        byMethod.capitalWithdrawals++;
-        break;
-      case 'Dépôt Admin':  // ← NOUVEAU CAS
-        adminDeposits += amount;
-        byMethod.adminDeposits++;
-        break;
-      case 'Vers Stratégies':  // ← NOUVEAU CAS
-        totalToStrategies += amount;
-        byMethod.toStrategies++;
-        break;
-    }
-  });
-
-  return {
-    totalDeposits,
-    totalWithdrawals,
-    totalFees,
-    totalCapitalWithdrawals,
-    totalAdminDeposits,
-    transactionCount: filteredTxs.length,
-    byMethod,
-    totalToStrategies,
-    adminDeposits,
-  };
-};
 
   const summary = calculateSummary();
   const smartContractSummary = calculateSmartContractSummary();
@@ -577,14 +708,14 @@ const WalletMonitoring: React.FC = () => {
   };
 
   const getTransactionMethod = (tx: Transaction): string => {
-  if (tx.functionName) {
-    return tx.functionName.split('(')[0];
-  }
-  if (tx.input === '0x') {
-    return 'Transfer';
-  }
-  return 'Contract Call';
-};
+    if (tx.functionName) {
+      return tx.functionName.split('(')[0];
+    }
+    if (tx.input === '0x') {
+      return 'Transfer';
+    }
+    return 'Contract Call';
+  };
 
   const getDirection = (from: string, to: string): 'in' | 'out' => {
     return to.toLowerCase() === walletAddress.toLowerCase() ? 'in' : 'out';
@@ -599,7 +730,7 @@ const WalletMonitoring: React.FC = () => {
 
   // Fonction pour le tableau des transactions du smart contract
   const renderSmartContractTable = () => {
-    const filteredData = smartContractTxs.filter(tx => filterByDate(tx.timeStamp));
+    const filteredData = smartContractTxs.filter(tx =>filterByDateUnified(tx.timeStamp));
 
     return (
       <TableContainer>
@@ -637,12 +768,13 @@ const WalletMonitoring: React.FC = () => {
                 <Td>
                   <Badge 
                     colorScheme={
-                      tx.decodedMethod === 'Dépôt plan' ? 'green' :
-                      tx.decodedMethod === 'Dépôt Admin' ? 'cyan' :
+                      tx.decodedMethod === 'Dépôt Plans' ? 'green' :
+                      tx.decodedMethod === 'Récompenses Pancake' ? 'yellow' :
+                      tx.decodedMethod === 'Retour récompense Owner' ? 'teal' :
                       tx.decodedMethod === 'Vers Stratégies' ? 'purple' :
-                      tx.decodedMethod === 'Retrait gains' ? 'blue' :
-                      tx.decodedMethod === 'Retrait Capital' ? 'orange' :
-                      tx.decodedMethod === '2% Frais' ? 'red' : 'gray'
+                      tx.decodedMethod === 'Retrait récompense Plans' ? 'blue' :
+                      tx.decodedMethod === 'Retrait capitaux' ? 'orange' :
+                      tx.decodedMethod === 'Frais 2%' ? 'red' : 'gray'
                     }
                     size="sm"
                   >
@@ -677,155 +809,223 @@ const WalletMonitoring: React.FC = () => {
     );
   };
 
-  // Fonction pour analyser les transactions et générer le rapport (inchangé)
+  // Fonction pour générer le rapport avec filtrage par période sélectionnée
   const generateTransparencyReport = () => {
-    const now = new Date();
-    let startDate: Date, endDate: Date, periodLabel: string;
-    
-    switch (reportPeriod) {
-      case 'current-month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        periodLabel = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  // Utiliser la MÊME logique de filtrage que le tableau
+  const filteredSmartContract = smartContractTxs.filter(tx => filterByDateUnified(tx.timeStamp));
+  
+  // Générer le label de période
+  let periodLabel: string;
+  let daysInPeriod: number;
+  
+  if (dateFilter === 'custom' && customStartDate && customEndDate) {
+    const startDate = new Date(customStartDate);
+    const endDate = new Date(customEndDate);
+    daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+    periodLabel = `${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
+  } else {
+    switch (dateFilter) {
+      case '1d': 
+        periodLabel = 'Aujourd\'hui'; 
+        daysInPeriod = 1; 
         break;
-        
-      case 'previous-month':
-        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-        periodLabel = startDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      case '7d': 
+        periodLabel = '7 derniers jours'; 
+        daysInPeriod = 7; 
         break;
-        
-      case 'current-quarter':
-        const quarterStart = Math.floor(now.getMonth() / 3) * 3;
-        startDate = new Date(now.getFullYear(), quarterStart, 1);
-        endDate = new Date(now.getFullYear(), quarterStart + 3, 0);
-        periodLabel = `T${Math.floor(quarterStart / 3) + 1} ${now.getFullYear()}`;
+      case '30d': 
+        periodLabel = '30 derniers jours'; 
+        daysInPeriod = 30; 
         break;
-        
-      case 'custom':
-        startDate = new Date(customStartDate);
-        endDate = new Date(customEndDate);
-        periodLabel = `${customStartDate} au ${customEndDate}`;
+      case '90d': 
+        periodLabel = '90 derniers jours'; 
+        daysInPeriod = 90; 
         break;
-        
-      default:
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        periodLabel = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      case 'all': 
+        periodLabel = 'Toutes les transactions'; 
+        daysInPeriod = 365; 
+        break;
+      default: 
+        periodLabel = 'Période inconnue'; 
+        daysInPeriod = 30; 
+        break;
     }
-    
-    const filteredTransactions = transactions.filter(tx => {
-      const txDate = new Date(parseInt(tx.timeStamp) * 1000);
-      return txDate >= startDate && txDate <= endDate;
-    });
-    
-    const filteredTokens = tokenTransfers.filter(tx => {
-      const txDate = new Date(parseInt(tx.timeStamp) * 1000);
-      return txDate >= startDate && txDate <= endDate;
-    });
+  }
+  
+  // Calculer les données Smart Contract pour la période filtrée
+  let userDeposits = 0;
+  let claimRewards = 0;
+  let endStake = 0;
+  let pancakeRewards = 0;
+  let ownerReturns = 0;
+  let fees = 0;
+  let toStrategies = 0;
+  let emergencyWithdrawals = 0;
 
-    // Ajouter les données du smart contract au rapport
-    const filteredSmartContract = smartContractTxs.filter(tx => {
-      const txDate = new Date(parseInt(tx.timeStamp) * 1000);
-      return txDate >= startDate && txDate <= endDate;
-    });
-    
-    let userDeposits = 0;
-    let platformInvestments = 0;
-    let platformReturns = 0;
-    let userWithdrawals = 0;
-    let gasFees = 0;
-    let claimRewards = 0;
-    let endStake = 0;
-
-    // Analyser les transactions du smart contract
-    filteredSmartContract.forEach(tx => {
-      const amount = parseFloat(tx.amountUSDC);
-      
-      switch (tx.decodedMethod) {
-        case 'Dépôt plan':
-          userDeposits += amount;
-          break;
-        case 'Dépôt Admin': 
-          //Ne pas ajouter à usersDeposits
-          break;
-        case 'Retrait gains':
-          claimRewards += amount;
-          break;
-        case 'Retrait Capital':
-          endStake += amount;
-          break;
-        case '2% Frais':
-          // Les frais sont comptabilisés séparément
-          break;
-      }
-    });
-
-      // userWithdrawals = TOTAL des deux types de retraits
-      userWithdrawals = claimRewards + endStake;
-    
-    filteredTransactions.forEach(tx => {
-      const value = parseFloat(tx.value) / Math.pow(10, 18);
-      const fee = (parseFloat(tx.gasUsed) * parseFloat(tx.gasPrice)) / Math.pow(10, 18);
-      gasFees += fee;
-      
-      if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
-        platformReturns += value;
-      } else {
-        platformInvestments += value;
-      }
-    });
-    
-    /*
-    filteredTokens.forEach(tx => {
-      const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-      
-      if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
-        if (tx.tokenSymbol === 'USDT' || tx.tokenSymbol === 'USDC') {
-          userDeposits += value;
-        }
-      } else {
-        if (tx.tokenSymbol === 'USDT' || tx.tokenSymbol === 'USDC') {
-          userWithdrawals += value;
-        }
-      }
-    });
-    */
-    
-    const daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
-    const estimatedBeginnerReturns = (userDeposits * 0.10 * daysInPeriod) / 365;
-    const estimatedGrowthReturns = (userDeposits * 0.15 * daysInPeriod) / 365;
-    const estimatedPremiumReturns = (userDeposits * 0.20 * daysInPeriod) / 365;
-    const totalEstimatedReturns = estimatedBeginnerReturns + estimatedGrowthReturns + estimatedPremiumReturns;
-    const rendements = smartContractSummary.totalWithdrawals + smartContractSummary.totalCapitalWithdrawals;
-    
-    return {
-      period: periodLabel,
-      userDeposits,
-      platformInvestments,
-      platformReturns,
-      userWithdrawals,
-      gasFees,
-      netFlow: platformReturns - platformInvestments,
-      estimatedReturns: totalEstimatedReturns,
-      actualReturns: claimRewards + endStake,
-      claimRewards,
-      endStake,
-      performance: (smartContractSummary.totalWithdrawals + smartContractSummary.totalCapitalWithdrawals) > 0 ? 
-  (((smartContractSummary.totalWithdrawals + smartContractSummary.totalCapitalWithdrawals) / totalEstimatedReturns) * 100) : 0,
-      transactionCount: filteredTransactions.length + filteredTokens.length + filteredSmartContract.length,
-      walletAddress,
-      contractBalance: contractUSDCBalance,
-      startDate: startDate.toLocaleDateString('fr-FR'),
-      endDate: endDate.toLocaleDateString('fr-FR'),
-      smartContractSummary,
-    };
+  const reportByMethod = {
+    deposits: 0,
+    withdrawals: 0,
+    fees: 0,
+    capitalWithdrawals: 0,
+    pancakeRewards: 0,
+    toStrategies: 0,
+    ownerReturns: 0,
+    emergencyWithdrawals: 0,
   };
 
-  const report = generateTransparencyReport();
+  filteredSmartContract.forEach(tx => {
+    const amount = parseFloat(tx.amountUSDC) || 0; // Protection contre NaN
+    
+    switch (tx.decodedMethod) {
+      case 'Dépôt Plans':
+        userDeposits += amount;
+        reportByMethod.deposits++;
+        break;
+      case 'Récompenses Pancake':
+        pancakeRewards += amount;
+        reportByMethod.pancakeRewards++;
+        break;
+      case 'Retour récompense Owner':
+        ownerReturns += amount;
+        reportByMethod.ownerReturns++;
+        break;
+      case 'Retrait récompense Plans':
+        claimRewards += amount;
+        reportByMethod.withdrawals++;
+        break;
+      case 'Retrait capitaux':
+        endStake += amount;
+        reportByMethod.capitalWithdrawals++;
+        break;
+      case 'Frais 2%':
+        fees += amount;
+        reportByMethod.fees++;
+        break;
+      case 'Vers Stratégies':
+        toStrategies += amount;
+        reportByMethod.toStrategies++;
+        break;
+      case 'Retrait d\'urgence':
+        emergencyWithdrawals += amount;
+        reportByMethod.emergencyWithdrawals++;
+        break;
+    }
+  });
 
-  // Composant du rapport de transparence avec données Smart Contract
-  const TransparencyReportModal = () => (
+  // Valeurs par défaut pour éviter undefined
+  const userWithdrawals = (claimRewards || 0) + (endStake || 0) + (emergencyWithdrawals || 0);
+  
+  // LOGIQUE DE PERFORMANCE avec protection
+  const totalInvestments = userDeposits || 0;
+  const totalExternalReturns = (pancakeRewards || 0) + (ownerReturns || 0);
+  
+  const performanceRatio = totalInvestments > 0 ? (totalExternalReturns / totalInvestments) : 0;
+  const performancePercentage = performanceRatio * 100;
+  
+  const annualizedReturn = daysInPeriod > 0 && dateFilter !== 'all' ? 
+    (performanceRatio * 365) / daysInPeriod : performanceRatio;
+  const annualizedReturnPercentage = annualizedReturn * 100;
+
+  // Flux net Smart Contract
+  const totalEntries = (userDeposits || 0) + (pancakeRewards || 0) + (ownerReturns || 0);
+  const totalExits = (claimRewards || 0) + (endStake || 0) + (fees || 0) + (toStrategies || 0) + (emergencyWithdrawals || 0);
+  const netFlowSmartContract = totalEntries - totalExits;
+  
+  // RETOURNER TOUTES LES PROPRIÉTÉS NÉCESSAIRES
+  return {
+    period: periodLabel || 'Période inconnue',
+    userDeposits: userDeposits || 0,
+    pancakeRewards: pancakeRewards || 0,
+    ownerReturns: ownerReturns || 0,
+    claimRewards: claimRewards || 0,
+    endStake: endStake || 0,
+    emergencyWithdrawals: emergencyWithdrawals || 0,
+    fees: fees || 0,
+    toStrategies: toStrategies || 0,
+    userWithdrawals: userWithdrawals || 0,
+    totalEntries: totalEntries || 0,
+    totalExits: totalExits || 0,
+    netFlowSmartContract: netFlowSmartContract || 0,
+    
+    // PERFORMANCE
+    totalInvestments: totalInvestments || 0,
+    totalExternalReturns: totalExternalReturns || 0,
+    performanceRatio: performanceRatio || 0,
+    performancePercentage: performancePercentage || 0,
+    annualizedReturnPercentage: annualizedReturnPercentage || 0,
+    
+    // MÉTADONNÉES
+    smartContractTxCount: filteredSmartContract.length || 0,
+    reportByMethod: reportByMethod || {
+      deposits: 0,
+      withdrawals: 0,
+      fees: 0,
+      capitalWithdrawals: 0,
+      pancakeRewards: 0,
+      toStrategies: 0,
+      ownerReturns: 0,
+      emergencyWithdrawals: 0,
+    },
+    contractBalance: contractUSDCBalance || '0',
+    daysInPeriod: daysInPeriod || 30,
+    dateFilter: dateFilter || '7d',
+  };
+};
+
+// 2. AJOUTER une fonction helper pour les valeurs sûres
+const safeToFixed = (value: any, decimals: number = 2): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return '0.' + '0'.repeat(decimals);
+  }
+  return Number(value).toFixed(decimals);
+};
+
+  // Composant du rapport de transparence avec données Smart Contract mises à jour
+  const TransparencyReportModal = () => {
+  // Générer le rapport avec protection
+  let report;
+  try {
+    report = generateTransparencyReport();
+  } catch (error) {
+    console.error('Erreur lors de la génération du rapport:', error);
+    // Rapport par défaut en cas d'erreur
+    report = {
+      period: 'Erreur',
+      userDeposits: 0,
+      pancakeRewards: 0,
+      ownerReturns: 0,
+      claimRewards: 0,
+      endStake: 0,
+      emergencyWithdrawals: 0,
+      fees: 0,
+      toStrategies: 0,
+      userWithdrawals: 0,
+      totalEntries: 0,
+      totalExits: 0,
+      netFlowSmartContract: 0,
+      totalInvestments: 0,
+      totalExternalReturns: 0,
+      performanceRatio: 0,
+      performancePercentage: 0,
+      annualizedReturnPercentage: 0,
+      smartContractTxCount: 0,
+      reportByMethod: {
+        deposits: 0,
+        withdrawals: 0,
+        fees: 0,
+        capitalWithdrawals: 0,
+        pancakeRewards: 0,
+        toStrategies: 0,
+        ownerReturns: 0,
+        emergencyWithdrawals: 0,
+      },
+      contractBalance: '0',
+      daysInPeriod: 30,
+      dateFilter: '7d',
+    };
+  }
+  
+  return (
     <Modal isOpen={showReport} onClose={() => setShowReport(false)} size="6xl">
       <ModalOverlay />
       <ModalContent>
@@ -839,7 +1039,7 @@ const WalletMonitoring: React.FC = () => {
         
         <ModalBody>
           <VStack spacing={6} align="stretch">
-            {/* Sélecteur de période */}
+            {/* Sélecteur de période SYNCHRONISÉ */}
             <Card>
               <CardHeader>
                 <Heading size="md">📅 Période du Rapport</Heading>
@@ -848,22 +1048,24 @@ const WalletMonitoring: React.FC = () => {
                 <VStack spacing={4} align="stretch">
                   <HStack spacing={4}>
                     <Select 
-                      value={reportPeriod} 
-                      onChange={(e) => setReportPeriod(e.target.value)}
+                      value={dateFilter} 
+                      onChange={(e) => setDateFilter(e.target.value)}
                       maxW="300px"
                     >
-                      <option value="current-month">Mois en cours</option>
-                      <option value="previous-month">Mois précédent</option>
-                      <option value="current-quarter">Trimestre en cours</option>
+                      <option value="1d">Aujourd'hui</option>
+                      <option value="7d">7 derniers jours</option>
+                      <option value="30d">30 derniers jours</option>
+                      <option value="90d">90 derniers jours</option>
+                      <option value="all">Toutes les transactions</option>
                       <option value="custom">Période personnalisée</option>
                     </Select>
                     
-                    <Button onClick={() => window.location.reload()} colorScheme="blue" size="sm">
-                      Actualiser
-                    </Button>
+                    <Text fontSize="sm" color="blue.500" fontWeight="bold">
+                      📊 {report.smartContractTxCount} transactions analysées
+                    </Text>
                   </HStack>
                   
-                  {reportPeriod === 'custom' && (
+                  {dateFilter === 'custom' && (
                     <HStack spacing={4}>
                       <Box>
                         <Text fontSize="sm" mb={1}>Date de début :</Text>
@@ -884,254 +1086,156 @@ const WalletMonitoring: React.FC = () => {
                     </HStack>
                   )}
                   
+                  <Alert status="info">
+                    <AlertIcon />
+                    <Box>
+                      <Text fontSize="sm">
+                        📌 Ce sélecteur est synchronisé avec l'onglet Smart Contract. 
+                        Les modifications ici affectent aussi le tableau des transactions.
+                      </Text>
+                    </Box>
+                  </Alert>
+                  
                   <Text fontSize="sm" color="gray.600">
-                    Période analysée : {report.startDate} au {report.endDate}
+                    Période analysée : {report.period} ({report.daysInPeriod} jours)
                   </Text>
                 </VStack>
               </CardBody>
             </Card>
 
-            {/* Résumé Smart Contract */}
+            {/* Résumé Smart Contract - AVEC PROTECTION */}
             <Card>
               <CardHeader>
-                <Heading size="md" color="purple.600">🏦 Résumé Smart Contract</Heading>
+                <Heading size="md" color="purple.600">🏦 Résumé Smart Contract - {report.period}</Heading>
               </CardHeader>
               <CardBody>
-                <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
                   <Stat>
                     <StatLabel>Dépôts Plans</StatLabel>
                     <StatNumber color="green.500">
-                      {smartContractSummary.totalDeposits.toFixed(2)} USDC
+                      {safeToFixed(report.userDeposits)} USDC
                     </StatNumber>
-                    <StatHelpText>{smartContractSummary.byMethod.deposits} transactions</StatHelpText>
+                    <StatHelpText>{report.reportByMethod?.deposits || 0} transactions</StatHelpText>
                   </Stat>
                   
                   <Stat>
-                    <StatLabel>Retraits Gains</StatLabel>
-                    <StatNumber color="blue.500">
-                      {report.claimRewards.toFixed(2)} USDC
+                    <StatLabel>Récompenses Pancake</StatLabel>
+                    <StatNumber color="yellow.500">
+                      {safeToFixed(report.pancakeRewards)} USDC
                     </StatNumber>
-                    <StatHelpText>{smartContractSummary.byMethod.withdrawals} Claim Rewards</StatHelpText>
+                    <StatHelpText>{report.reportByMethod?.pancakeRewards || 0} entrées</StatHelpText>
                   </Stat>
 
                   <Stat>
-                    <StatLabel>Retraits Capital</StatLabel>
-                    <StatNumber color="orange.500">
-                      {report.endStake.toFixed(2)} USDC
+                    <StatLabel>Retour Owner</StatLabel>
+                    <StatNumber color="teal.500">
+                      {safeToFixed(report.ownerReturns)} USDC
                     </StatNumber>
-                    <StatHelpText>{smartContractSummary.byMethod.capitalWithdrawals} End Stake</StatHelpText>
-                  </Stat>
-                  
-                  <Stat>
-                    <StatLabel>Frais 2%</StatLabel>
-                    <StatNumber color="orange.500">
-                      {smartContractSummary.totalFees.toFixed(2)} USDC
-                    </StatNumber>
-                    <StatHelpText>{smartContractSummary.byMethod.fees} transactions</StatHelpText>
+                    <StatHelpText>{report.reportByMethod?.ownerReturns || 0} transferts</StatHelpText>
                   </Stat>
 
                   <Stat>
-                    <StatLabel>Retraits Capital</StatLabel>
-                    <StatNumber color="red.500">
-                      {smartContractSummary.totalCapitalWithdrawals.toFixed(2)} USDC
+                    <StatLabel>Performance Réelle</StatLabel>
+                    <StatNumber color={(report.performancePercentage || 0) >= 5 ? "green.500" : "orange.500"}>
+                      {safeToFixed(report.performancePercentage, 1)}%
                     </StatNumber>
-                    <StatHelpText>{smartContractSummary.byMethod.capitalWithdrawals} transactions</StatHelpText>
+                    <StatHelpText>
+                      {safeToFixed(report.annualizedReturnPercentage, 1)}% annualisé
+                    </StatHelpText>
                   </Stat>
                 </SimpleGrid>
               </CardBody>
             </Card>
 
-            {/* Résumé Exécutif */}
+            {/* Performance Réelle - AVEC PROTECTION */}
             <Card>
               <CardHeader>
-                <Heading size="md" color="blue.600">📊 Résumé Exécutif</Heading>
+                <Heading size="md" color="green.600">📈 Performance Réelle - {report.period}</Heading>
               </CardHeader>
               <CardBody>
-                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
                   <Stat>
-                    <StatLabel>Dépôts Utilisateurs</StatLabel>
+                    <StatLabel>💰 Total Investissements</StatLabel>
+                    <StatNumber color="blue.500">
+                      {safeToFixed(report.totalInvestments)} USDC
+                    </StatNumber>
+                    <StatHelpText>Somme des Dépôts Plans</StatHelpText>
+                  </Stat>
+                  
+                  <Stat>
+                    <StatLabel>🎯 Retours Générés</StatLabel>
                     <StatNumber color="green.500">
-                      {report.userDeposits.toFixed(2)} USDC
+                      {safeToFixed(report.totalExternalReturns)} USDC
                     </StatNumber>
-                    <StatHelpText>Fonds des plans d'investissement</StatHelpText>
+                    <StatHelpText>Owner + Pancake</StatHelpText>
                   </Stat>
                   
                   <Stat>
-                    <StatLabel>Rendements Générés</StatLabel>
-                    <StatNumber color="blue.500">
-                      {(report.claimRewards + report.endStake).toFixed(2)} USDC
+                    <StatLabel>📊 Performance Période</StatLabel>
+                    <StatNumber color={(report.performancePercentage || 0) >= 5 ? "green.500" : "orange.500"}>
+                      {safeToFixed(report.performancePercentage)}%
                     </StatNumber>
                     <StatHelpText>
-                      Claim Rewards + End Stake
+                      {(report.performancePercentage || 0) >= 5 ? "🎯 Bonne performance" : "⚠️ Performance faible"}
                     </StatHelpText>
                   </Stat>
                   
                   <Stat>
-                    <StatLabel>Flux Net</StatLabel>
-                    <StatNumber color={report.netFlow >= 0 ? "green.500" : "red.500"}>
-                      {formatValueWithUSD(Math.abs(report.netFlow))}
+                    <StatLabel>📈 Rendement Annualisé</StatLabel>
+                    <StatNumber color={(report.annualizedReturnPercentage || 0) >= 15 ? "green.500" : "orange.500"}>
+                      {report.dateFilter === 'all' ? 'N/A' : `${safeToFixed(report.annualizedReturnPercentage, 1)}% /an`}
                     </StatNumber>
                     <StatHelpText>
-                      {report.netFlow >= 0 ? "Bénéfice" : "Perte"} de la période
+                      {report.dateFilter === 'all' ? 'Toutes périodes' : `Basé sur ${report.daysInPeriod} jours`}
                     </StatHelpText>
                   </Stat>
                 </SimpleGrid>
+
+                {/* Détail du calcul - AVEC PROTECTION */}
+                <Box mt={6} p={4} bg="gray.50" borderRadius="lg">
+                  <Heading color="gray.600" size="md" mb={5} textDecoration="underline">ℹ️ Détail du Calcul</Heading>
+                  <VStack spacing={2} align="stretch">
+                    <HStack justify="space-between">
+                      <Text color="green" fontWeight="bold">💰 Total Dépôts Plans:</Text>
+                      <Text color="green" fontWeight="bold">{safeToFixed(report.totalInvestments)} USDC</Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text fontWeight="bold" color="yellow.600">🥞 Récompenses Pancake:</Text>
+                      <Text fontWeight="bold" color="yellow.600">+{safeToFixed(report.pancakeRewards)} USDC</Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text fontWeight="bold" color="teal.600">👤 Retours Owner:</Text>
+                      <Text fontWeight="bold" color="teal.600">+{safeToFixed(report.ownerReturns)} USDC</Text>
+                    </HStack>
+                    <Box h="1px" bg="gray.300" />
+                    <HStack justify="space-between">
+                      <Text color="green.600" fontWeight="bold">🎯 Total Retours:</Text>
+                      <Text fontWeight="bold" color="green.600">{safeToFixed(report.totalExternalReturns)} USDC</Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text color="orange" fontWeight="bold">📊 Performance:</Text>
+                      <Text fontWeight="bold" color={(report.performancePercentage || 0) >= 5 ? "green.600" : "orange.600"}>
+                        {safeToFixed(report.totalExternalReturns)} ÷ {safeToFixed(report.totalInvestments)} = {safeToFixed(report.performancePercentage)}%
+                      </Text>
+                    </HStack>
+                  </VStack>
+                </Box>
               </CardBody>
             </Card>
 
-            {/* Analyse des Flux Smart Contract */}
-            <Card>
-              <CardHeader>
-                <Heading size="md" color="purple.600">💰 Analyse des Flux Smart Contract (USDC)</Heading>
-              </CardHeader>
-              <CardBody>
-                <TableContainer>
-                  <Table variant="simple">
-                    <Thead>
-                      <Tr>
-                        <Th>Type de Transaction</Th>
-                        <Th>Montant USDC</Th>
-                        <Th>Nombre de Transactions</Th>
-                        <Th>Description</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      <Tr>
-                        <Td>
-                          <Badge colorScheme="green">Dépôts Plans</Badge>
-                        </Td>
-                        <Td>{smartContractSummary.totalDeposits.toFixed(2)} USDC</Td>
-                        <Td>{smartContractSummary.byMethod.deposits}</Td>
-                        <Td>Fonds investis par les utilisateurs</Td>
-                      </Tr>
-                      <Tr>
-                        <Td>
-                          <Badge colorScheme="blue">Retraits Gains</Badge>
-                        </Td>
-                        <Td>{smartContractSummary.totalWithdrawals.toFixed(2)} USDC</Td>
-                        <Td>{smartContractSummary.byMethod.withdrawals}</Td>
-                        <Td>Profits redistribués aux utilisateurs</Td>
-                      </Tr>
-                      <Tr>
-                        <Td>
-                          <Badge colorScheme="orange">Frais 2%</Badge>
-                        </Td>
-                        <Td>{smartContractSummary.totalFees.toFixed(2)} USDC</Td>
-                        <Td>{smartContractSummary.byMethod.fees}</Td>
-                        <Td>Frais de gestion prélevés</Td>
-                      </Tr>
-                      <Tr>
-                        <Td>
-                          <Badge colorScheme="red">Retraits Capital</Badge>
-                        </Td>
-                        <Td>{smartContractSummary.totalCapitalWithdrawals.toFixed(2)} USDC</Td>
-                        <Td>{smartContractSummary.byMethod.capitalWithdrawals}</Td>
-                        <Td>Capital retiré par les utilisateurs</Td>
-                      </Tr>
-                    </Tbody>
-                  </Table>
-                </TableContainer>
-              </CardBody>
-            </Card>
-
-            {/* Performance des Plans */}
-            <Card>
-              <CardHeader>
-                <Heading size="md" color="green.600">📈 Performance des Plans d'Investissement</Heading>
-              </CardHeader>
-              <CardBody>
-                <SimpleGrid columns={3} spacing={4}>
-                  <Box p={4} bg="blue.50" borderRadius="lg" textAlign="center">
-                    <Text fontWeight="bold" color="blue.600">Plan Débutant</Text>
-                    <Text fontSize="2xl" fontWeight="bold">10% APR</Text>
-                    <Text fontSize="sm" color="gray.600">30 jours - Bloqué</Text>
-                    <Text fontSize="sm" mt={2}>
-                      Rendement estimé: {((smartContractSummary.totalDeposits * 0.10) / 12).toFixed(2)} USDC/mois
-                    </Text>
-                  </Box>
-                  
-                  <Box p={4} bg="purple.50" borderRadius="lg" textAlign="center">
-                    <Text fontWeight="bold" color="purple.600">Plan Croissance</Text>
-                    <Text fontSize="2xl" fontWeight="bold">15% APR</Text>
-                    <Text fontSize="sm" color="gray.600">90 jours - Bloqué</Text>
-                    <Text fontSize="sm" mt={2}>
-                      Rendement estimé: {((smartContractSummary.totalDeposits * 0.15) / 12).toFixed(2)} USDC/mois
-                    </Text>
-                  </Box>
-                  
-                  <Box p={4} bg="yellow.50" borderRadius="lg" textAlign="center">
-                    <Text fontWeight="bold" color="yellow.600">Plan Premium</Text>
-                    <Text fontSize="2xl" fontWeight="bold">20% APR</Text>
-                    <Text fontSize="sm" color="gray.600">180 jours - Bloqué</Text>
-                    <Text fontSize="sm" mt={2}>
-                      Rendement estimé: {((smartContractSummary.totalDeposits * 0.20) / 12).toFixed(2)} USDC/mois
-                    </Text>
-                  </Box>
-                </SimpleGrid>
-              </CardBody>
-            </Card>
-
-            {/* Traçabilité On-Chain */}
-            <Card>
-              <CardHeader>
-                <Heading size="md" color="teal.600">🔗 Traçabilité On-Chain</Heading>
-              </CardHeader>
-              <CardBody>
-                <VStack spacing={3} align="stretch">
-                  <HStack justify="space-between">
-                    <Text fontWeight="bold">Wallet analysé:</Text>
-                    <Link href={`https://bscscan.com/address/${walletAddress}`} isExternal color="blue.500">
-                      {walletAddress.slice(0, 20)}... <ExternalLink size={12} style={{display: 'inline'}} />
-                    </Link>
-                  </HStack>
-                  
-                  <HStack justify="space-between">
-                    <Text fontWeight="bold">Smart Contract:</Text>
-                    <Link href={`https://bscscan.com/address/${SMART_CONTRACT_ADDRESS}`} isExternal color="blue.500">
-                      {SMART_CONTRACT_ADDRESS.slice(0, 20)}... <ExternalLink size={12} style={{display: 'inline'}} />
-                    </Link>
-                  </HStack>
-                  
-                  <HStack justify="space-between">
-                    <Text fontWeight="bold">Solde du contrat :</Text>
-                    <Text>{report.contractBalance} USDC</Text>
-                  </HStack>
-                  
-                  <HStack justify="space-between">
-                    <Text fontWeight="bold">Transactions analysées:</Text>
-                    <Text>{report.transactionCount} transactions sur la période</Text>
-                  </HStack>
-                  
-                  <HStack justify="space-between">
-                    <Text fontWeight="bold">Transactions Smart Contract:</Text>
-                    <Text>{smartContractSummary.transactionCount} transactions USDC</Text>
-                  </HStack>
-                  
-                  <HStack justify="space-between">
-                    <Text fontWeight="bold">Période du rapport:</Text>
-                    <Text>{report.period}</Text>
-                  </HStack>
-                  
-                  <HStack justify="space-between">
-                    <Text fontWeight="bold">Génération du rapport:</Text>
-                    <Text>{new Date().toLocaleString('fr-FR')}</Text>
-                  </HStack>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            {/* Conclusions */}
-            <Alert status={smartContractSummary.totalDeposits > smartContractSummary.totalWithdrawals ? "success" : "warning"}>
+            {/* Conclusions - AVEC PROTECTION */}
+            <Alert status={(report.netFlowSmartContract || 0) >= 0 ? "success" : "warning"}>
               <AlertIcon />
               <Box>
                 <Text fontWeight="bold">
-                  {smartContractSummary.totalDeposits > smartContractSummary.totalWithdrawals ? "✅ Flux Positif Smart Contract" : "⚠️ Flux Négatif Smart Contract"}
+                  {(report.netFlowSmartContract || 0) >= 0 ? "✅ Flux Positif" : "⚠️ Flux Négatif"} - {report.period}
                 </Text>
                 <Text fontSize="sm">
-                  {smartContractSummary.totalDeposits > smartContractSummary.totalWithdrawals
-                    ? `Les dépôts (${smartContractSummary.totalDeposits.toFixed(2)} USDC) dépassent les retraits (${(smartContractSummary.totalWithdrawals + smartContractSummary.totalCapitalWithdrawals).toFixed(2)} USDC). Le contrat accumule des fonds.`
-                    : `Les retraits (${(smartContractSummary.totalWithdrawals + smartContractSummary.totalCapitalWithdrawals).toFixed(2)} USDC) dépassent les dépôts (${smartContractSummary.totalDeposits.toFixed(2)} USDC). Surveillance recommandée.`
-                  }
+                  Entrées: {safeToFixed(report.totalEntries)} USDC | 
+                  Sorties: {safeToFixed(report.totalExits)} USDC | 
+                  Net: {(report.netFlowSmartContract || 0) >= 0 ? "+" : ""}{safeToFixed(report.netFlowSmartContract)} USDC | 
+                  Performance: {safeToFixed(report.performancePercentage, 1)}%
+                  {report.dateFilter !== 'all' && ` (${safeToFixed(report.annualizedReturnPercentage, 1)}% annualisé)`}
                 </Text>
               </Box>
             </Alert>
@@ -1154,6 +1258,7 @@ const WalletMonitoring: React.FC = () => {
       </ModalContent>
     </Modal>
   );
+};
 
   const renderTransactionTable = (type: 'normal' | 'internal' | 'token') => {
     let data: any[] = [];
@@ -1161,15 +1266,15 @@ const WalletMonitoring: React.FC = () => {
 
     switch (type) {
       case 'normal':
-        data = transactions.filter(tx => filterByDate(tx.timeStamp));
+        data = transactions.filter(tx => filterByDateUnified(tx.timeStamp));
         columns = ['Hash', 'Méthode', 'Direction', 'Montant (BNB)', 'Frais (BNB)', 'Date'];
         break;
       case 'internal':
-        data = internalTxs.filter(tx => filterByDate(tx.timeStamp));
+        data = internalTxs.filter(tx => filterByDateUnified(tx.timeStamp));
         columns = ['Hash', 'Type', 'Direction', 'Montant (BNB)', 'Date'];
         break;
       case 'token':
-        data = tokenTransfers.filter(tx => filterByDate(tx.timeStamp));
+        data = tokenTransfers.filter(tx => filterByDateUnified(tx.timeStamp));
         columns = ['Hash', 'Token', 'Direction', 'Montant', 'Date'];
         break;
     }
@@ -1259,7 +1364,7 @@ const WalletMonitoring: React.FC = () => {
                         <DirectionIcon direction={getDirection(item.from, item.to)} />
                         <Text color={getDirection(item.from, item.to) === 'in' ? 'green.500' : 'red.500'}>
                           {getDirection(item.from, item.to) === 'in' ? 'Entrée' : 'Sortie'}
-                        </Text>
+                          </Text>
                       </HStack>
                     </Td>
                     <Td>{formatValue(item.value, parseInt(item.tokenDecimal))}</Td>
@@ -1304,7 +1409,7 @@ const WalletMonitoring: React.FC = () => {
               </TabList>
 
               <TabPanels>
-                {/* Onglet Monitoring Wallet (inchangé) */}
+                {/* Onglet Monitoring Wallet */}
                 <TabPanel>
                   <VStack spacing={6} align="stretch">
                     {/* En-tête avec champ de saisie */}
@@ -1318,7 +1423,7 @@ const WalletMonitoring: React.FC = () => {
                         <HStack spacing={3}>
                           <InputGroup>
                             <Input
-                              placeholder="0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF"
+                              placeholder="0x6Cf9fA1738C0c2AE386EF8a75025B53DEa95407a"
                               value={walletAddress}
                               onChange={(e) => handleAddressChange(e.target.value)}
                               fontSize="sm"
@@ -1475,7 +1580,7 @@ const WalletMonitoring: React.FC = () => {
                   </VStack>
                 </TabPanel>
 
-                {/* Nouvel Onglet Monitoring SmartContrat */}
+                {/* Onglet Monitoring SmartContrat */}
                 <TabPanel>
                   <VStack spacing={6} align="stretch">
                     {/* En-tête Smart Contract */}
@@ -1494,6 +1599,7 @@ const WalletMonitoring: React.FC = () => {
                               fontSize="sm"
                               fontFamily="monospace"
                               bg="gray.50"
+                              color="gray.700"
                             />
                             <InputRightElement>
                               <Link href={`https://bscscan.com/address/${SMART_CONTRACT_ADDRESS}`} isExternal>
@@ -1518,23 +1624,61 @@ const WalletMonitoring: React.FC = () => {
                     </VStack>
 
                     {/* Contrôles Smart Contract */}
-                    <HStack spacing={4}>
-                      <Select 
-                        value={dateFilter} 
-                        onChange={(e) => setDateFilter(e.target.value)}
-                        maxW="200px"
-                      >
-                        <option value="1d">Aujourd'hui</option>
-                        <option value="7d">7 derniers jours</option>
-                        <option value="30d">30 derniers jours</option>
-                        <option value="90d">90 derniers jours</option>
-                        <option value="all">Toutes</option>
-                      </Select>
-                      
-                      <Button onClick={handleSmartContractRefresh} isLoading={smartContractLoading} colorScheme="purple">
-                        Actualiser Smart Contract
-                      </Button>
-                    </HStack>
+                    <VStack spacing={4} align="stretch">
+  <HStack spacing={4}>
+    <Select 
+      value={dateFilter} 
+      onChange={(e) => setDateFilter(e.target.value)}
+      maxW="200px"
+    >
+      <option value="1d">Aujourd'hui</option>
+      <option value="7d">7 derniers jours</option>
+      <option value="30d">30 derniers jours</option>
+      <option value="90d">90 derniers jours</option>
+      <option value="all">Toutes</option>
+      <option value="custom">Période personnalisée</option>
+    </Select>
+    
+    <Button onClick={handleSmartContractRefresh} isLoading={smartContractLoading} colorScheme="purple">
+      Actualiser Smart Contract
+    </Button>
+  </HStack>
+
+  {dateFilter === 'custom' && (
+    <HStack spacing={4}>
+      <Box>
+        <Text fontSize="sm" mb={1}>Date de début :</Text>
+        <Input 
+          type="date" 
+          value={customStartDate}
+          onChange={(e) => setCustomStartDate(e.target.value)}
+          size="sm"
+        />
+      </Box>
+      <Box>
+        <Text fontSize="sm" mb={1}>Date de fin :</Text>
+        <Input 
+          type="date" 
+          value={customEndDate}
+          onChange={(e) => setCustomEndDate(e.target.value)}
+          size="sm"
+        />
+      </Box>
+    </HStack>
+  )}
+  
+  <Text fontSize="sm" color="gray.600">
+    Période active : {
+      dateFilter === 'custom' && customStartDate && customEndDate
+        ? `${new Date(customStartDate).toLocaleDateString('fr-FR')} au ${new Date(customEndDate).toLocaleDateString('fr-FR')}`
+        : dateFilter === '1d' ? 'Aujourd\'hui'
+        : dateFilter === '7d' ? '7 derniers jours'
+        : dateFilter === '30d' ? '30 derniers jours'
+        : dateFilter === '90d' ? '90 derniers jours'
+        : 'Toutes les transactions'
+    }
+  </Text>
+</VStack>
 
                     {/* Loading Smart Contract */}
                     {smartContractLoading && (
@@ -1544,8 +1688,8 @@ const WalletMonitoring: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* Résumé Smart Contract */}
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+                    {/* Résumé Smart Contract avec filtrage par période */}
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
                       <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
                         <StatLabel color="black">Dépôts Plans</StatLabel>
                         <StatNumber color="green.500">{smartContractSummary.totalDeposits.toFixed(2)} USDC</StatNumber>
@@ -1556,7 +1700,34 @@ const WalletMonitoring: React.FC = () => {
                       </Stat>
 
                       <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-                        <StatLabel color="black">Retraits Gains</StatLabel>
+                        <StatLabel color="black">Récompenses Pancake</StatLabel>
+                        <StatNumber color="yellow.500">{smartContractSummary.totalPancakeRewards.toFixed(2)} USDC</StatNumber>
+                        <StatHelpText>
+                          <StatArrow type="increase" />
+                          {smartContractSummary.byMethod.pancakeRewards} entrées
+                        </StatHelpText>
+                      </Stat>
+
+                      <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                        <StatLabel color="black">Retour Owner</StatLabel>
+                        <StatNumber color="teal.500">{smartContractSummary.totalOwnerReturns.toFixed(2)} USDC</StatNumber>
+                        <StatHelpText>
+                          <StatArrow type="increase" />
+                          {smartContractSummary.byMethod.ownerReturns} transferts
+                        </StatHelpText>
+                      </Stat>
+
+                      <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                        <StatLabel color="black">Vers Stratégies</StatLabel>
+                        <StatNumber color="purple.500">{smartContractSummary.totalToStrategies.toFixed(2)} USDC</StatNumber>
+                        <StatHelpText>
+                          <StatArrow type="decrease" />
+                          {smartContractSummary.byMethod.toStrategies} transferts
+                        </StatHelpText>
+                      </Stat>
+
+                      <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                        <StatLabel color="black">Retraits Récompenses</StatLabel>
                         <StatNumber color="blue.500">{smartContractSummary.totalWithdrawals.toFixed(2)} USDC</StatNumber>
                         <StatHelpText>
                           <StatArrow type="decrease" />
@@ -1565,19 +1736,19 @@ const WalletMonitoring: React.FC = () => {
                       </Stat>
 
                       <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-                        <StatLabel color="black">Frais 2%</StatLabel>
-                        <StatNumber color="orange.500">{smartContractSummary.totalFees.toFixed(2)} USDC</StatNumber>
+                        <StatLabel color="black">Retraits Capitaux</StatLabel>
+                        <StatNumber color="orange.500">{smartContractSummary.totalCapitalWithdrawals.toFixed(2)} USDC</StatNumber>
                         <StatHelpText>
-                          {smartContractSummary.byMethod.fees} prélèvements
+                          <StatArrow type="decrease" />
+                          {smartContractSummary.byMethod.capitalWithdrawals} retraits
                         </StatHelpText>
                       </Stat>
 
                       <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-                        <StatLabel color="black">Retraits Capital</StatLabel>
-                        <StatNumber color="red.500">{smartContractSummary.totalCapitalWithdrawals.toFixed(2)} USDC</StatNumber>
+                        <StatLabel color="black">Frais 2%</StatLabel>
+                        <StatNumber color="red.500">{smartContractSummary.totalFees.toFixed(2)} USDC</StatNumber>
                         <StatHelpText>
-                          <StatArrow type="decrease" />
-                          {smartContractSummary.byMethod.capitalWithdrawals} retraits
+                          {smartContractSummary.byMethod.fees} prélèvements
                         </StatHelpText>
                       </Stat>
                     </SimpleGrid>
@@ -1585,10 +1756,10 @@ const WalletMonitoring: React.FC = () => {
                     {/* Répartition par méthode Smart Contract */}
                     <Card bg={bgColor}>
                       <CardHeader>
-                        <Heading size="md">Répartition par Méthode</Heading>
+                        <Heading size="md">Répartition par Méthode (Période filtrée: {dateFilter})</Heading>
                       </CardHeader>
                       <CardBody>
-                        <SimpleGrid columns={4} spacing={4}>
+                        <SimpleGrid columns={{ base: 2, md: 3, lg: 7 }} spacing={4}>
                           <Box textAlign="center" p={4} bg="green.100" borderRadius="lg">
                             <Text fontSize="2xl" fontWeight="bold" color="green.900">
                               {smartContractSummary.byMethod.deposits}
@@ -1598,31 +1769,64 @@ const WalletMonitoring: React.FC = () => {
                               {smartContractSummary.totalDeposits.toFixed(0)} USDC
                             </Text>
                           </Box>
+                          
+                          <Box textAlign="center" p={4} bg="yellow.100" borderRadius="lg">
+                            <Text fontSize="2xl" fontWeight="bold" color="yellow.700">
+                              {smartContractSummary.byMethod.pancakeRewards}
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">Récompenses Pancake</Text>
+                            <Text fontSize="xs" color="gray.500">
+                              {smartContractSummary.totalPancakeRewards.toFixed(0)} USDC
+                            </Text>
+                          </Box>
+
+                          <Box textAlign="center" p={4} bg="teal.100" borderRadius="lg">
+                            <Text fontSize="2xl" fontWeight="bold" color="teal.900">
+                              {smartContractSummary.byMethod.ownerReturns}
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">Retour Owner</Text>
+                            <Text fontSize="xs" color="gray.500">
+                              {smartContractSummary.totalOwnerReturns.toFixed(0)} USDC
+                            </Text>
+                          </Box>
+                          
+                          <Box textAlign="center" p={4} bg="purple.100" borderRadius="lg">
+                            <Text fontSize="2xl" fontWeight="bold" color="purple.900">
+                              {smartContractSummary.byMethod.toStrategies}
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">Vers Stratégies</Text>
+                            <Text fontSize="xs" color="gray.500">
+                              {smartContractSummary.totalToStrategies.toFixed(0)} USDC
+                            </Text>
+                          </Box>
+                          
                           <Box textAlign="center" p={4} bg="blue.100" borderRadius="lg">
                             <Text fontSize="2xl" fontWeight="bold" color="blue.900">
                               {smartContractSummary.byMethod.withdrawals}
                             </Text>
-                            <Text fontSize="sm" color="gray.600">Retraits Gains</Text>
+                            <Text fontSize="sm" color="gray.600">Retraits Récompenses</Text>
                             <Text fontSize="xs" color="gray.500">
                               {smartContractSummary.totalWithdrawals.toFixed(0)} USDC
                             </Text>
                           </Box>
+                          
                           <Box textAlign="center" p={4} bg="orange.100" borderRadius="lg">
                             <Text fontSize="2xl" fontWeight="bold" color="orange.900">
+                              {smartContractSummary.byMethod.capitalWithdrawals}
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">Retraits Capitaux</Text>
+                            <Text fontSize="xs" color="gray.500">
+                              {smartContractSummary.totalCapitalWithdrawals.toFixed(0)} USDC
+                            </Text>
+                          </Box>
+                          
+                          <Box textAlign="center" p={4} bg="red.100" borderRadius="lg">
+                            <Text fontSize="2xl" fontWeight="bold" color="red.900">
                               {smartContractSummary.byMethod.fees}
                             </Text>
                             <Text fontSize="sm" color="gray.600">Frais 2%</Text>
                             <Text fontSize="xs" color="gray.500">
                               {smartContractSummary.totalFees.toFixed(0)} USDC
-                            </Text>
-                          </Box>
-                          <Box textAlign="center" p={4} bg="red.100" borderRadius="lg">
-                            <Text fontSize="2xl" fontWeight="bold" color="red.900">
-                              {smartContractSummary.byMethod.capitalWithdrawals}
-                            </Text>
-                            <Text fontSize="sm" color="gray.600">Retraits Capital</Text>
-                            <Text fontSize="xs" color="gray.500">
-                              {smartContractSummary.totalCapitalWithdrawals.toFixed(0)} USDC
                             </Text>
                           </Box>
                         </SimpleGrid>
@@ -1637,7 +1841,7 @@ const WalletMonitoring: React.FC = () => {
                             🏦 Transactions Smart Contract ({smartContractSummary.transactionCount})
                           </Heading>
                           <Badge colorScheme="purple" p={2}>
-                            Token Transfers USDC
+                            Token Transfers USDC - Filtrées par période
                           </Badge>
                         </HStack>
                       </CardHeader>
@@ -1649,16 +1853,37 @@ const WalletMonitoring: React.FC = () => {
                     {/* Analyse détaillée Smart Contract */}
                     <Card bg={bgColor}>
                       <CardHeader>
-                        <Heading size="md" color="purple.600">📊 Analyse Détaillée</Heading>
+                        <Heading size="md" color="purple.600">📊 Analyse Détaillée - Période: {dateFilter}</Heading>
                       </CardHeader>
                       <CardBody>
                         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                           <VStack spacing={3} align="stretch">
-                            <Text fontWeight="bold" color="purple.600">Flux Entrants (USDC)</Text>
+                            <Text fontWeight="bold" color="green.600">Flux Entrants (USDC)</Text>
                             <HStack justify="space-between">
-                              <Text>Total dépôts:</Text>
+                              <Text>Dépôts Plans:</Text>
                               <Text fontWeight="bold" color="green.500">
                                 +{smartContractSummary.totalDeposits.toFixed(2)} USDC
+                              </Text>
+                            </HStack>
+                            <HStack justify="space-between">
+                              <Text>Récompenses Pancake:</Text>
+                              <Text fontWeight="bold" color="yellow.500">
+                                +{smartContractSummary.totalPancakeRewards.toFixed(2)} USDC
+                              </Text>
+                            </HStack>
+                            <HStack justify="space-between">
+                              <Text>Retour Owner:</Text>
+                              <Text fontWeight="bold" color="teal.500">
+                                +{smartContractSummary.totalOwnerReturns.toFixed(2)} USDC
+                              </Text>
+                            </HStack>
+                            <Box h="1px" bg="gray.200" />
+                            <HStack justify="space-between">
+                              <Text fontWeight="bold">Total entrées:</Text>
+                              <Text fontWeight="bold" color="green.500">
+                                +{(smartContractSummary.totalDeposits + 
+                                   smartContractSummary.totalPancakeRewards + 
+                                   smartContractSummary.totalOwnerReturns).toFixed(2)} USDC
                               </Text>
                             </HStack>
                             <Text fontSize="sm" color="gray.600">
@@ -1673,20 +1898,26 @@ const WalletMonitoring: React.FC = () => {
                           <VStack spacing={3} align="stretch">
                             <Text fontWeight="bold" color="red.600">Flux Sortants (USDC)</Text>
                             <HStack justify="space-between">
-                              <Text>Retraits gains:</Text>
+                              <Text>Vers Stratégies:</Text>
+                              <Text fontWeight="bold" color="purple.500">
+                                -{smartContractSummary.totalToStrategies.toFixed(2)} USDC
+                              </Text>
+                            </HStack>
+                            <HStack justify="space-between">
+                              <Text>Retraits récompenses:</Text>
                               <Text fontWeight="bold" color="blue.500">
                                 -{smartContractSummary.totalWithdrawals.toFixed(2)} USDC
                               </Text>
                             </HStack>
                             <HStack justify="space-between">
-                              <Text>Retraits capital:</Text>
-                              <Text fontWeight="bold" color="red.500">
+                              <Text>Retraits capitaux:</Text>
+                              <Text fontWeight="bold" color="orange.500">
                                 -{smartContractSummary.totalCapitalWithdrawals.toFixed(2)} USDC
                               </Text>
                             </HStack>
                             <HStack justify="space-between">
                               <Text>Frais 2%:</Text>
-                              <Text fontWeight="bold" color="orange.500">
+                              <Text fontWeight="bold" color="red.500">
                                 -{smartContractSummary.totalFees.toFixed(2)} USDC
                               </Text>
                             </HStack>
@@ -1694,7 +1925,8 @@ const WalletMonitoring: React.FC = () => {
                             <HStack justify="space-between">
                               <Text fontWeight="bold">Total sorties:</Text>
                               <Text fontWeight="bold" color="red.500">
-                                -{(smartContractSummary.totalWithdrawals + 
+                                -{(smartContractSummary.totalToStrategies + 
+                                   smartContractSummary.totalWithdrawals + 
                                    smartContractSummary.totalCapitalWithdrawals + 
                                    smartContractSummary.totalFees).toFixed(2)} USDC
                               </Text>
@@ -1704,31 +1936,86 @@ const WalletMonitoring: React.FC = () => {
 
                         <Box mt={6} p={4} bg="gray.50" borderRadius="lg">
                           <HStack justify="space-between">
-                            <Text fontSize="lg" fontWeight="bold">Flux Net du Contrat:</Text>
+                            <Text fontSize="lg" fontWeight="bold">Flux Net du Contrat (période {dateFilter}):</Text>
                             <Text 
                               fontSize="lg" 
                               fontWeight="bold" 
                               color={
-                                (smartContractSummary.totalDeposits - 
-                                 smartContractSummary.totalWithdrawals - 
-                                 smartContractSummary.totalCapitalWithdrawals - 
-                                 smartContractSummary.totalFees) >= 0 ? "green.500" : "red.500"
+                                ((smartContractSummary.totalDeposits + 
+                                  smartContractSummary.totalPancakeRewards + 
+                                  smartContractSummary.totalOwnerReturns) - 
+                                 (smartContractSummary.totalToStrategies + 
+                                  smartContractSummary.totalWithdrawals + 
+                                  smartContractSummary.totalCapitalWithdrawals + 
+                                  smartContractSummary.totalFees)) >= 0 ? "green.500" : "red.500"
                               }
                             >
-                              {(smartContractSummary.totalDeposits - 
-                                smartContractSummary.totalWithdrawals - 
-                                smartContractSummary.totalCapitalWithdrawals - 
-                                smartContractSummary.totalFees) >= 0 ? "+" : ""}
-                              {(smartContractSummary.totalDeposits - 
-                                smartContractSummary.totalWithdrawals - 
-                                smartContractSummary.totalCapitalWithdrawals - 
-                                smartContractSummary.totalFees).toFixed(2)} USDC
+                              {((smartContractSummary.totalDeposits + 
+                                 smartContractSummary.totalPancakeRewards + 
+                                 smartContractSummary.totalOwnerReturns) - 
+                                (smartContractSummary.totalToStrategies + 
+                                 smartContractSummary.totalWithdrawals + 
+                                 smartContractSummary.totalCapitalWithdrawals + 
+                                 smartContractSummary.totalFees)) >= 0 ? "+" : ""}
+                              {((smartContractSummary.totalDeposits + 
+                                 smartContractSummary.totalPancakeRewards + 
+                                 smartContractSummary.totalOwnerReturns) - 
+                                (smartContractSummary.totalToStrategies + 
+                                 smartContractSummary.totalWithdrawals + 
+                                 smartContractSummary.totalCapitalWithdrawals + 
+                                 smartContractSummary.totalFees)).toFixed(2)} USDC
                             </Text>
                           </HStack>
                           <Text fontSize="sm" color="gray.600" mt={1}>
-                            Solde théorique vs Solde réel: {contractUSDCBalance} USDC
+                            Solde actuel du contrat: {contractUSDCBalance} USDC
+                          </Text>
+                          <Text fontSize="xs" color="gray.500" mt={1}>
+                            Note: Le flux net est calculé pour la période sélectionnée ({dateFilter}), 
+                            tandis que le solde du contrat représente le total cumulé depuis le déploiement.
                           </Text>
                         </Box>
+                      </CardBody>
+                    </Card>
+
+                    {/* Wallets de référence */}
+                    <Card bg={bgColor}>
+                      <CardHeader>
+                        <Heading size="md" color="teal.600">🔗 Wallets de Référence</Heading>
+                      </CardHeader>
+                      <CardBody>
+                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                          <VStack spacing={3} align="stretch">
+                            <HStack justify="space-between">
+                              <Text fontWeight="bold">Smart Contract:</Text>
+                              <Link href={`https://bscscan.com/address/${SMART_CONTRACT_ADDRESS}`} isExternal color="blue.500">
+                                {SMART_CONTRACT_ADDRESS.slice(0, 15)}... <ExternalLink size={12} style={{display: 'inline'}} />
+                              </Link>
+                            </HStack>
+                            
+                            <HStack justify="space-between">
+                              <Text fontWeight="bold">Wallet Frais (2%):</Text>
+                              <Link href={`https://bscscan.com/address/${FEES_WALLET}`} isExternal color="red.500">
+                                {FEES_WALLET.slice(0, 15)}... <ExternalLink size={12} style={{display: 'inline'}} />
+                              </Link>
+                            </HStack>
+                          </VStack>
+                          
+                          <VStack spacing={3} align="stretch">
+                            <HStack justify="space-between">
+                              <Text fontWeight="bold">Wallet Pancake:</Text>
+                              <Link href={`https://bscscan.com/address/${PANCAKE_REWARDS_WALLET}`} isExternal color="yellow.500">
+                                {PANCAKE_REWARDS_WALLET.slice(0, 15)}... <ExternalLink size={12} style={{display: 'inline'}} />
+                              </Link>
+                            </HStack>
+                            
+                            <HStack justify="space-between">
+                              <Text fontWeight="bold">Wallet Stratégies:</Text>
+                              <Link href={`https://bscscan.com/address/${STRATEGIES_WALLET}`} isExternal color="purple.500">
+                                {STRATEGIES_WALLET.slice(0, 15)}... <ExternalLink size={12} style={{display: 'inline'}} />
+                              </Link>
+                            </HStack>
+                          </VStack>
+                        </SimpleGrid>
                       </CardBody>
                     </Card>
                   </VStack>
