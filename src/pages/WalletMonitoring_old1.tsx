@@ -1,4 +1,4 @@
-// src/pages/WalletMonitoring.tsx - VERSION COMPLÈTE ET CORRIGÉE
+// src/pages/WalletMonitoring.tsx - VERSION PROPRE ET CORRIGÉE
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -155,15 +155,6 @@ interface WalletSummary {
   netFlow: number;
 }
 
-// Nouveau type pour le résumé des tokens BEP-20
-interface TokenSummary {
-  totalTokensIn: number;
-  totalTokensOut: number;
-  tokenTransactionCount: number;
-  uniqueTokens: number;
-  tokenNetFlow: number;
-}
-
 interface SmartContractSummary {
   totalDeposits: number;
   totalWithdrawals: number;
@@ -196,7 +187,6 @@ const WalletMonitoring: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [walletAddress, setWalletAddress] = useState('0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF');
   const [showReport, setShowReport] = useState(false);
-  const [showWalletReport, setShowWalletReport] = useState(false); // Nouveau state pour le rapport wallet
   const [contractUSDCBalance, setContractUSDCBalance] = useState('0');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -212,14 +202,6 @@ const WalletMonitoring: React.FC = () => {
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-
-  // Fonction helper pour les valeurs sûres
-  const safeToFixed = (value: any, decimals: number = 2): string => {
-    if (value === null || value === undefined || isNaN(value)) {
-      return '0.' + '0'.repeat(decimals);
-    }
-    return Number(value).toFixed(decimals);
-  };
 
   // Fonction pour récupérer les transactions du smart contrat
   const fetchSmartContractData = async () => {
@@ -572,30 +554,30 @@ const WalletMonitoring: React.FC = () => {
   }, []);
 
   const filterByDateUnified = (timestamp: string): boolean => {
-    const txDate = new Date(parseInt(timestamp) * 1000);
-    
-    // Si on a des dates custom ET que dateFilter est 'custom'
-    if (dateFilter === 'custom' && customStartDate && customEndDate) {
-      const startDate = new Date(customStartDate);
-      const endDate = new Date(customEndDate);
-      endDate.setHours(23, 59, 59, 999); // Fin de journée
-      return txDate >= startDate && txDate <= endDate;
-    }
-    
-    // Sinon, utiliser le filtre standard
-    const now = new Date();
-    const diffTime = now.getTime() - txDate.getTime();
-    const diffDays = diffTime / (1000 * 3600 * 24);
+  const txDate = new Date(parseInt(timestamp) * 1000);
+  
+  // Si on a des dates custom ET que dateFilter est 'custom'
+  if (dateFilter === 'custom' && customStartDate && customEndDate) {
+    const startDate = new Date(customStartDate);
+    const endDate = new Date(customEndDate);
+    endDate.setHours(23, 59, 59, 999); // Fin de journée
+    return txDate >= startDate && txDate <= endDate;
+  }
+  
+  // Sinon, utiliser le filtre standard
+  const now = new Date();
+  const diffTime = now.getTime() - txDate.getTime();
+  const diffDays = diffTime / (1000 * 3600 * 24);
 
-    switch (dateFilter) {
-      case '1d': return diffDays <= 1;
-      case '7d': return diffDays <= 7;
-      case '30d': return diffDays <= 30;
-      case '90d': return diffDays <= 90;
-      case 'all': return true;
-      default: return true;
-    }
-  };
+  switch (dateFilter) {
+    case '1d': return diffDays <= 1;
+    case '7d': return diffDays <= 7;
+    case '30d': return diffDays <= 30;
+    case '90d': return diffDays <= 90;
+    case 'all': return true;
+    default: return true;
+  }
+};
 
   const calculateSummary = (): WalletSummary => {
     const filteredNormal = transactions.filter(tx => filterByDateUnified(tx.timeStamp));
@@ -636,36 +618,6 @@ const WalletMonitoring: React.FC = () => {
         token: filteredTokens.length,
       },
       netFlow: totalIn - totalOut,
-    };
-  };
-
-  // Nouvelle fonction pour calculer le résumé des tokens BEP-20
-  const calculateTokenSummary = (): TokenSummary => {
-    const filteredTokens = tokenTransfers.filter(tx => filterByDateUnified(tx.timeStamp));
-
-    let totalTokensIn = 0;
-    let totalTokensOut = 0;
-    const uniqueTokensSet = new Set<string>();
-
-    filteredTokens.forEach(tx => {
-      const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-      const isIncoming = tx.to.toLowerCase() === walletAddress.toLowerCase();
-      
-      if (isIncoming) {
-        totalTokensIn += value;
-      } else {
-        totalTokensOut += value;
-      }
-      
-      uniqueTokensSet.add(tx.tokenSymbol);
-    });
-
-    return {
-      totalTokensIn,
-      totalTokensOut,
-      tokenTransactionCount: filteredTokens.length,
-      uniqueTokens: uniqueTokensSet.size,
-      tokenNetFlow: totalTokensIn - totalTokensOut,
     };
   };
 
@@ -738,613 +690,7 @@ const WalletMonitoring: React.FC = () => {
     };
   };
 
-  // Fonction pour générer le rapport du wallet (suite)
-  const generateWalletReport = () => {
-    const filteredTokens = tokenTransfers.filter(tx => filterByDateUnified(tx.timeStamp));
-    
-    // Générer le label de période
-    let periodLabel: string;
-    let daysInPeriod: number;
-    
-    if (dateFilter === 'custom' && customStartDate && customEndDate) {
-      const startDate = new Date(customStartDate);
-      const endDate = new Date(customEndDate);
-      daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
-      periodLabel = `${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
-    } else {
-      switch (dateFilter) {
-        case '1d': 
-          periodLabel = 'Aujourd\'hui'; 
-          daysInPeriod = 1; 
-          break;
-        case '7d': 
-          periodLabel = '7 derniers jours'; 
-          daysInPeriod = 7; 
-          break;
-        case '30d': 
-          periodLabel = '30 derniers jours'; 
-          daysInPeriod = 30; 
-          break;
-        case '90d': 
-          periodLabel = '90 derniers jours'; 
-          daysInPeriod = 90; 
-          break;
-        case 'all': 
-          periodLabel = 'Toutes les transactions'; 
-          daysInPeriod = 365; 
-          break;
-        default: 
-          periodLabel = 'Période inconnue'; 
-          daysInPeriod = 30; 
-          break;
-      }
-    }
-
-    // Calculer les données des tokens BEP-20
-    let totalTokensIn = 0;
-    let totalTokensOut = 0;
-    const tokensBySymbol: { [key: string]: { in: number; out: number; transactions: number } } = {};
-    const uniqueTokensSet = new Set<string>();
-
-    filteredTokens.forEach(tx => {
-      const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-      const isIncoming = tx.to.toLowerCase() === walletAddress.toLowerCase();
-      
-      if (isIncoming) {
-        totalTokensIn += value;
-      } else {
-        totalTokensOut += value;
-      }
-      
-      uniqueTokensSet.add(tx.tokenSymbol);
-      
-      // Grouper par token
-      if (!tokensBySymbol[tx.tokenSymbol]) {
-        tokensBySymbol[tx.tokenSymbol] = { in: 0, out: 0, transactions: 0 };
-      }
-      
-      if (isIncoming) {
-        tokensBySymbol[tx.tokenSymbol].in += value;
-      } else {
-        tokensBySymbol[tx.tokenSymbol].out += value;
-      }
-      tokensBySymbol[tx.tokenSymbol].transactions++;
-    });
-
-    const tokenNetFlow = totalTokensIn - totalTokensOut;
-
-    return {
-      period: periodLabel,
-      walletAddress,
-      totalTokensIn,
-      totalTokensOut,
-      tokenNetFlow,
-      tokenTransactionCount: filteredTokens.length,
-      uniqueTokens: uniqueTokensSet.size,
-      tokensBySymbol,
-      daysInPeriod,
-      dateFilter,
-    };
-  };
-
-  // Fonction pour générer le rapport avec filtrage par période sélectionnée
-  const generateTransparencyReport = () => {
-    // Utiliser la MÊME logique de filtrage que le tableau
-    const filteredSmartContract = smartContractTxs.filter(tx => filterByDateUnified(tx.timeStamp));
-    
-    // Générer le label de période
-    let periodLabel: string;
-    let daysInPeriod: number;
-    
-    if (dateFilter === 'custom' && customStartDate && customEndDate) {
-      const startDate = new Date(customStartDate);
-      const endDate = new Date(customEndDate);
-      daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
-      periodLabel = `${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
-    } else {
-      switch (dateFilter) {
-        case '1d': 
-          periodLabel = 'Aujourd\'hui'; 
-          daysInPeriod = 1; 
-          break;
-        case '7d': 
-          periodLabel = '7 derniers jours'; 
-          daysInPeriod = 7; 
-          break;
-        case '30d': 
-          periodLabel = '30 derniers jours'; 
-          daysInPeriod = 30; 
-          break;
-        case '90d': 
-          periodLabel = '90 derniers jours'; 
-          daysInPeriod = 90; 
-          break;
-        case 'all': 
-          periodLabel = 'Toutes les transactions'; 
-          daysInPeriod = 365; 
-          break;
-        default: 
-          periodLabel = 'Période inconnue'; 
-          daysInPeriod = 30; 
-          break;
-      }
-    }
-    
-    // Calculer les données Smart Contract pour la période filtrée
-    let userDeposits = 0;
-    let claimRewards = 0;
-    let endStake = 0;
-    let pancakeRewards = 0;
-    let ownerReturns = 0;
-    let fees = 0;
-    let toStrategies = 0;
-    let emergencyWithdrawals = 0;
-
-    const reportByMethod = {
-      deposits: 0,
-      withdrawals: 0,
-      fees: 0,
-      capitalWithdrawals: 0,
-      pancakeRewards: 0,
-      toStrategies: 0,
-      ownerReturns: 0,
-      emergencyWithdrawals: 0,
-    };
-
-    filteredSmartContract.forEach(tx => {
-      const amount = parseFloat(tx.amountUSDC) || 0; // Protection contre NaN
-      
-      switch (tx.decodedMethod) {
-        case 'Dépôt Plans':
-          userDeposits += amount;
-          reportByMethod.deposits++;
-          break;
-        case 'Récompenses Pancake':
-          pancakeRewards += amount;
-          reportByMethod.pancakeRewards++;
-          break;
-        case 'Retour récompense Owner':
-          ownerReturns += amount;
-          reportByMethod.ownerReturns++;
-          break;
-        case 'Retrait récompense Plans':
-          claimRewards += amount;
-          reportByMethod.withdrawals++;
-          break;
-        case 'Retrait capitaux':
-          endStake += amount;
-          reportByMethod.capitalWithdrawals++;
-          break;
-        case 'Frais 2%':
-          fees += amount;
-          reportByMethod.fees++;
-          break;
-        case 'Vers Stratégies':
-          toStrategies += amount;
-          reportByMethod.toStrategies++;
-          break;
-        case 'Retrait d\'urgence':
-          emergencyWithdrawals += amount;
-          reportByMethod.emergencyWithdrawals++;
-          break;
-      }
-    });
-
-    // Valeurs par défaut pour éviter undefined
-    const userWithdrawals = (claimRewards || 0) + (endStake || 0) + (emergencyWithdrawals || 0);
-    
-    // LOGIQUE DE PERFORMANCE avec protection
-    const totalInvestments = userDeposits || 0;
-    const totalExternalReturns = (pancakeRewards || 0) + (ownerReturns || 0);
-    
-    const performanceRatio = totalInvestments > 0 ? (totalExternalReturns / totalInvestments) : 0;
-    const performancePercentage = performanceRatio * 100;
-    
-    const annualizedReturn = daysInPeriod > 0 && dateFilter !== 'all' ? 
-      (performanceRatio * 365) / daysInPeriod : performanceRatio;
-    const annualizedReturnPercentage = annualizedReturn * 100;
-
-    // Flux net Smart Contract
-    const totalEntries = (userDeposits || 0) + (pancakeRewards || 0) + (ownerReturns || 0);
-    const totalExits = (claimRewards || 0) + (endStake || 0) + (fees || 0) + (toStrategies || 0) + (emergencyWithdrawals || 0);
-    const netFlowSmartContract = totalEntries - totalExits;
-    
-    // RETOURNER TOUTES LES PROPRIÉTÉS NÉCESSAIRES
-    return {
-      period: periodLabel || 'Période inconnue',
-      userDeposits: userDeposits || 0,
-      pancakeRewards: pancakeRewards || 0,
-      ownerReturns: ownerReturns || 0,
-      claimRewards: claimRewards || 0,
-      endStake: endStake || 0,
-      emergencyWithdrawals: emergencyWithdrawals || 0,
-      fees: fees || 0,
-      toStrategies: toStrategies || 0,
-      userWithdrawals: userWithdrawals || 0,
-      totalEntries: totalEntries || 0,
-      totalExits: totalExits || 0,
-      netFlowSmartContract: netFlowSmartContract || 0,
-      
-      // PERFORMANCE
-      totalInvestments: totalInvestments || 0,
-      totalExternalReturns: totalExternalReturns || 0,
-      performanceRatio: performanceRatio || 0,
-      performancePercentage: performancePercentage || 0,
-      annualizedReturnPercentage: annualizedReturnPercentage || 0,
-      
-      // MÉTADONNÉES
-      smartContractTxCount: filteredSmartContract.length || 0,
-      reportByMethod: reportByMethod || {
-        deposits: 0,
-        withdrawals: 0,
-        fees: 0,
-        capitalWithdrawals: 0,
-        pancakeRewards: 0,
-        toStrategies: 0,
-        ownerReturns: 0,
-        emergencyWithdrawals: 0,
-      },
-      contractBalance: contractUSDCBalance || '0',
-      daysInPeriod: daysInPeriod || 30,
-      dateFilter: dateFilter || '7d',
-    };
-  };
-
-  // Fonction pour exporter le rapport wallet en CSV
-  const exportWalletCSV = () => {
-    try {
-      const report = generateWalletReport();
-      
-      // En-tête CSV
-      let csvContent = "Rapport Wallet - " + report.period + "\n\n";
-      csvContent += "Informations Générales\n";
-      csvContent += "Adresse Wallet," + report.walletAddress + "\n";
-      csvContent += "Période," + report.period + "\n";
-      csvContent += "Nombre de jours," + report.daysInPeriod + "\n";
-      csvContent += "Transactions analysées," + report.tokenTransactionCount + "\n\n";
-      
-      // Résumé
-      csvContent += "Résumé Tokens BEP-20\n";
-      csvContent += "Total Tokens Reçus," + safeToFixed(report.totalTokensIn, 4) + "\n";
-      csvContent += "Total Tokens Envoyés," + safeToFixed(report.totalTokensOut, 4) + "\n";
-      csvContent += "Flux Net," + safeToFixed(report.tokenNetFlow, 4) + "\n";
-      csvContent += "Types de tokens différents," + report.uniqueTokens + "\n\n";
-      
-      // Détail par token
-      csvContent += "Détail par Token\n";
-      csvContent += "Token,Entrées,Sorties,Net,Transactions\n";
-      
-      Object.entries(report.tokensBySymbol || {}).forEach(([symbol, data]) => {
-        csvContent += symbol + "," + 
-                     safeToFixed(data.in, 4) + "," + 
-                     safeToFixed(data.out, 4) + "," + 
-                     safeToFixed(data.in - data.out, 4) + "," + 
-                     data.transactions + "\n";
-      });
-      
-      // Créer et télécharger le fichier
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `rapport_wallet_${report.walletAddress.slice(0, 10)}_${report.dateFilter}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Erreur lors de l\'export CSV:', error);
-      alert('Erreur lors de l\'export CSV');
-    }
-  };
-
-  // Fonction pour exporter le rapport smart contract en CSV
-  const exportSmartContractCSV = () => {
-    try {
-      const report = generateTransparencyReport();
-      
-      // En-tête CSV
-      let csvContent = "Rapport Smart Contract - " + report.period + "\n\n";
-      csvContent += "Informations Générales\n";
-      csvContent += "Smart Contract," + SMART_CONTRACT_ADDRESS + "\n";
-      csvContent += "Période," + report.period + "\n";
-      csvContent += "Nombre de jours," + report.daysInPeriod + "\n";
-      csvContent += "Transactions analysées," + report.smartContractTxCount + "\n";
-      csvContent += "Solde USDC du contrat," + report.contractBalance + " USDC\n\n";
-      
-      // Résumé des flux
-      csvContent += "Résumé des Flux (USDC)\n";
-      csvContent += "Dépôts Plans," + safeToFixed(report.userDeposits) + "\n";
-      csvContent += "Récompenses Pancake," + safeToFixed(report.pancakeRewards) + "\n";
-      csvContent += "Retours Owner," + safeToFixed(report.ownerReturns) + "\n";
-      csvContent += "Total Entrées," + safeToFixed(report.totalEntries) + "\n";
-      csvContent += "Vers Stratégies," + safeToFixed(report.toStrategies) + "\n";
-      csvContent += "Retraits Récompenses," + safeToFixed(report.claimRewards) + "\n";
-      csvContent += "Retraits Capitaux," + safeToFixed(report.endStake) + "\n";
-      csvContent += "Frais 2%," + safeToFixed(report.fees) + "\n";
-      csvContent += "Total Sorties," + safeToFixed(report.totalExits) + "\n";
-      csvContent += "Flux Net," + safeToFixed(report.netFlowSmartContract) + "\n\n";
-      
-      // Performance
-      csvContent += "Performance\n";
-      csvContent += "Total Investissements," + safeToFixed(report.totalInvestments) + " USDC\n";
-      csvContent += "Total Retours Générés," + safeToFixed(report.totalExternalReturns) + " USDC\n";
-      csvContent += "Performance Période," + safeToFixed(report.performancePercentage, 1) + "%\n";
-      if (report.dateFilter !== 'all') {
-        csvContent += "Rendement Annualisé," + safeToFixed(report.annualizedReturnPercentage, 1) + "%\n";
-      }
-      csvContent += "\n";
-      
-      // Détail par méthode
-      csvContent += "Détail par Méthode\n";
-      csvContent += "Méthode,Nombre de transactions,Montant total (USDC)\n";
-      csvContent += "Dépôts Plans," + report.reportByMethod.deposits + "," + safeToFixed(report.userDeposits) + "\n";
-      csvContent += "Récompenses Pancake," + report.reportByMethod.pancakeRewards + "," + safeToFixed(report.pancakeRewards) + "\n";
-      csvContent += "Retours Owner," + report.reportByMethod.ownerReturns + "," + safeToFixed(report.ownerReturns) + "\n";
-      csvContent += "Vers Stratégies," + report.reportByMethod.toStrategies + "," + safeToFixed(report.toStrategies) + "\n";
-      csvContent += "Retraits Récompenses," + report.reportByMethod.withdrawals + "," + safeToFixed(report.claimRewards) + "\n";
-      csvContent += "Retraits Capitaux," + report.reportByMethod.capitalWithdrawals + "," + safeToFixed(report.endStake) + "\n";
-      csvContent += "Frais 2%," + report.reportByMethod.fees + "," + safeToFixed(report.fees) + "\n";
-      
-      // Créer et télécharger le fichier
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `rapport_smart_contract_${report.dateFilter}_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Erreur lors de l\'export CSV:', error);
-      alert('Erreur lors de l\'export CSV');
-    }
-  };
-
-  // Fonction pour exporter le rapport wallet en PDF
-  const exportWalletPDF = () => {
-    try {
-      const report = generateWalletReport();
-      
-      // Créer le contenu HTML pour l'impression
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Rapport Wallet - ${report.period}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-            .section { margin-bottom: 20px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-            .info-item { padding: 8px; border: 1px solid #ddd; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .positive { color: green; }
-            .negative { color: red; }
-            .conclusion { background-color: #f0f8ff; padding: 15px; border-radius: 5px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>🪙 Rapport Wallet - ${report.period}</h1>
-            <p>Généré le ${new Date().toLocaleString('fr-FR')}</p>
-          </div>
-          
-          <div class="section">
-            <h2>📅 Informations du Wallet</h2>
-            <div class="info-grid">
-              <div class="info-item"><strong>Adresse:</strong> ${report.walletAddress}</div>
-              <div class="info-item"><strong>Période:</strong> ${report.period}</div>
-              <div class="info-item"><strong>Durée:</strong> ${report.daysInPeriod} jours</div>
-              <div class="info-item"><strong>Transactions:</strong> ${report.tokenTransactionCount}</div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h2>📊 Résumé Tokens BEP-20</h2>
-            <div class="info-grid">
-              <div class="info-item"><strong>Total Reçu:</strong> <span class="positive">${safeToFixed(report.totalTokensIn, 4)} tokens</span></div>
-              <div class="info-item"><strong>Total Envoyé:</strong> <span class="negative">${safeToFixed(report.totalTokensOut, 4)} tokens</span></div>
-              <div class="info-item"><strong>Flux Net:</strong> <span class="${(report.tokenNetFlow || 0) >= 0 ? 'positive' : 'negative'}">${safeToFixed(report.tokenNetFlow, 4)} tokens</span></div>
-              <div class="info-item"><strong>Types de tokens:</strong> ${report.uniqueTokens}</div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h2>🔍 Détail par Token</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Token</th>
-                  <th>Entrées</th>
-                  <th>Sorties</th>
-                  <th>Net</th>
-                  <th>Transactions</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${Object.entries(report.tokensBySymbol || {}).map(([symbol, data]) => `
-                  <tr>
-                    <td>${symbol}</td>
-                    <td class="positive">+${safeToFixed(data.in, 4)}</td>
-                    <td class="negative">-${safeToFixed(data.out, 4)}</td>
-                    <td class="${(data.in - data.out) >= 0 ? 'positive' : 'negative'}">${(data.in - data.out) >= 0 ? '+' : ''}${safeToFixed(data.in - data.out, 4)}</td>
-                    <td>${data.transactions}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="section">
-            <div class="conclusion">
-              <h3>${(report.tokenNetFlow || 0) >= 0 ? '✅ Flux Token Positif' : '⚠️ Flux Token Négatif'}</h3>
-              <p>
-                <strong>Wallet:</strong> ${report.walletAddress} |
-                <strong>Entrées:</strong> ${safeToFixed(report.totalTokensIn, 2)} tokens |
-                <strong>Sorties:</strong> ${safeToFixed(report.totalTokensOut, 2)} tokens |
-                <strong>Net:</strong> ${(report.tokenNetFlow || 0) >= 0 ? '+' : ''}${safeToFixed(report.tokenNetFlow, 2)} tokens
-              </p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-      
-      // Ouvrir une nouvelle fenêtre et imprimer avec vérification de nullité
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-      } else {
-        throw new Error('Impossible d\'ouvrir la fenêtre d\'impression');
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'export PDF:', error);
-      alert('Erreur lors de l\'export PDF. Vérifiez que les popups ne sont pas bloqués.');
-    }
-  };
-
-  // Fonction pour exporter le rapport smart contract en PDF
-  const exportSmartContractPDF = () => {
-    try {
-      const report = generateTransparencyReport();
-      
-      // Créer le contenu HTML pour l'impression
-      const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Rapport Smart Contract - ${report.period}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-            .section { margin-bottom: 20px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-            .info-item { padding: 8px; border: 1px solid #ddd; }
-            .performance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .positive { color: green; }
-            .negative { color: red; }
-            .neutral { color: orange; }
-            .conclusion { background-color: #f0f8ff; padding: 15px; border-radius: 5px; }
-            .calculation-box { background-color: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>🏦 Rapport Smart Contract - ${report.period}</h1>
-            <p>Généré le ${new Date().toLocaleString('fr-FR')}</p>
-          </div>
-          
-          <div class="section">
-            <h2>📅 Informations Générales</h2>
-            <div class="info-grid">
-              <div class="info-item"><strong>Smart Contract:</strong> ${SMART_CONTRACT_ADDRESS}</div>
-              <div class="info-item"><strong>Période:</strong> ${report.period}</div>
-              <div class="info-item"><strong>Durée:</strong> ${report.daysInPeriod} jours</div>
-              <div class="info-item"><strong>Transactions:</strong> ${report.smartContractTxCount}</div>
-              <div class="info-item"><strong>Solde USDC:</strong> ${report.contractBalance} USDC</div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h2>💰 Résumé des Flux (USDC)</h2>
-            <div class="performance-grid">
-              <div class="info-item"><strong>Dépôts Plans:</strong> <span class="positive">${safeToFixed(report.userDeposits)} USDC</span></div>
-              <div class="info-item"><strong>Récompenses Pancake:</strong> <span class="positive">${safeToFixed(report.pancakeRewards)} USDC</span></div>
-              <div class="info-item"><strong>Retours Owner:</strong> <span class="positive">${safeToFixed(report.ownerReturns)} USDC</span></div>
-              <div class="info-item"><strong>Total Entrées:</strong> <span class="positive">${safeToFixed(report.totalEntries)} USDC</span></div>
-              <div class="info-item"><strong>Vers Stratégies:</strong> <span class="negative">${safeToFixed(report.toStrategies)} USDC</span></div>
-              <div class="info-item"><strong>Retraits Récompenses:</strong> <span class="negative">${safeToFixed(report.claimRewards)} USDC</span></div>
-              <div class="info-item"><strong>Retraits Capitaux:</strong> <span class="negative">${safeToFixed(report.endStake)} USDC</span></div>
-              <div class="info-item"><strong>Frais 2%:</strong> <span class="negative">${safeToFixed(report.fees)} USDC</span></div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h2>📈 Performance Réelle</h2>
-            <div class="performance-grid">
-              <div class="info-item"><strong>💰 Total Investissements:</strong> ${safeToFixed(report.totalInvestments)} USDC</div>
-              <div class="info-item"><strong>🎯 Retours Générés:</strong> ${safeToFixed(report.totalExternalReturns)} USDC</div>
-              <div class="info-item"><strong>📊 Performance:</strong> <span class="${(report.performancePercentage || 0) >= 5 ? 'positive' : 'neutral'}">${safeToFixed(report.performancePercentage)}%</span></div>
-              <div class="info-item"><strong>📈 Annualisé:</strong> ${report.dateFilter === 'all' ? 'N/A' : safeToFixed(report.annualizedReturnPercentage, 1) + '% /an'}</div>
-            </div>
-            
-            <div class="calculation-box">
-              <h4>ℹ️ Détail du Calcul de Performance</h4>
-              <p><strong>💰 Total Dépôts Plans:</strong> ${safeToFixed(report.totalInvestments)} USDC</p>
-              <p><strong>🥞 Récompenses Pancake:</strong> +${safeToFixed(report.pancakeRewards)} USDC</p>
-              <p><strong>👤 Retours Owner:</strong> +${safeToFixed(report.ownerReturns)} USDC</p>
-              <hr>
-              <p><strong>🎯 Total Retours:</strong> ${safeToFixed(report.totalExternalReturns)} USDC</p>
-              <p><strong>📊 Performance:</strong> ${safeToFixed(report.totalExternalReturns)} ÷ ${safeToFixed(report.totalInvestments)} = ${safeToFixed(report.performancePercentage)}%</p>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h2>📊 Détail par Méthode</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Méthode</th>
-                  <th>Transactions</th>
-                  <th>Montant (USDC)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Dépôts Plans</td><td>${report.reportByMethod.deposits}</td><td class="positive">${safeToFixed(report.userDeposits)}</td></tr>
-                <tr><td>Récompenses Pancake</td><td>${report.reportByMethod.pancakeRewards}</td><td class="positive">${safeToFixed(report.pancakeRewards)}</td></tr>
-                <tr><td>Retours Owner</td><td>${report.reportByMethod.ownerReturns}</td><td class="positive">${safeToFixed(report.ownerReturns)}</td></tr>
-                <tr><td>Vers Stratégies</td><td>${report.reportByMethod.toStrategies}</td><td class="negative">${safeToFixed(report.toStrategies)}</td></tr>
-                <tr><td>Retraits Récompenses</td><td>${report.reportByMethod.withdrawals}</td><td class="negative">${safeToFixed(report.claimRewards)}</td></tr>
-                <tr><td>Retraits Capitaux</td><td>${report.reportByMethod.capitalWithdrawals}</td><td class="negative">${safeToFixed(report.endStake)}</td></tr>
-                <tr><td>Frais 2%</td><td>${report.reportByMethod.fees}</td><td class="negative">${safeToFixed(report.fees)}</td></tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="section">
-            <div class="conclusion">
-              <h3>${(report.netFlowSmartContract || 0) >= 0 ? '✅ Flux Positif' : '⚠️ Flux Négatif'} - ${report.period}</h3>
-              <p>
-                <strong>Entrées:</strong> ${safeToFixed(report.totalEntries)} USDC |
-                <strong>Sorties:</strong> ${safeToFixed(report.totalExits)} USDC |
-                <strong>Net:</strong> ${(report.netFlowSmartContract || 0) >= 0 ? '+' : ''}${safeToFixed(report.netFlowSmartContract)} USDC |
-                <strong>Performance:</strong> ${safeToFixed(report.performancePercentage, 1)}%
-                ${report.dateFilter !== 'all' ? ` (${safeToFixed(report.annualizedReturnPercentage, 1)}% annualisé)` : ''}
-              </p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-      
-      // Ouvrir une nouvelle fenêtre et imprimer avec vérification de nullité
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-      } else {
-        throw new Error('Impossible d\'ouvrir la fenêtre d\'impression');
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'export PDF:', error);
-      alert('Erreur lors de l\'export PDF. Vérifiez que les popups ne sont pas bloqués.');
-    }
-  };
-
   const summary = calculateSummary();
-  const tokenSummary = calculateTokenSummary(); // Nouveau résumé pour les tokens
   const smartContractSummary = calculateSmartContractSummary();
 
   const formatDate = (timestamp: string): string => {
@@ -1382,489 +728,9 @@ const WalletMonitoring: React.FC = () => {
     return <IconComponent size={16} color={color} />;
   };
 
-  // Composant du rapport de transparence pour le wallet
-  const WalletReportModal = () => {
-    let report;
-    try {
-      report = generateWalletReport();
-    } catch (error) {
-      console.error('Erreur lors de la génération du rapport wallet:', error);
-      report = {
-        period: 'Erreur',
-        walletAddress: walletAddress,
-        totalTokensIn: 0,
-        totalTokensOut: 0,
-        tokenNetFlow: 0,
-        tokenTransactionCount: 0,
-        uniqueTokens: 0,
-        tokensBySymbol: {},
-        daysInPeriod: 30,
-        dateFilter: '7d',
-      };
-    }
-
-    return (
-      <Modal isOpen={showWalletReport} onClose={() => setShowWalletReport(false)} size="6xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            <HStack>
-              <FileText size={24} />
-              <Text>Rapport Wallet - {report.period}</Text>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          
-          <ModalBody>
-            <VStack spacing={6} align="stretch">
-              {/* Informations du wallet */}
-              <Card>
-                <CardHeader>
-                  <Heading size="md">📅 Informations du Wallet</Heading>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={4} align="stretch">
-                    <HStack justify="space-between">
-                      <Text fontWeight="bold">Adresse du wallet :</Text>
-                      <Link href={`https://bscscan.com/address/${report.walletAddress}`} isExternal color="blue.500">
-                        {report.walletAddress} <ExternalLink size={12} style={{display: 'inline'}} />
-                      </Link>
-                    </HStack>
-                    <HStack justify="space-between">
-                      <Text fontWeight="bold">Période analysée :</Text>
-                      <Text>{report.period} ({report.daysInPeriod} jours)</Text>
-                    </HStack>
-                    <HStack justify="space-between">
-                      <Text fontWeight="bold">Transactions tokens analysées :</Text>
-                      <Text color="blue.500" fontWeight="bold">{report.tokenTransactionCount} transactions</Text>
-                    </HStack>
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              {/* Résumé des tokens BEP-20 */}
-              <Card>
-                <CardHeader>
-                  <Heading size="md" color="green.600">🪙 Résumé Tokens BEP-20 - {report.period}</Heading>
-                </CardHeader>
-                <CardBody>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-                    <Stat>
-                      <StatLabel>Total Tokens Reçus</StatLabel>
-                      <StatNumber color="green.500">
-                        {safeToFixed(report.totalTokensIn, 4)}
-                      </StatNumber>
-                      <StatHelpText>Entrées de tokens</StatHelpText>
-                    </Stat>
-                    
-                    <Stat>
-                      <StatLabel>Total Tokens Envoyés</StatLabel>
-                      <StatNumber color="red.500">
-                        {safeToFixed(report.totalTokensOut, 4)}
-                      </StatNumber>
-                      <StatHelpText>Sorties de tokens</StatHelpText>
-                    </Stat>
-
-                    <Stat>
-                      <StatLabel>Flux Net</StatLabel>
-                      <StatNumber color={(report.tokenNetFlow || 0) >= 0 ? "green.500" : "red.500"}>
-                        {(report.tokenNetFlow || 0) >= 0 ? "+" : ""}{safeToFixed(report.tokenNetFlow, 4)}
-                      </StatNumber>
-                      <StatHelpText>
-                        {(report.tokenNetFlow || 0) >= 0 ? "Flux positif" : "Flux négatif"}
-                      </StatHelpText>
-                    </Stat>
-
-                    <Stat>
-                      <StatLabel>Tokens Différents</StatLabel>
-                      <StatNumber color="blue.500">
-                        {report.uniqueTokens}
-                      </StatNumber>
-                      <StatHelpText>Types de tokens</StatHelpText>
-                    </Stat>
-                  </SimpleGrid>
-                </CardBody>
-              </Card>
-
-              {/* Détail par token */}
-              <Card>
-                <CardHeader>
-                  <Heading size="md" color="purple.600">📊 Détail par Token - {report.period}</Heading>
-                </CardHeader>
-                <CardBody>
-                  <TableContainer>
-                    <Table variant="simple" size="sm">
-                      <Thead>
-                        <Tr>
-                          <Th>Token</Th>
-                          <Th>Entrées</Th>
-                          <Th>Sorties</Th>
-                          <Th>Net</Th>
-                          <Th>Transactions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {Object.entries(report.tokensBySymbol || {}).map(([symbol, data]) => (
-                          <Tr key={symbol}>
-                            <Td>
-                              <Badge colorScheme="blue">{symbol}</Badge>
-                            </Td>
-                            <Td color="green.500">+{safeToFixed(data.in, 4)}</Td>
-                            <Td color="red.500">-{safeToFixed(data.out, 4)}</Td>
-                            <Td color={(data.in - data.out) >= 0 ? "green.500" : "red.500"}>
-                              {(data.in - data.out) >= 0 ? "+" : ""}{safeToFixed(data.in - data.out, 4)}
-                            </Td>
-                            <Td>{data.transactions}</Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
-
-                  {Object.keys(report.tokensBySymbol || {}).length === 0 && (
-                    <Box textAlign="center" py={8}>
-                      <Text color="gray.500">Aucune transaction token trouvée pour cette période</Text>
-                    </Box>
-                  )}
-                </CardBody>
-              </Card>
-
-              {/* Conclusion */}
-              <Alert status={(report.tokenNetFlow || 0) >= 0 ? "success" : "warning"}>
-                <AlertIcon />
-                <Box>
-                  <Text fontWeight="bold">
-                    {(report.tokenNetFlow || 0) >= 0 ? "✅ Flux Token Positif" : "⚠️ Flux Token Négatif"} - {report.period}
-                  </Text>
-                  <Text fontSize="sm">
-                    Wallet: {report.walletAddress.slice(0, 15)}... | 
-                    Entrées: {safeToFixed(report.totalTokensIn, 2)} tokens | 
-                    Sorties: {safeToFixed(report.totalTokensOut, 2)} tokens | 
-                    Net: {(report.tokenNetFlow || 0) >= 0 ? "+" : ""}{safeToFixed(report.tokenNetFlow, 2)} tokens | 
-                    {report.uniqueTokens} type(s) de token(s)
-                  </Text>
-                </Box>
-              </Alert>
-            </VStack>
-          </ModalBody>
-
-          <ModalFooter>
-            <HStack spacing={3}>
-              <Button 
-                leftIcon={<Calendar size={16} />} 
-                colorScheme="green"
-                onClick={exportWalletPDF}
-              >
-                Exporter PDF
-              </Button>
-              <Button 
-                leftIcon={<FileText size={16} />} 
-                colorScheme="blue"
-                onClick={exportWalletCSV}
-              >
-                Exporter CSV
-              </Button>
-              <Button variant="ghost" onClick={() => setShowWalletReport(false)}>
-                Fermer
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  };
-
-  // Composant du rapport de transparence avec données Smart Contract mises à jour
-  const TransparencyReportModal = () => {
-    // Générer le rapport avec protection
-    let report;
-    try {
-      report = generateTransparencyReport();
-    } catch (error) {
-      console.error('Erreur lors de la génération du rapport:', error);
-      // Rapport par défaut en cas d'erreur
-      report = {
-        period: 'Erreur',
-        userDeposits: 0,
-        pancakeRewards: 0,
-        ownerReturns: 0,
-        claimRewards: 0,
-        endStake: 0,
-        emergencyWithdrawals: 0,
-        fees: 0,
-        toStrategies: 0,
-        userWithdrawals: 0,
-        totalEntries: 0,
-        totalExits: 0,
-        netFlowSmartContract: 0,
-        totalInvestments: 0,
-        totalExternalReturns: 0,
-        performanceRatio: 0,
-        performancePercentage: 0,
-        annualizedReturnPercentage: 0,
-        smartContractTxCount: 0,
-        reportByMethod: {
-          deposits: 0,
-          withdrawals: 0,
-          fees: 0,
-          capitalWithdrawals: 0,
-          pancakeRewards: 0,
-          toStrategies: 0,
-          ownerReturns: 0,
-          emergencyWithdrawals: 0,
-        },
-        contractBalance: '0',
-        daysInPeriod: 30,
-        dateFilter: '7d',
-      };
-    }
-    
-    return (
-      <Modal isOpen={showReport} onClose={() => setShowReport(false)} size="6xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            <HStack>
-              <FileText size={24} />
-              <Text>Rapport de Transparence Smart Contract - {report.period}</Text>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          
-          <ModalBody>
-            <VStack spacing={6} align="stretch">
-              {/* Sélecteur de période SYNCHRONISÉ */}
-              <Card>
-                <CardHeader>
-                  <Heading size="md">📅 Période du Rapport</Heading>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={4} align="stretch">
-                    <HStack spacing={4}>
-                      <Select 
-                        value={dateFilter} 
-                        onChange={(e) => setDateFilter(e.target.value)}
-                        maxW="300px"
-                      >
-                        <option value="1d">Aujourd'hui</option>
-                        <option value="7d">7 derniers jours</option>
-                        <option value="30d">30 derniers jours</option>
-                        <option value="90d">90 derniers jours</option>
-                        <option value="all">Toutes les transactions</option>
-                        <option value="custom">Période personnalisée</option>
-                      </Select>
-                      
-                      <Text fontSize="sm" color="blue.500" fontWeight="bold">
-                        📊 {report.smartContractTxCount} transactions analysées
-                      </Text>
-                    </HStack>
-                    
-                    {dateFilter === 'custom' && (
-                      <HStack spacing={4}>
-                        <Box>
-                          <Text fontSize="sm" mb={1}>Date de début :</Text>
-                          <Input 
-                            type="date" 
-                            value={customStartDate}
-                            onChange={(e) => setCustomStartDate(e.target.value)}
-                          />
-                        </Box>
-                        <Box>
-                          <Text fontSize="sm" mb={1}>Date de fin :</Text>
-                          <Input 
-                            type="date" 
-                            value={customEndDate}
-                            onChange={(e) => setCustomEndDate(e.target.value)}
-                          />
-                        </Box>
-                      </HStack>
-                    )}
-                    
-                    <Alert status="info">
-                      <AlertIcon />
-                      <Box>
-                        <Text fontSize="sm">
-                          📌 Ce sélecteur est synchronisé avec l'onglet Smart Contract. 
-                          Les modifications ici affectent aussi le tableau des transactions.
-                        </Text>
-                      </Box>
-                    </Alert>
-                    
-                    <Text fontSize="sm" color="gray.600">
-                      Période analysée : {report.period} ({report.daysInPeriod} jours)
-                    </Text>
-                  </VStack>
-                </CardBody>
-              </Card>
-
-              {/* Résumé Smart Contract - AVEC PROTECTION */}
-              <Card>
-                <CardHeader>
-                  <Heading size="md" color="purple.600">🏦 Résumé Smart Contract - {report.period}</Heading>
-                </CardHeader>
-                <CardBody>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-                    <Stat>
-                      <StatLabel>Dépôts Plans</StatLabel>
-                      <StatNumber color="green.500">
-                        {safeToFixed(report.userDeposits)} USDC
-                      </StatNumber>
-                      <StatHelpText>{report.reportByMethod?.deposits || 0} transactions</StatHelpText>
-                    </Stat>
-                    
-                    <Stat>
-                      <StatLabel>Récompenses Pancake</StatLabel>
-                      <StatNumber color="yellow.500">
-                        {safeToFixed(report.pancakeRewards)} USDC
-                      </StatNumber>
-                      <StatHelpText>{report.reportByMethod?.pancakeRewards || 0} entrées</StatHelpText>
-                    </Stat>
-
-                    <Stat>
-                      <StatLabel>Retour Owner</StatLabel>
-                      <StatNumber color="teal.500">
-                        {safeToFixed(report.ownerReturns)} USDC
-                      </StatNumber>
-                      <StatHelpText>{report.reportByMethod?.ownerReturns || 0} transferts</StatHelpText>
-                    </Stat>
-
-                    <Stat>
-                      <StatLabel>Performance Réelle</StatLabel>
-                      <StatNumber color={(report.performancePercentage || 0) >= 5 ? "green.500" : "orange.500"}>
-                        {safeToFixed(report.performancePercentage, 1)}%
-                      </StatNumber>
-                      <StatHelpText>
-                        {safeToFixed(report.annualizedReturnPercentage, 1)}% annualisé
-                      </StatHelpText>
-                    </Stat>
-                  </SimpleGrid>
-                </CardBody>
-              </Card>
-
-              {/* Performance Réelle - AVEC PROTECTION */}
-              <Card>
-                <CardHeader>
-                  <Heading size="md" color="green.600">📈 Performance Réelle - {report.period}</Heading>
-                </CardHeader>
-                <CardBody>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-                    <Stat>
-                      <StatLabel>💰 Total Investissements</StatLabel>
-                      <StatNumber color="blue.500">
-                        {safeToFixed(report.totalInvestments)} USDC
-                      </StatNumber>
-                      <StatHelpText>Somme des Dépôts Plans</StatHelpText>
-                    </Stat>
-                    
-                    <Stat>
-                      <StatLabel>🎯 Retours Générés</StatLabel>
-                      <StatNumber color="green.500">
-                        {safeToFixed(report.totalExternalReturns)} USDC
-                      </StatNumber>
-                      <StatHelpText>Owner + Pancake</StatHelpText>
-                    </Stat>
-                    
-                    <Stat>
-                      <StatLabel>📊 Performance Période</StatLabel>
-                      <StatNumber color={(report.performancePercentage || 0) >= 5 ? "green.500" : "orange.500"}>
-                        {safeToFixed(report.performancePercentage)}%
-                      </StatNumber>
-                      <StatHelpText>
-                        {(report.performancePercentage || 0) >= 5 ? "🎯 Bonne performance" : "⚠️ Performance faible"}
-                      </StatHelpText>
-                    </Stat>
-                    
-                    <Stat>
-                      <StatLabel>📈 Rendement Annualisé</StatLabel>
-                      <StatNumber color={(report.annualizedReturnPercentage || 0) >= 15 ? "green.500" : "orange.500"}>
-                        {report.dateFilter === 'all' ? 'N/A' : `${safeToFixed(report.annualizedReturnPercentage, 1)}% /an`}
-                      </StatNumber>
-                      <StatHelpText>
-                        {report.dateFilter === 'all' ? 'Toutes périodes' : `Basé sur ${report.daysInPeriod} jours`}
-                      </StatHelpText>
-                    </Stat>
-                  </SimpleGrid>
-
-                  {/* Détail du calcul - AVEC PROTECTION */}
-                  <Box mt={6} p={4} bg="gray.50" borderRadius="lg">
-                    <Heading color="gray.600" size="md" mb={5} textDecoration="underline">ℹ️ Détail du Calcul</Heading>
-                    <VStack spacing={2} align="stretch">
-                      <HStack justify="space-between">
-                        <Text color="green" fontWeight="bold">💰 Total Dépôts Plans:</Text>
-                        <Text color="green" fontWeight="bold">{safeToFixed(report.totalInvestments)} USDC</Text>
-                      </HStack>
-                      <HStack justify="space-between">
-                        <Text fontWeight="bold" color="yellow.600">🥞 Récompenses Pancake:</Text>
-                        <Text fontWeight="bold" color="yellow.600">+{safeToFixed(report.pancakeRewards)} USDC</Text>
-                      </HStack>
-                      <HStack justify="space-between">
-                        <Text fontWeight="bold" color="teal.600">👤 Retours Owner:</Text>
-                        <Text fontWeight="bold" color="teal.600">+{safeToFixed(report.ownerReturns)} USDC</Text>
-                      </HStack>
-                      <Box h="1px" bg="gray.300" />
-                      <HStack justify="space-between">
-                        <Text color="green.600" fontWeight="bold">🎯 Total Retours:</Text>
-                        <Text fontWeight="bold" color="green.600">{safeToFixed(report.totalExternalReturns)} USDC</Text>
-                      </HStack>
-                      <HStack justify="space-between">
-                        <Text color="orange" fontWeight="bold">📊 Performance:</Text>
-                        <Text fontWeight="bold" color={(report.performancePercentage || 0) >= 5 ? "green.600" : "orange.600"}>
-                          {safeToFixed(report.totalExternalReturns)} ÷ {safeToFixed(report.totalInvestments)} = {safeToFixed(report.performancePercentage)}%
-                        </Text>
-                      </HStack>
-                    </VStack>
-                  </Box>
-                </CardBody>
-              </Card>
-
-              {/* Conclusions - AVEC PROTECTION */}
-              <Alert status={(report.netFlowSmartContract || 0) >= 0 ? "success" : "warning"}>
-                <AlertIcon />
-                <Box>
-                  <Text fontWeight="bold">
-                    {(report.netFlowSmartContract || 0) >= 0 ? "✅ Flux Positif" : "⚠️ Flux Négatif"} - {report.period}
-                  </Text>
-                  <Text fontSize="sm">
-                    Entrées: {safeToFixed(report.totalEntries)} USDC | 
-                    Sorties: {safeToFixed(report.totalExits)} USDC | 
-                    Net: {(report.netFlowSmartContract || 0) >= 0 ? "+" : ""}{safeToFixed(report.netFlowSmartContract)} USDC | 
-                    Performance: {safeToFixed(report.performancePercentage, 1)}%
-                    {report.dateFilter !== 'all' && ` (${safeToFixed(report.annualizedReturnPercentage, 1)}% annualisé)`}
-                  </Text>
-                </Box>
-              </Alert>
-            </VStack>
-          </ModalBody>
-
-          <ModalFooter>
-            <HStack spacing={3}>
-              <Button 
-                leftIcon={<Calendar size={16} />} 
-                colorScheme="green"
-                onClick={exportSmartContractPDF}
-              >
-                Exporter PDF
-              </Button>
-              <Button 
-                leftIcon={<FileText size={16} />} 
-                colorScheme="blue"
-                onClick={exportSmartContractCSV}
-              >
-                Exporter CSV
-              </Button>
-              <Button variant="ghost" onClick={() => setShowReport(false)}>
-                Fermer
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  };
-
   // Fonction pour le tableau des transactions du smart contract
   const renderSmartContractTable = () => {
-    const filteredData = smartContractTxs.filter(tx => filterByDateUnified(tx.timeStamp));
+    const filteredData = smartContractTxs.filter(tx =>filterByDateUnified(tx.timeStamp));
 
     return (
       <TableContainer>
@@ -1942,6 +808,457 @@ const WalletMonitoring: React.FC = () => {
       </TableContainer>
     );
   };
+
+  // Fonction pour générer le rapport avec filtrage par période sélectionnée
+  const generateTransparencyReport = () => {
+  // Utiliser la MÊME logique de filtrage que le tableau
+  const filteredSmartContract = smartContractTxs.filter(tx => filterByDateUnified(tx.timeStamp));
+  
+  // Générer le label de période
+  let periodLabel: string;
+  let daysInPeriod: number;
+  
+  if (dateFilter === 'custom' && customStartDate && customEndDate) {
+    const startDate = new Date(customStartDate);
+    const endDate = new Date(customEndDate);
+    daysInPeriod = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+    periodLabel = `${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`;
+  } else {
+    switch (dateFilter) {
+      case '1d': 
+        periodLabel = 'Aujourd\'hui'; 
+        daysInPeriod = 1; 
+        break;
+      case '7d': 
+        periodLabel = '7 derniers jours'; 
+        daysInPeriod = 7; 
+        break;
+      case '30d': 
+        periodLabel = '30 derniers jours'; 
+        daysInPeriod = 30; 
+        break;
+      case '90d': 
+        periodLabel = '90 derniers jours'; 
+        daysInPeriod = 90; 
+        break;
+      case 'all': 
+        periodLabel = 'Toutes les transactions'; 
+        daysInPeriod = 365; 
+        break;
+      default: 
+        periodLabel = 'Période inconnue'; 
+        daysInPeriod = 30; 
+        break;
+    }
+  }
+  
+  // Calculer les données Smart Contract pour la période filtrée
+  let userDeposits = 0;
+  let claimRewards = 0;
+  let endStake = 0;
+  let pancakeRewards = 0;
+  let ownerReturns = 0;
+  let fees = 0;
+  let toStrategies = 0;
+  let emergencyWithdrawals = 0;
+
+  const reportByMethod = {
+    deposits: 0,
+    withdrawals: 0,
+    fees: 0,
+    capitalWithdrawals: 0,
+    pancakeRewards: 0,
+    toStrategies: 0,
+    ownerReturns: 0,
+    emergencyWithdrawals: 0,
+  };
+
+  filteredSmartContract.forEach(tx => {
+    const amount = parseFloat(tx.amountUSDC) || 0; // Protection contre NaN
+    
+    switch (tx.decodedMethod) {
+      case 'Dépôt Plans':
+        userDeposits += amount;
+        reportByMethod.deposits++;
+        break;
+      case 'Récompenses Pancake':
+        pancakeRewards += amount;
+        reportByMethod.pancakeRewards++;
+        break;
+      case 'Retour récompense Owner':
+        ownerReturns += amount;
+        reportByMethod.ownerReturns++;
+        break;
+      case 'Retrait récompense Plans':
+        claimRewards += amount;
+        reportByMethod.withdrawals++;
+        break;
+      case 'Retrait capitaux':
+        endStake += amount;
+        reportByMethod.capitalWithdrawals++;
+        break;
+      case 'Frais 2%':
+        fees += amount;
+        reportByMethod.fees++;
+        break;
+      case 'Vers Stratégies':
+        toStrategies += amount;
+        reportByMethod.toStrategies++;
+        break;
+      case 'Retrait d\'urgence':
+        emergencyWithdrawals += amount;
+        reportByMethod.emergencyWithdrawals++;
+        break;
+    }
+  });
+
+  // Valeurs par défaut pour éviter undefined
+  const userWithdrawals = (claimRewards || 0) + (endStake || 0) + (emergencyWithdrawals || 0);
+  
+  // LOGIQUE DE PERFORMANCE avec protection
+  const totalInvestments = userDeposits || 0;
+  const totalExternalReturns = (pancakeRewards || 0) + (ownerReturns || 0);
+  
+  const performanceRatio = totalInvestments > 0 ? (totalExternalReturns / totalInvestments) : 0;
+  const performancePercentage = performanceRatio * 100;
+  
+  const annualizedReturn = daysInPeriod > 0 && dateFilter !== 'all' ? 
+    (performanceRatio * 365) / daysInPeriod : performanceRatio;
+  const annualizedReturnPercentage = annualizedReturn * 100;
+
+  // Flux net Smart Contract
+  const totalEntries = (userDeposits || 0) + (pancakeRewards || 0) + (ownerReturns || 0);
+  const totalExits = (claimRewards || 0) + (endStake || 0) + (fees || 0) + (toStrategies || 0) + (emergencyWithdrawals || 0);
+  const netFlowSmartContract = totalEntries - totalExits;
+  
+  // RETOURNER TOUTES LES PROPRIÉTÉS NÉCESSAIRES
+  return {
+    period: periodLabel || 'Période inconnue',
+    userDeposits: userDeposits || 0,
+    pancakeRewards: pancakeRewards || 0,
+    ownerReturns: ownerReturns || 0,
+    claimRewards: claimRewards || 0,
+    endStake: endStake || 0,
+    emergencyWithdrawals: emergencyWithdrawals || 0,
+    fees: fees || 0,
+    toStrategies: toStrategies || 0,
+    userWithdrawals: userWithdrawals || 0,
+    totalEntries: totalEntries || 0,
+    totalExits: totalExits || 0,
+    netFlowSmartContract: netFlowSmartContract || 0,
+    
+    // PERFORMANCE
+    totalInvestments: totalInvestments || 0,
+    totalExternalReturns: totalExternalReturns || 0,
+    performanceRatio: performanceRatio || 0,
+    performancePercentage: performancePercentage || 0,
+    annualizedReturnPercentage: annualizedReturnPercentage || 0,
+    
+    // MÉTADONNÉES
+    smartContractTxCount: filteredSmartContract.length || 0,
+    reportByMethod: reportByMethod || {
+      deposits: 0,
+      withdrawals: 0,
+      fees: 0,
+      capitalWithdrawals: 0,
+      pancakeRewards: 0,
+      toStrategies: 0,
+      ownerReturns: 0,
+      emergencyWithdrawals: 0,
+    },
+    contractBalance: contractUSDCBalance || '0',
+    daysInPeriod: daysInPeriod || 30,
+    dateFilter: dateFilter || '7d',
+  };
+};
+
+// 2. AJOUTER une fonction helper pour les valeurs sûres
+const safeToFixed = (value: any, decimals: number = 2): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return '0.' + '0'.repeat(decimals);
+  }
+  return Number(value).toFixed(decimals);
+};
+
+  // Composant du rapport de transparence avec données Smart Contract mises à jour
+  const TransparencyReportModal = () => {
+  // Générer le rapport avec protection
+  let report;
+  try {
+    report = generateTransparencyReport();
+  } catch (error) {
+    console.error('Erreur lors de la génération du rapport:', error);
+    // Rapport par défaut en cas d'erreur
+    report = {
+      period: 'Erreur',
+      userDeposits: 0,
+      pancakeRewards: 0,
+      ownerReturns: 0,
+      claimRewards: 0,
+      endStake: 0,
+      emergencyWithdrawals: 0,
+      fees: 0,
+      toStrategies: 0,
+      userWithdrawals: 0,
+      totalEntries: 0,
+      totalExits: 0,
+      netFlowSmartContract: 0,
+      totalInvestments: 0,
+      totalExternalReturns: 0,
+      performanceRatio: 0,
+      performancePercentage: 0,
+      annualizedReturnPercentage: 0,
+      smartContractTxCount: 0,
+      reportByMethod: {
+        deposits: 0,
+        withdrawals: 0,
+        fees: 0,
+        capitalWithdrawals: 0,
+        pancakeRewards: 0,
+        toStrategies: 0,
+        ownerReturns: 0,
+        emergencyWithdrawals: 0,
+      },
+      contractBalance: '0',
+      daysInPeriod: 30,
+      dateFilter: '7d',
+    };
+  }
+  
+  return (
+    <Modal isOpen={showReport} onClose={() => setShowReport(false)} size="6xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>
+          <HStack>
+            <FileText size={24} />
+            <Text>Rapport de Transparence - {report.period}</Text>
+          </HStack>
+        </ModalHeader>
+        <ModalCloseButton />
+        
+        <ModalBody>
+          <VStack spacing={6} align="stretch">
+            {/* Sélecteur de période SYNCHRONISÉ */}
+            <Card>
+              <CardHeader>
+                <Heading size="md">📅 Période du Rapport</Heading>
+              </CardHeader>
+              <CardBody>
+                <VStack spacing={4} align="stretch">
+                  <HStack spacing={4}>
+                    <Select 
+                      value={dateFilter} 
+                      onChange={(e) => setDateFilter(e.target.value)}
+                      maxW="300px"
+                    >
+                      <option value="1d">Aujourd'hui</option>
+                      <option value="7d">7 derniers jours</option>
+                      <option value="30d">30 derniers jours</option>
+                      <option value="90d">90 derniers jours</option>
+                      <option value="all">Toutes les transactions</option>
+                      <option value="custom">Période personnalisée</option>
+                    </Select>
+                    
+                    <Text fontSize="sm" color="blue.500" fontWeight="bold">
+                      📊 {report.smartContractTxCount} transactions analysées
+                    </Text>
+                  </HStack>
+                  
+                  {dateFilter === 'custom' && (
+                    <HStack spacing={4}>
+                      <Box>
+                        <Text fontSize="sm" mb={1}>Date de début :</Text>
+                        <Input 
+                          type="date" 
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                        />
+                      </Box>
+                      <Box>
+                        <Text fontSize="sm" mb={1}>Date de fin :</Text>
+                        <Input 
+                          type="date" 
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                        />
+                      </Box>
+                    </HStack>
+                  )}
+                  
+                  <Alert status="info">
+                    <AlertIcon />
+                    <Box>
+                      <Text fontSize="sm">
+                        📌 Ce sélecteur est synchronisé avec l'onglet Smart Contract. 
+                        Les modifications ici affectent aussi le tableau des transactions.
+                      </Text>
+                    </Box>
+                  </Alert>
+                  
+                  <Text fontSize="sm" color="gray.600">
+                    Période analysée : {report.period} ({report.daysInPeriod} jours)
+                  </Text>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            {/* Résumé Smart Contract - AVEC PROTECTION */}
+            <Card>
+              <CardHeader>
+                <Heading size="md" color="purple.600">🏦 Résumé Smart Contract - {report.period}</Heading>
+              </CardHeader>
+              <CardBody>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+                  <Stat>
+                    <StatLabel>Dépôts Plans</StatLabel>
+                    <StatNumber color="green.500">
+                      {safeToFixed(report.userDeposits)} USDC
+                    </StatNumber>
+                    <StatHelpText>{report.reportByMethod?.deposits || 0} transactions</StatHelpText>
+                  </Stat>
+                  
+                  <Stat>
+                    <StatLabel>Récompenses Pancake</StatLabel>
+                    <StatNumber color="yellow.500">
+                      {safeToFixed(report.pancakeRewards)} USDC
+                    </StatNumber>
+                    <StatHelpText>{report.reportByMethod?.pancakeRewards || 0} entrées</StatHelpText>
+                  </Stat>
+
+                  <Stat>
+                    <StatLabel>Retour Owner</StatLabel>
+                    <StatNumber color="teal.500">
+                      {safeToFixed(report.ownerReturns)} USDC
+                    </StatNumber>
+                    <StatHelpText>{report.reportByMethod?.ownerReturns || 0} transferts</StatHelpText>
+                  </Stat>
+
+                  <Stat>
+                    <StatLabel>Performance Réelle</StatLabel>
+                    <StatNumber color={(report.performancePercentage || 0) >= 5 ? "green.500" : "orange.500"}>
+                      {safeToFixed(report.performancePercentage, 1)}%
+                    </StatNumber>
+                    <StatHelpText>
+                      {safeToFixed(report.annualizedReturnPercentage, 1)}% annualisé
+                    </StatHelpText>
+                  </Stat>
+                </SimpleGrid>
+              </CardBody>
+            </Card>
+
+            {/* Performance Réelle - AVEC PROTECTION */}
+            <Card>
+              <CardHeader>
+                <Heading size="md" color="green.600">📈 Performance Réelle - {report.period}</Heading>
+              </CardHeader>
+              <CardBody>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+                  <Stat>
+                    <StatLabel>💰 Total Investissements</StatLabel>
+                    <StatNumber color="blue.500">
+                      {safeToFixed(report.totalInvestments)} USDC
+                    </StatNumber>
+                    <StatHelpText>Somme des Dépôts Plans</StatHelpText>
+                  </Stat>
+                  
+                  <Stat>
+                    <StatLabel>🎯 Retours Générés</StatLabel>
+                    <StatNumber color="green.500">
+                      {safeToFixed(report.totalExternalReturns)} USDC
+                    </StatNumber>
+                    <StatHelpText>Owner + Pancake</StatHelpText>
+                  </Stat>
+                  
+                  <Stat>
+                    <StatLabel>📊 Performance Période</StatLabel>
+                    <StatNumber color={(report.performancePercentage || 0) >= 5 ? "green.500" : "orange.500"}>
+                      {safeToFixed(report.performancePercentage)}%
+                    </StatNumber>
+                    <StatHelpText>
+                      {(report.performancePercentage || 0) >= 5 ? "🎯 Bonne performance" : "⚠️ Performance faible"}
+                    </StatHelpText>
+                  </Stat>
+                  
+                  <Stat>
+                    <StatLabel>📈 Rendement Annualisé</StatLabel>
+                    <StatNumber color={(report.annualizedReturnPercentage || 0) >= 15 ? "green.500" : "orange.500"}>
+                      {report.dateFilter === 'all' ? 'N/A' : `${safeToFixed(report.annualizedReturnPercentage, 1)}% /an`}
+                    </StatNumber>
+                    <StatHelpText>
+                      {report.dateFilter === 'all' ? 'Toutes périodes' : `Basé sur ${report.daysInPeriod} jours`}
+                    </StatHelpText>
+                  </Stat>
+                </SimpleGrid>
+
+                {/* Détail du calcul - AVEC PROTECTION */}
+                <Box mt={6} p={4} bg="gray.50" borderRadius="lg">
+                  <Heading color="gray.600" size="md" mb={5} textDecoration="underline">ℹ️ Détail du Calcul</Heading>
+                  <VStack spacing={2} align="stretch">
+                    <HStack justify="space-between">
+                      <Text color="green" fontWeight="bold">💰 Total Dépôts Plans:</Text>
+                      <Text color="green" fontWeight="bold">{safeToFixed(report.totalInvestments)} USDC</Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text fontWeight="bold" color="yellow.600">🥞 Récompenses Pancake:</Text>
+                      <Text fontWeight="bold" color="yellow.600">+{safeToFixed(report.pancakeRewards)} USDC</Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text fontWeight="bold" color="teal.600">👤 Retours Owner:</Text>
+                      <Text fontWeight="bold" color="teal.600">+{safeToFixed(report.ownerReturns)} USDC</Text>
+                    </HStack>
+                    <Box h="1px" bg="gray.300" />
+                    <HStack justify="space-between">
+                      <Text color="green.600" fontWeight="bold">🎯 Total Retours:</Text>
+                      <Text fontWeight="bold" color="green.600">{safeToFixed(report.totalExternalReturns)} USDC</Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text color="orange" fontWeight="bold">📊 Performance:</Text>
+                      <Text fontWeight="bold" color={(report.performancePercentage || 0) >= 5 ? "green.600" : "orange.600"}>
+                        {safeToFixed(report.totalExternalReturns)} ÷ {safeToFixed(report.totalInvestments)} = {safeToFixed(report.performancePercentage)}%
+                      </Text>
+                    </HStack>
+                  </VStack>
+                </Box>
+              </CardBody>
+            </Card>
+
+            {/* Conclusions - AVEC PROTECTION */}
+            <Alert status={(report.netFlowSmartContract || 0) >= 0 ? "success" : "warning"}>
+              <AlertIcon />
+              <Box>
+                <Text fontWeight="bold">
+                  {(report.netFlowSmartContract || 0) >= 0 ? "✅ Flux Positif" : "⚠️ Flux Négatif"} - {report.period}
+                </Text>
+                <Text fontSize="sm">
+                  Entrées: {safeToFixed(report.totalEntries)} USDC | 
+                  Sorties: {safeToFixed(report.totalExits)} USDC | 
+                  Net: {(report.netFlowSmartContract || 0) >= 0 ? "+" : ""}{safeToFixed(report.netFlowSmartContract)} USDC | 
+                  Performance: {safeToFixed(report.performancePercentage, 1)}%
+                  {report.dateFilter !== 'all' && ` (${safeToFixed(report.annualizedReturnPercentage, 1)}% annualisé)`}
+                </Text>
+              </Box>
+            </Alert>
+          </VStack>
+        </ModalBody>
+
+        <ModalFooter>
+          <HStack spacing={3}>
+            <Button leftIcon={<Calendar size={16} />} colorScheme="green">
+              Exporter PDF
+            </Button>
+            <Button leftIcon={<FileText size={16} />} colorScheme="blue">
+              Exporter CSV
+            </Button>
+            <Button variant="ghost" onClick={() => setShowReport(false)}>
+              Fermer
+            </Button>
+          </HStack>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
 
   const renderTransactionTable = (type: 'normal' | 'internal' | 'token') => {
     let data: any[] = [];
@@ -2047,7 +1364,7 @@ const WalletMonitoring: React.FC = () => {
                         <DirectionIcon direction={getDirection(item.from, item.to)} />
                         <Text color={getDirection(item.from, item.to) === 'in' ? 'green.500' : 'red.500'}>
                           {getDirection(item.from, item.to) === 'in' ? 'Entrée' : 'Sortie'}
-                        </Text>
+                          </Text>
                       </HStack>
                     </Td>
                     <Td>{formatValue(item.value, parseInt(item.tokenDecimal))}</Td>
@@ -2169,23 +1486,40 @@ const WalletMonitoring: React.FC = () => {
                       </Box>
                     )}
 
-                    {/* Résumé modifié pour afficher uniquement les tokens BEP-20 */}
-                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                    {/* Résumé */}
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
                       <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-                        <StatLabel color="black">Total Tokens Reçus</StatLabel>
-                        <StatNumber color="green.500">{tokenSummary.totalTokensIn.toFixed(4)} tokens</StatNumber>
+                        <StatLabel color="black">Total Entré</StatLabel>
+                        <StatNumber color="green.500">{formatValueWithUSD(summary.totalIn)}</StatNumber>
                         <StatHelpText>
                           <StatArrow type="increase" />
-                          Entrées BEP-20
+                          Toutes entrées
                         </StatHelpText>
                       </Stat>
 
                       <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
-                        <StatLabel color="black">Total Tokens Envoyés</StatLabel>
-                        <StatNumber color="red.500">{tokenSummary.totalTokensOut.toFixed(4)} tokens</StatNumber>
+                        <StatLabel color="black">Total Sorti</StatLabel>
+                        <StatNumber color="red.500">{formatValueWithUSD(summary.totalOut)}</StatNumber>
                         <StatHelpText>
                           <StatArrow type="decrease" />
-                          Sorties BEP-20
+                          Toutes sorties
+                        </StatHelpText>
+                      </Stat>
+
+                      <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                        <StatLabel color="black">Frais Totaux</StatLabel>
+                        <StatNumber color="orange.500">{formatValueWithUSD(summary.totalFees)}</StatNumber>
+                        <StatHelpText>Gas utilisé</StatHelpText>
+                      </Stat>
+
+                      <Stat bg={bgColor} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                        <StatLabel color="black">Flux Net</StatLabel>
+                        <StatNumber color={summary.netFlow >= 0 ? "green.500" : "red.500"}>
+                          {formatValueWithUSD(summary.netFlow)}
+                        </StatNumber>
+                        <StatHelpText>
+                          <StatArrow type={summary.netFlow >= 0 ? "increase" : "decrease"} />
+                          Entrées - Sorties
                         </StatHelpText>
                       </Stat>
                     </SimpleGrid>
@@ -2246,7 +1580,7 @@ const WalletMonitoring: React.FC = () => {
                   </VStack>
                 </TabPanel>
 
-                {/* Onglet Monitoring SmartContrat (INCHANGÉ) */}
+                {/* Onglet Monitoring SmartContrat */}
                 <TabPanel>
                   <VStack spacing={6} align="stretch">
                     {/* En-tête Smart Contract */}
@@ -2291,60 +1625,60 @@ const WalletMonitoring: React.FC = () => {
 
                     {/* Contrôles Smart Contract */}
                     <VStack spacing={4} align="stretch">
-                      <HStack spacing={4}>
-                        <Select 
-                          value={dateFilter} 
-                          onChange={(e) => setDateFilter(e.target.value)}
-                          maxW="200px"
-                        >
-                          <option value="1d">Aujourd'hui</option>
-                          <option value="7d">7 derniers jours</option>
-                          <option value="30d">30 derniers jours</option>
-                          <option value="90d">90 derniers jours</option>
-                          <option value="all">Toutes</option>
-                          <option value="custom">Période personnalisée</option>
-                        </Select>
-                        
-                        <Button onClick={handleSmartContractRefresh} isLoading={smartContractLoading} colorScheme="purple">
-                          Actualiser Smart Contract
-                        </Button>
-                      </HStack>
+  <HStack spacing={4}>
+    <Select 
+      value={dateFilter} 
+      onChange={(e) => setDateFilter(e.target.value)}
+      maxW="200px"
+    >
+      <option value="1d">Aujourd'hui</option>
+      <option value="7d">7 derniers jours</option>
+      <option value="30d">30 derniers jours</option>
+      <option value="90d">90 derniers jours</option>
+      <option value="all">Toutes</option>
+      <option value="custom">Période personnalisée</option>
+    </Select>
+    
+    <Button onClick={handleSmartContractRefresh} isLoading={smartContractLoading} colorScheme="purple">
+      Actualiser Smart Contract
+    </Button>
+  </HStack>
 
-                      {dateFilter === 'custom' && (
-                        <HStack spacing={4}>
-                          <Box>
-                            <Text fontSize="sm" mb={1}>Date de début :</Text>
-                            <Input 
-                              type="date" 
-                              value={customStartDate}
-                              onChange={(e) => setCustomStartDate(e.target.value)}
-                              size="sm"
-                            />
-                          </Box>
-                          <Box>
-                            <Text fontSize="sm" mb={1}>Date de fin :</Text>
-                            <Input 
-                              type="date" 
-                              value={customEndDate}
-                              onChange={(e) => setCustomEndDate(e.target.value)}
-                              size="sm"
-                            />
-                          </Box>
-                        </HStack>
-                      )}
-                      
-                      <Text fontSize="sm" color="gray.600">
-                        Période active : {
-                          dateFilter === 'custom' && customStartDate && customEndDate
-                            ? `${new Date(customStartDate).toLocaleDateString('fr-FR')} au ${new Date(customEndDate).toLocaleDateString('fr-FR')}`
-                            : dateFilter === '1d' ? 'Aujourd\'hui'
-                            : dateFilter === '7d' ? '7 derniers jours'
-                            : dateFilter === '30d' ? '30 derniers jours'
-                            : dateFilter === '90d' ? '90 derniers jours'
-                            : 'Toutes les transactions'
-                        }
-                      </Text>
-                    </VStack>
+  {dateFilter === 'custom' && (
+    <HStack spacing={4}>
+      <Box>
+        <Text fontSize="sm" mb={1}>Date de début :</Text>
+        <Input 
+          type="date" 
+          value={customStartDate}
+          onChange={(e) => setCustomStartDate(e.target.value)}
+          size="sm"
+        />
+      </Box>
+      <Box>
+        <Text fontSize="sm" mb={1}>Date de fin :</Text>
+        <Input 
+          type="date" 
+          value={customEndDate}
+          onChange={(e) => setCustomEndDate(e.target.value)}
+          size="sm"
+        />
+      </Box>
+    </HStack>
+  )}
+  
+  <Text fontSize="sm" color="gray.600">
+    Période active : {
+      dateFilter === 'custom' && customStartDate && customEndDate
+        ? `${new Date(customStartDate).toLocaleDateString('fr-FR')} au ${new Date(customEndDate).toLocaleDateString('fr-FR')}`
+        : dateFilter === '1d' ? 'Aujourd\'hui'
+        : dateFilter === '7d' ? '7 derniers jours'
+        : dateFilter === '30d' ? '30 derniers jours'
+        : dateFilter === '90d' ? '90 derniers jours'
+        : 'Toutes les transactions'
+    }
+  </Text>
+</VStack>
 
                     {/* Loading Smart Contract */}
                     {smartContractLoading && (
@@ -2699,15 +2033,9 @@ const WalletMonitoring: React.FC = () => {
           <Button 
             colorScheme="blue" 
             leftIcon={<Info size={16} />}
-            onClick={() => {
-              if (activeCategory === 0) {
-                setShowWalletReport(true);
-              } else {
-                setShowReport(true);
-              }
-            }}
+            onClick={() => setShowReport(true)}
           >
-            Générer Rapport {activeCategory === 0 ? 'Wallet' : 'Smart Contract'}
+            Générer Rapport
           </Button>
           <Button 
             colorScheme="purple" 
@@ -2719,10 +2047,7 @@ const WalletMonitoring: React.FC = () => {
           </Button>
         </HStack>
 
-        {/* Modal du rapport de transparence wallet */}
-        <WalletReportModal />
-
-        {/* Modal du rapport de transparence smart contract */}
+        {/* Modal du rapport de transparence */}
         <TransparencyReportModal />
       </VStack>
     </Box>

@@ -66,13 +66,13 @@ const InvestmentCard = ({
   const lockPeriodOver = isLockPeriodOver();
 
   return (
-    <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 shadow-lg">
+    <div className="bg-gray-900 rounded-lg overflow-hidden border-2 border-t-slate-600 border-l-slate-600 border-r-slate-900 border-b-slate-900 shadow-2xl">
       <div className="p-5">
         {/* En-tête */}
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-white">Plan {plan.name}</h3>
+          <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name}</h3>
           <div className="bg-blue-600 rounded-full px-3 py-1 text-xs font-semibold text-white">
-            {plan.apr}% Récompenses
+            Autour de {plan.apr}% Récompenses
           </div>
         </div>
         
@@ -149,8 +149,8 @@ const InvestmentCard = ({
             disabled={!canWithdraw || isWithdrawing}
             className={`w-full py-2 rounded-lg font-medium transition-all duration-200 ${
               canWithdraw
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
-                : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30 border-2 border-green-400/50 ring-1 ring-green-300/20 hover:shadow-xl hover:shadow-green-500/40 active:scale-95 transform' 
+                : 'bg-slate-700 text-slate-400 cursor-not-allowed shadow-inner border-2 border-slate-600 ring-1 ring-slate-500/30'
             }`}
           >
             {isWithdrawing
