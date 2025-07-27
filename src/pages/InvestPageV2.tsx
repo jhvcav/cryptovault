@@ -140,7 +140,7 @@ const InvestPage: React.FC = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h3 className={`text-xl font-bold ${isAccessible ? 'text-white' : 'text-slate-400'}`}>
-              Plan {plan.name}
+              Plan {plan.name} V2
             </h3>
             <div className={`rounded-full px-3 py-1 text-xs font-semibold text-white ${
               isAccessible ? 'bg-blue-600' : 'bg-slate-600'

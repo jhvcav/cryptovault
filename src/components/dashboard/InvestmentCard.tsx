@@ -67,14 +67,17 @@ const InvestmentCard = ({
 
   return (
     <div className="bg-gray-900 rounded-lg overflow-hidden border-2 border-t-slate-600 border-l-slate-600 border-r-slate-900 border-b-slate-900 shadow-2xl">
-      <div className="p-5">
-        {/* En-tête */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V1</h3>
-          <div className="bg-blue-600 rounded-full px-3 py-1 text-xs font-semibold text-white">
-            {plan.apr}% Récompenses approx.
-          </div>
-        </div>
+  <div className="p-5">
+    {/* En-tête */}
+    <div className="mb-4">
+      {/* Badge en haut sur toute la largeur */}
+      <div className="w-full bg-blue-600 rounded-lg px-3 py-1 text-xs font-semibold text-white text-center mb-3">
+        Récompenses approximative de {plan.apr}%
+      </div>
+      
+      {/* Titre en dessous */}
+      <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V1</h3>
+    </div>
         
         {/* Montant investi */}
         <div className="mb-4">

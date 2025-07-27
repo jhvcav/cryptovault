@@ -89,14 +89,21 @@ const InvestmentCard = ({
         )}
 
         {/* En-tête */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V2</h3>
-          <div className={`rounded-full px-3 py-1 text-xs font-semibold text-white ${
-            hasNFTBonus ? 'bg-green-600' : 'bg-blue-600'
+        <div className="mb-4">
+          {/* Badge en haut sur toute la largeur */}
+          <div className={`w-full rounded-lg px-3 py-1 text-xs font-semibold text-white text-center mb-3 ${
+            hasNFTBonus ? 'bg-gray-600' : 'bg-blue-600'
           }`}>
-            {/* ✅ MODIFIÉ - Afficher l'APR avec bonus NFT */}
-            Autour de {effectiveAPR.toFixed(1)}% récompenses
+            Récompense approximative de {effectiveAPR.toFixed(1)}%
+        {hasNFTBonus && (
+          <span className="opacity-80 ml-2 border-l border-white/30 pl-2">
+            +{bonusPercentage.toFixed(0)}% NFT
+          </span>
+        )}
           </div>
+  
+          {/* Titre en dessous */}
+          <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V2</h3>
         </div>
         
         {/* Montant investi */}
