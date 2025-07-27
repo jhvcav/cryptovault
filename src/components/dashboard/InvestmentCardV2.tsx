@@ -153,11 +153,6 @@ const InvestmentCard = ({
               <TrendingUp size={14} className="mr-1" />
               <span>Récompenses Actuels</span>
               {/* ✅ AJOUTÉ - Indication du bonus */}
-              {hasNFTBonus && (
-                <span className="ml-2 text-green-400 text-xs">
-                  (+{bonusPercentage.toFixed(0)}%)
-                </span>
-              )}
             </div>
             <div className="text-green-400 font-medium">
               {calculatedReturns.toFixed(4)} {investment.token}
@@ -197,8 +192,8 @@ const InvestmentCard = ({
             {isWithdrawing
               ? 'Traitement en cours...'
               : canWithdraw
-                ? `Récolter les récompenses (${calculatedReturns.toFixed(2)} ${investment.token})${hasNFTBonus ? ' 🎁' : ''}`
-                : `Récolte des récompenses (> 0.4 ${investment.token})`
+                ? `Récolter récompenses (${calculatedReturns.toFixed(2)} ${investment.token})${hasNFTBonus ? ' 🎁' : ''}`
+                : `Récolte récompenses (> 0.4 ${investment.token})`
             }
           </button>
           

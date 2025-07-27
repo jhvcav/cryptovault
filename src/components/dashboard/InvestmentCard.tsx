@@ -72,7 +72,7 @@ const InvestmentCard = ({
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V1</h3>
           <div className="bg-blue-600 rounded-full px-3 py-1 text-xs font-semibold text-white">
-            Autour de {plan.apr}% Récompenses
+            {plan.apr}% Récompenses approx.
           </div>
         </div>
         
@@ -156,8 +156,8 @@ const InvestmentCard = ({
             {isWithdrawing
               ? 'Traitement en cours...'
               : canWithdraw
-                ? `Récolter les récompenses (${calculatedReturns.toFixed(2)} ${investment.token})`
-                : `Récolte des récompenses (> 0.4 ${investment.token})`
+                ? `Récolter récompenses (${calculatedReturns.toFixed(2)} ${investment.token})`
+                : `Récolte récompenses (> 0.4 ${investment.token})`
             }
           </button>
           
