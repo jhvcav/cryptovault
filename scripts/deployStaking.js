@@ -6,20 +6,31 @@ async function main() {
   const [deployer] = await hre.ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
   
-  // Utiliser CryptoVaultStaking au lieu de Staking
-  const CryptoVaultStaking = await hre.ethers.getContractFactory("CryptoVaultStaking");
+  // Utiliser CryptoVaultStakingV3 au lieu de Staking
+  const CryptoVaultStakingV3 = await hre.ethers.getContractFactory("CryptoVaultStakingV3");
   
-  // Vérifier que la variable d'environnement est définie
+  // Vérifier que les variables d'environnement sont définies
   if (!process.env.FEE_COLLECTOR_ADDRESS) {
     throw new Error("FEE_COLLECTOR_ADDRESS not set in environment variables");
   }
 
+  // ✅ AJOUTÉ - Adresse de votre contrat NFT
+  if (!process.env.NFT_CONTRACT_ADDRESS) {
+    throw new Error("NFT_CONTRACT_ADDRESS not set in environment variables");
+  }
+
   console.log("FEE_COLLECTOR_ADDRESS:", process.env.FEE_COLLECTOR_ADDRESS);
+  console.log("NFT_CONTRACT_ADDRESS:", process.env.NFT_CONTRACT_ADDRESS);
   
-  const staking = await CryptoVaultStaking.deploy(process.env.FEE_COLLECTOR_ADDRESS);
+  // ✅ MODIFIÉ - Passer les 2 paramètres au constructor
+  const staking = await CryptoVaultStakingV3.deploy(
+    process.env.FEE_COLLECTOR_ADDRESS,
+    process.env.NFT_CONTRACT_ADDRESS  // ✅ AJOUTÉ
+  );
+  
   await staking.waitForDeployment();
   const stakingAddress = await staking.getAddress();
-  console.log("CryptoVaultStaking contract deployed to:", stakingAddress);
+  console.log("CryptoVaultStakingV3 contract deployed to:", stakingAddress);
   
   // Vérifier le contrat sur l'explorateur
   if (process.env.NETWORK !== "hardhat" && process.env.NETWORK !== "localhost") {
@@ -28,7 +39,10 @@ async function main() {
     try {
       await hre.run("verify:verify", {
         address: stakingAddress,
-        constructorArguments: [process.env.FEE_COLLECTOR_ADDRESS],
+        constructorArguments: [
+          process.env.FEE_COLLECTOR_ADDRESS,
+          process.env.NFT_CONTRACT_ADDRESS  // ✅ AJOUTÉ
+        ],
       });
     } catch (error) {
       console.error("Error verifying contract:", error);

@@ -1,3 +1,4 @@
+//src/pages/DashboardV2.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   Wallet, 
@@ -9,15 +10,14 @@ import {
   History
 } from 'lucide-react';
 import { useWallet } from '../contexts/WalletContext';
-import { useInvestment } from '../contexts/InvestmentContext';
-import { useNavigate, Link } from 'react-router-dom'; // Ajouter Link ici
+import { useInvestmentV2 } from '../contexts/InvestmentContextV2';
+import { useNFTAccess } from '../hooks/useNFTAccess'; // ✅ AJOUTÉ
+import { useNavigate, Link } from 'react-router-dom';
 import StatsCard from '../components/dashboard/StatsCard';
-import InvestmentCard from '../components/dashboard/InvestmentCard';
+import InvestmentCardV2 from '../components/dashboard/InvestmentCardV2';
 import InvestmentChart from '../components/dashboard/InvestmentChart';
-import MigrationBanner from '../components/MigrationBanner';
 
-const Dashboard = () => {
-
+const DashboardV2 = () => {
   const { address, balance, chainId } = useWallet();
   const { 
     activeInvestments, 
@@ -29,7 +29,15 @@ const Dashboard = () => {
     getTotalReturns,
     isLoading,
     error
-  } = useInvestment();
+  } = useInvestmentV2();
+  
+  // ✅ AJOUTÉ - Hook NFT pour le multiplicateur
+  const { 
+    hasNFT, 
+    multiplier, 
+    loading: nftLoading,
+    error: nftError
+  } = useNFTAccess();
   
   const navigate = useNavigate();
   
@@ -62,41 +70,7 @@ const Dashboard = () => {
     return result;
   };
 
-  // ✅ CORRECTION: Affichage d'un écran de chargement si les données ne sont pas prêtes
-  if (isLoading) {
-    return (
-      <div className="py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
-            <span className="ml-4 text-white text-lg">Chargement du tableau de bord V1...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ CORRECTION: Affichage d'une erreur si les données n'ont pas pu être chargées
-  if (error) {
-    return (
-      <div className="py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h3 className="text-red-800 font-medium text-lg mb-2">Erreur de chargement</h3>
-            <p className="text-red-600 mb-4">{error.message || 'Impossible de charger les données du tableau de bord'}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              Réessayer
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Générer des données de graphique hebdomadaires
+  // ✅ CORRIGÉ - Générer des données de graphique hebdomadaires avec bonus NFT
   useEffect(() => {
     if (calculatedInvestments.length === 0) {
       setChartData({
@@ -125,7 +99,7 @@ const Dashboard = () => {
       const weekLabel = formatWeekLabel(currentWeek);
       labels.push(weekLabel);
       
-      // Calculer la valeur totale des investissements à cette date
+      // ✅ CORRIGÉ - Calculer la valeur totale avec bonus NFT
       const totalValue = sortedInvestments.reduce((sum, item) => {
         const investmentDate = new Date(item.investment.startDate);
         
@@ -135,9 +109,10 @@ const Dashboard = () => {
             currentDate.getTime() - investmentDate.getTime()
           );
           const daysActive = Math.ceil(timeDiff / (1000 * 3600 * 24));
-          const dailyReturn = item.investment.dailyReturn;
+          // ✅ CORRIGÉ - Appliquer le multiplicateur NFT
+          const dailyReturnWithBonus = item.investment.dailyReturn * item.nftMultiplier;
           
-          return sum + item.investment.amount + (dailyReturn * daysActive);
+          return sum + item.investment.amount + (dailyReturnWithBonus * daysActive);
         }
         return sum;
       }, 0);
@@ -149,28 +124,30 @@ const Dashboard = () => {
     setChartData({ labels, values });
   }, [calculatedInvestments]);
   
-  // Calculer les rendements totaux
+  // ✅ CORRIGÉ - Calculer les rendements totaux avec bonus NFT
   useEffect(() => {
     const fetchTotalReturns = async () => {
       try {
-        const total = await getTotalReturns();
-        setTotalReturnsValue(total || 0);
+        const totalBase = await getTotalReturns();
+        // ✅ CORRIGÉ - Appliquer le multiplicateur NFT
+        const totalWithBonus = (totalBase || 0) * multiplier;
+        setTotalReturnsValue(totalWithBonus);
       } catch (error) {
         console.error('Erreur lors du calcul des récompenses totaux:', error);
         setTotalReturnsValue(0);
       }
     };
     
-    if (getTotalReturns) {
+    if (getTotalReturns && multiplier) {
       fetchTotalReturns();
     }
-  }, [getTotalReturns]);
+  }, [getTotalReturns, multiplier]); // ✅ AJOUTÉ multiplier dans les dépendances
   
-  // Traiter les investissements et calculer les rendements actuels
+  // ✅ CORRIGÉ - Traiter les investissements et calculer les rendements avec bonus NFT
   useEffect(() => {
     const calculateAllReturns = async () => {
       // ✅ CORRECTION: Vérifier que les données sont disponibles
-      if (!safeActiveInvestments.length || !safePlans.length) {
+      if (!safeActiveInvestments.length || !safePlans.length || !multiplier) {
         setCalculatedInvestments([]);
         return;
       }
@@ -184,9 +161,17 @@ const Dashboard = () => {
           }
           
           const stakeId = parseInt(investment.id);
-          const returns = await calculateReturns(stakeId);
+          const baseReturns = await calculateReturns(stakeId);
+          // ✅ CORRIGÉ - Appliquer le multiplicateur NFT aux rendements
+          const returnsWithBonus = baseReturns * multiplier;
           
-          return { investment, plan, returns };
+          return { 
+            investment, 
+            plan, 
+            returns: returnsWithBonus,
+            baseReturns: baseReturns,
+            nftMultiplier: multiplier // ✅ AJOUTÉ
+          };
         }));
         
         setCalculatedInvestments(processed.filter(Boolean));
@@ -196,10 +181,10 @@ const Dashboard = () => {
       }
     };
     
-    if (calculateReturns) {
+    if (calculateReturns && multiplier) {
       calculateAllReturns();
     }
-  }, [safeActiveInvestments, safePlans, calculateReturns]);
+  }, [safeActiveInvestments, safePlans, calculateReturns, multiplier]); // ✅ AJOUTÉ multiplier
   
   // Gérer le retrait des rendements
   const handleWithdraw = async (investmentId) => {
@@ -227,26 +212,34 @@ const Dashboard = () => {
     }
   };
   
-  // Gérer le rafraîchissement des données d'investissement uniquement
+  // ✅ CORRIGÉ - Gérer le rafraîchissement avec bonus NFT
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       // Rafraîchir uniquement les données d'investissement
-      if (getTotalReturns) {
-        const total = await getTotalReturns();
-        setTotalReturnsValue(total || 0);
+      if (getTotalReturns && multiplier) {
+        const totalBase = await getTotalReturns();
+        const totalWithBonus = (totalBase || 0) * multiplier;
+        setTotalReturnsValue(totalWithBonus);
       }
       
-      // Recalculer tous les rendements
-      if (safeActiveInvestments.length && safePlans.length && calculateReturns) {
+      // Recalculer tous les rendements avec bonus NFT
+      if (safeActiveInvestments.length && safePlans.length && calculateReturns && multiplier) {
         const processed = await Promise.all(safeActiveInvestments.map(async (investment) => {
           const plan = safePlans.find(p => p.id === investment.planId);
           if (!plan) return null;
           
           const stakeId = parseInt(investment.id);
-          const returns = await calculateReturns(stakeId);
+          const baseReturns = await calculateReturns(stakeId);
+          const returnsWithBonus = baseReturns * multiplier;
           
-          return { investment, plan, returns };
+          return { 
+            investment, 
+            plan, 
+            returns: returnsWithBonus,
+            baseReturns: baseReturns,
+            nftMultiplier: multiplier
+          };
         }));
         
         setCalculatedInvestments(processed.filter(Boolean));
@@ -263,23 +256,57 @@ const Dashboard = () => {
   
   // ✅ CORRECTION: Calcul sécurisé des totaux
   const totalInvested = getTotalInvested ? getTotalInvested() : 0;
+
+  // ✅ CORRECTION: Affichage d'un écran de chargement si les données ne sont pas prêtes
+  if (isLoading || nftLoading) {
+    return (
+      <div className="py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent mb-1">Chargement du tableau de bord V2...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ CORRECTION: Affichage d'une erreur si les données n'ont pas pu être chargées
+  if (error || nftError) {
+    return (
+      <div className="py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <h3 className="text-red-800 font-medium text-lg mb-2">Erreur de chargement</h3>
+            <p className="text-red-600 mb-4">
+              {error?.message || nftError || 'Impossible de charger les données du tableau de bord'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Banner de migration Dashboard et autre de mise à jour Dashboard */}
-        <MigrationBanner 
-          currentVersion="V1" 
-          onDismiss={() => {
-            // Optionnel : enregistrer en localStorage que l'utilisateur a dismissé
-            localStorage.setItem('migration_banner_dismissed', 'true');
-          }}
-        />
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white mb-1">Tableau de Bord V1</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent mb-1">Tableau de Bord V2</h1>
             <p className="text-slate-400">
               Suivez vos récompenses
+              {/* ✅ AJOUTÉ - Affichage du bonus NFT actif */}
+              {hasNFT && multiplier > 1 && (
+                <span className="ml-2 text-green-400 font-medium">
+                  • Bonus NFT: +{((multiplier - 1) * 100).toFixed(0)}% actif
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center mt-4 md:mt-0">
@@ -301,15 +328,15 @@ const Dashboard = () => {
           </div>
         </div>
 
-       {/*Bouton accès Historique transactions users*/}
-<button
-  onClick={() => navigate('/history')}
-  className="flex items-center px-5 py-2 bg-transparent border-2 border-white-500 text-white-500 hover:bg-purple-600 hover:text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 mb-4"
-  title="Accéder à l'historique des transactions"
->
-  <History size={18} className="mr-3" />
-  <span className="text-white">Historique Transaction</span>
-</button>
+        {/*Bouton accès Historique transactions users*/}
+        <button
+          onClick={() => navigate('/historyV2')}
+          className="flex items-center px-5 py-2 bg-transparent border-2 border-white-500 text-white-500 hover:bg-purple-600 hover:text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 mb-4"
+          title="Accéder à l'historique des transactions"
+        >
+          <History size={18} className="mr-3" />
+          <span className="text-white">Historique Transaction</span>
+        </button>
 
         {/* Cartes statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -332,7 +359,7 @@ const Dashboard = () => {
             change={{ value: '15.3%', positive: true }}
           />
           <StatsCard 
-            title="Récompenses Totaux" 
+            title={`Récompenses Totaux${hasNFT && multiplier > 1 ? ' (avec bonus NFT)' : ''}`}
             value={`${totalReturnsValue.toFixed(2)} USDT/USDC`}
             icon={<ArrowUpRight size={22} />}
             change={{ value: '8.2%', positive: true }}
@@ -385,7 +412,7 @@ const Dashboard = () => {
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-white">Récompenses Actifs V1</h2>
+                <h2 className="text-xl font-semibold text-white">Récompenses Actifs V2</h2>
                 {hasInvestments && (
                   <span className="bg-blue-600 rounded-full px-3 py-1 text-xs font-semibold text-white">
                     {safeActiveInvestments.length} Actif{safeActiveInvestments.length > 1 ? 's' : ''}
@@ -400,7 +427,6 @@ const Dashboard = () => {
                   <p className="text-slate-400 mb-6">
                     Vous n'avez pas encore de plan de récompense actifs. Commencez à choisir un plan de récompense pour voir votre portefeuille ici.
                   </p>
-                  {/* ✅ CORRECTION: Remplacer <a> par <Link> pour éviter la déconnexion */}
                   <Link 
                     to="/nft-collection"
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-2 px-6 rounded-lg font-medium transition-all duration-200 inline-block"
@@ -410,16 +436,18 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {calculatedInvestments.map(({ investment, plan, returns }) => (
-                    <InvestmentCard
+                  {/* ✅ CORRIGÉ - Utiliser la bonne structure avec nftMultiplier */}
+                  {calculatedInvestments.map(({ investment, plan, returns, nftMultiplier }) => (
+                    <InvestmentCardV2
                       key={investment.id}
                       investment={investment}
                       plan={plan}
-                      calculatedReturns={returns}
+                      calculatedReturns={returns} // ✅ CORRIGÉ - Returns avec bonus NFT
                       onWithdraw={handleWithdraw}
                       onWithdrawCapital={handleWithdrawCapital}
                       isWithdrawing={withdrawingId === investment.id}
                       isWithdrawingCapital={withdrawingCapitalId === investment.id}
+                      nftMultiplier={nftMultiplier} // ✅ CORRIGÉ - Passer le multiplicateur NFT
                     />
                   ))}
                 </div>
@@ -432,7 +460,15 @@ const Dashboard = () => {
           {/* Colonne droite - Statistiques et informations */}
           <div className="space-y-8">
             <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-              <h2 className="text-xl font-semibold text-white mb-6">Résumé des Récompenses</h2>
+              <h2 className="text-xl font-semibold text-white mb-6">
+                Résumé des Récompenses
+                {/* ✅ AJOUTÉ - Indication du bonus NFT */}
+                {hasNFT && multiplier > 1 && (
+                  <span className="ml-2 text-green-400 text-sm">
+                    (avec bonus NFT +{((multiplier - 1) * 100).toFixed(0)}%)
+                  </span>
+                )}
+              </h2>
               
               <div className="space-y-4">
                 <div>
@@ -450,7 +486,12 @@ const Dashboard = () => {
                 
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-400">Récompenses Actuels</span>
+                    <span className="text-slate-400">
+                      Récompenses Actuels
+                      {hasNFT && multiplier > 1 && (
+                        <span className="text-green-400 ml-1">(+{((multiplier - 1) * 100).toFixed(0)}%)</span>
+                      )}
+                    </span>
                     <span className="text-white">{totalReturnsValue.toFixed(2)} USDT/USDC</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">
@@ -571,4 +612,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default DashboardV2;

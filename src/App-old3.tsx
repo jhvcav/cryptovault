@@ -1,15 +1,11 @@
-// src/App.tsx - COHABITATION V1 + V2
+// src/App.tsx - CORRECTION RESPONSIVITÉ MOBILE/TABLETTE (VERSION CORRIGÉE)
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ChakraProvider, extendTheme, Box } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-
-// ✅ DOUBLE IMPORT : V1 ET V2
-import { InvestmentProvider as InvestmentProviderV1 } from './contexts/InvestmentContext';
-import { InvestmentProvider as InvestmentProviderV2 } from './contexts/InvestmentContextV2';
-
+import { InvestmentProvider } from './contexts/InvestmentContext';
 import { useMetaMaskSecurityBSC } from './hooks/useMetaMaskSecurityBSC';
 import { detectMobileAndMetaMask, forceMobileBreakpoints } from './components/utils/mobileDetection';
 
@@ -18,15 +14,14 @@ import Navbar from './components/layout/Navbar';
 import SecurityMonitor from './components/SecurityMonitor';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
-import Dashboard from './pages/Dashboard'; // ← Utilise V1
-import DashboardV2 from './pages/DashboardV2'; // ← Utilise V2
+import Dashboard from './pages/Dashboard';
+import DashboardV2 from './pages/DashboardV2';
 import InvestPageV2 from './pages/InvestPageV2';
 import RoadmapPage from './pages/RoadmapPage';
 import AdminPage from './pages/AdminPage';
 import NFTMarketplace from './pages/NFTMarketplace';
 import LoadingSpinner from './components/LoadingSpinner';
 import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
-import TransactionHistoryUsersV2 from './pages/TransactionHistoryUsersV2';
 import Footer from './components/layout/Footer';
 import NFTCards1 from './pages/NFTCards1';
 import YieldCalculatorPage from './pages/YieldCalculatorPage';
@@ -47,7 +42,7 @@ import EnhancedAuthService from './services/EnhancedAuthService';
 
 import { pinataService } from './services/pinataService';
 
-// Configuration mobile (inchangée)
+// Force les breakpoints pour mobile si nécessaire
 const mobileInfo = detectMobileAndMetaMask();
 console.log('🔍 Mobile détecté:', mobileInfo);
 
@@ -56,7 +51,9 @@ if (mobileInfo.shouldUseMobileMode) {
   forceMobileBreakpoints();
 }
 
-// Configuration Chakra UI (inchangée - code raccourci pour la lisibilité)
+// ========================================
+// 🎨 CONFIGURATION THÈME CHAKRA UI RESPONSIVE
+// ========================================
 const chakraTheme = extendTheme({
   config: {
     initialColorMode: 'dark',
@@ -65,7 +62,14 @@ const chakraTheme = extendTheme({
   colors: {
     brand: {
       50: '#e6f3ff',
+      100: '#b3d9ff',
+      200: '#80bfff',
+      300: '#4da6ff',
+      400: '#1a8cff',
       500: '#0073e6',
+      600: '#005bb3',
+      700: '#004280',
+      800: '#002a4d',
       900: '#00111a',
     },
   },
@@ -73,19 +77,67 @@ const chakraTheme = extendTheme({
     heading: 'Inter, sans-serif',
     body: 'Inter, sans-serif',
   },
+  // 🆕 STYLES GLOBAUX RESPONSIVE
   styles: {
     global: {
-      '*': { margin: 0, padding: 0, boxSizing: 'border-box' },
-      html: { fontSize: { base: '14px', md: '16px' } },
-      body: { fontFamily: 'Inter, sans-serif', minHeight: '100vh', overflowX: 'hidden' },
+      // Reset et base
+      '*': {
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+      },
+      html: {
+        fontSize: { base: '14px', md: '16px' },
+        scrollBehavior: 'smooth',
+        // Empêche le zoom sur les inputs sur iOS
+        '-webkit-text-size-adjust': '100%',
+        '-ms-text-size-adjust': '100%',
+      },
+      body: {
+        fontFamily: 'Inter, sans-serif',
+        minHeight: '100vh',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        // Empêche le scroll horizontal
+        overflowX: 'hidden',
+        // Support PWA
+        '-webkit-touch-callout': 'none',
+        '-webkit-user-select': 'none',
+        userSelect: 'none',
+        // Améliore les performances de scroll sur mobile
+        '-webkit-overflow-scrolling': 'touch',
+      },
+      // Container principal responsive
+      '#root': {
+        minHeight: '100vh',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        position: 'relative',
+      },
+      // Améliore l'affichage des boutons sur mobile
+      'button, input, select, textarea': {
+        '-webkit-appearance': 'none',
+        '-moz-appearance': 'none',
+        fontSize: { base: '16px', md: '14px' }, // Évite le zoom sur iOS
+      },
     },
   },
+  // 🆕 BREAKPOINTS PERSONNALISÉS
   breakpoints: {
-    base: '0px', sm: '480px', md: '768px', lg: '992px', xl: '1280px', '2xl': '1536px'
+    base: '0px',    // mobile
+    sm: '480px',    // mobile large
+    md: '768px',    // tablette
+    lg: '992px',    // desktop
+    xl: '1280px',   // desktop large
+    '2xl': '1536px' // très large
   },
 });
 
-// Configuration debug Pinata (inchangée)
+// ========================================
+// 🔧 CONFIGURATION DEBUG PINATA (INCHANGÉ)
+// ========================================
 const setupPinataDebug = () => {
   if (import.meta.env.DEV) {
     (window as any).testPinata = async () => {
@@ -103,6 +155,7 @@ const setupPinataDebug = () => {
         console.error('💥 Erreur:', error);
       }
     };
+
     (window as any).pinataService = pinataService;
     console.log('🔧 Debug Pinata: testPinata() disponible');
   }
@@ -110,27 +163,40 @@ const setupPinataDebug = () => {
 
 setupPinataDebug();
 
-// Routes de protection (inchangées)
+// ========================================
+// 🆕 ROUTE DE PROTECTION COMMUNAUTÉ (INCHANGÉ)
+// ========================================
 const CommunityProtectedRoute: React.FC<{ 
   children: React.ReactNode;
   requiresCommunity?: boolean;
   requiresPlatform?: boolean;
   requiresLegalAcceptance?: boolean;
-}> = ({ children, requiresCommunity = false, requiresPlatform = false, requiresLegalAcceptance = false }) => {
+}> = ({ 
+  children, 
+  requiresCommunity = false, 
+  requiresPlatform = false, 
+  requiresLegalAcceptance = false 
+}) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAccess = async () => {
       if (!isAuthenticated || !user?.walletAddress) return;
+
       try {
         if (requiresCommunity || requiresPlatform || requiresLegalAcceptance) {
           const status = await EnhancedAuthService.getCompleteUserAccessStatus(user.walletAddress);
+          
           if (requiresCommunity && !status.isCommunityMember) {
             navigate('/community-registration');
             return;
           }
-          if (requiresPlatform && !status.isPlatformAuthorized) return;
+          
+          if (requiresPlatform && !status.isPlatformAuthorized) {
+            return;
+          }
+          
           if (requiresLegalAcceptance && !status.hasRecentLegalAcceptance) {
             navigate('/platform-access');
             return;
@@ -140,12 +206,18 @@ const CommunityProtectedRoute: React.FC<{
         console.error('Erreur vérification statut communauté:', error);
       }
     };
-    if (!isLoading) checkAccess();
+
+    if (!isLoading) {
+      checkAccess();
+    }
   }, [isAuthenticated, user?.walletAddress, isLoading, requiresCommunity, requiresPlatform, requiresLegalAcceptance, navigate]);
 
   return <>{children}</>;
 };
 
+// ========================================
+// 🔒 COMPOSANTS DE SÉCURITÉ (INCHANGÉS)
+// ========================================
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -182,7 +254,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}<SecurityMonitor /></>;
+  return (
+    <>
+      {children}
+      <SecurityMonitor />
+    </>
+  );
 };
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -205,168 +282,200 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-// ✅ COMPOSANT WRAPPER POUR LES ROUTES V1
-const V1ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <InvestmentProviderV1>
-      {children}
-    </InvestmentProviderV1>
-  );
-};
-
-// ✅ COMPOSANT WRAPPER POUR LES ROUTES V2
-const V2ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <InvestmentProviderV2>
-      {children}
-    </InvestmentProviderV2>
-  );
-};
-
-// Contenu principal avec routes séparées
+// ========================================
+// 🆕 CONTENU PRINCIPAL AVEC LAYOUT RESPONSIVE
+// ========================================
 const AppContent: React.FC = () => {
   return (
     <Router>
+      {/* 🎨 CONTAINER PRINCIPAL RESPONSIVE */}
       <Box
         minH="100vh"
         w="100%"
         bg="linear-gradient(135deg, #1a202c 0%, #2d3748 100%)"
         position="relative"
         overflow="hidden"
+        // Centrage et contraintes de largeur
         maxW="100vw"
         mx="auto"
+        // Évite les débordements sur mobile
         css={{
-          '&::-webkit-scrollbar': { display: 'none' },
+          '&::-webkit-scrollbar': {
+            display: 'none'
+          },
           msOverflowStyle: 'none',
           scrollbarWidth: 'none'
         }}
       >
         <Routes>
-          {/* Routes publiques (inchangées) */}
-          <Route path="/login" element={<PublicRoute><Box w="100%" minH="100vh" display="flex" flexDirection="column"><LoginPage /></Box></PublicRoute>} />
-          <Route path="/terms-and-conditions" element={<Box w="100%" minH="100vh" display="flex" flexDirection="column"><TermsAndConditionsPage /></Box>} />
-          <Route path="/politique-et-confidentialite" element={<Box w="100%" minH="100vh" display="flex" flexDirection="column"><PolitiqueEtConfidentialitePage /></Box>} />
-          <Route path="/divulgation-des-risques" element={<Box w="100%" minH="100vh" display="flex" flexDirection="column"><DivulgationDesRisquesPage /></Box>} />
-          <Route path="/registration" element={<Box w="100%" minH="100vh" display="flex" flexDirection="column"><RegistrationPage /></Box>} />
-          <Route path="/conditions-utilisation" element={<Box w="100%" minH="100vh" display="flex" flexDirection="column"><TermsAndConditionsPage /></Box>} />
-          <Route path="/community-registrations" element={<Box w="100%" minH="100vh" display="flex" flexDirection="column"><CommunityRegistrationPage /></Box>} />
-          <Route path="/platform-access" element={<CommunityProtectedRoute requiresCommunity={true}><Box w="100%" minH="100vh" display="flex" flexDirection="column"><PlatformAccessPage /></Box></CommunityProtectedRoute>} />
+          {/* Routes publiques */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                  <LoginPage />
+                </Box>
+              </PublicRoute>
+            }
+          />
+          
+          <Route
+            path="/terms-and-conditions"
+            element={
+                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                  <TermsAndConditionsPage />
+                </Box>
+            }
+          />
 
-          {/* Routes protégées avec layout */}
+          <Route
+            path="/politique-et-confidentialite"
+            element={
+                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                  <PolitiqueEtConfidentialitePage />
+                </Box>
+            }
+          />
+
+          <Route
+            path="/divulgation-des-risques"
+            element={
+                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                  <DivulgationDesRisquesPage />
+                </Box>
+            }
+          />
+
+          <Route 
+            path="/registration" 
+            element={
+              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                <RegistrationPage />
+              </Box>
+            } 
+          />
+          
+          <Route 
+            path="/conditions-utilisation" 
+            element={
+              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                <TermsAndConditionsPage />
+              </Box>
+            } 
+          />
+
+          <Route 
+            path="/community-registrations" 
+            element={
+              <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                <CommunityRegistrationPage />
+              </Box>
+            } 
+          />
+          
+          <Route 
+            path="/platform-access" 
+            element={
+              <CommunityProtectedRoute requiresCommunity={true}>
+                <Box w="100%" minH="100vh" display="flex" flexDirection="column">
+                  <PlatformAccessPage />
+                </Box>
+              </CommunityProtectedRoute>
+            } 
+          />
+
+          {/* Routes protégées avec layout responsive */}
           <Route
             path="/*"
             element={
               <ProtectedRoute>
-                <Box w="100%" minH="100vh" display="flex" flexDirection="column" position="relative">
-                  <Box w="100%" position="sticky" top={0} zIndex={1000} bg="rgba(26, 32, 44, 0.95)" backdropFilter="blur(10px)">
+                {/* 🎯 LAYOUT PRINCIPAL RESPONSIVE */}
+                <Box
+                  w="100%"
+                  minH="100vh"
+                  display="flex"
+                  flexDirection="column"
+                  position="relative"
+                >
+                  {/* Navbar responsive */}
+                  <Box
+                    w="100%"
+                    position="sticky"
+                    top={0}
+                    zIndex={1000}
+                    bg="rgba(26, 32, 44, 0.95)"
+                    backdropFilter="blur(10px)"
+                  >
                     <Navbar />
                   </Box>
                   
-                  <Box as="main" flex={1} w="100%" position="relative" px={{ base: 0, md: 0 }} py={{ base: 0, md: 0 }} mx="auto" maxW="100vw">
+                  {/* Contenu principal responsive */}
+                  <Box
+                    as="main"
+                    flex={1}
+                    w="100%"
+                    position="relative"
+                    // Padding responsive pour éviter que le contenu touche les bords
+                    px={{ base: 0, md: 0 }}
+                    py={{ base: 0, md: 0 }}
+                    // Centrage du contenu
+                    mx="auto"
+                    // Largeur maximale pour éviter l'étirement sur très grand écran
+                    maxW="100vw"
+                  >
                     <Routes>
                       <Route path="/" element={<HomePage />} />
                       
-                      {/* ✅ ROUTE V1 - AVEC PROVIDER V1 */}
                       <Route 
                         path="/dashboardV1" 
                         element={
-                          <V1ProtectedRoute>
-                            <CommunityProtectedRoute requiresCommunity={false} requiresPlatform={false} requiresLegalAcceptance={false}>
-                              <Dashboard />
-                            </CommunityProtectedRoute>
-                          </V1ProtectedRoute>
+                          <CommunityProtectedRoute 
+                            requiresCommunity={false}
+                            requiresPlatform={false}
+                            requiresLegalAcceptance={false}
+                          >
+                            <Dashboard />
+                          </CommunityProtectedRoute>
                         } 
                       />
 
-                      {/* ✅ ROUTE V2 - AVEC PROVIDER V2 */}
                       <Route 
                         path="/dashboardV2" 
                         element={
-                          <V2ProtectedRoute>
-                            <CommunityProtectedRoute requiresCommunity={false} requiresPlatform={false} requiresLegalAcceptance={false}>
-                              <DashboardV2 />
-                            </CommunityProtectedRoute>
-                          </V2ProtectedRoute>
-                        } 
-                      />
-
-                      {/* ✅ ROUTE PRINCIPALE - REDIRECTION INTELLIGENTE */}
-                      <Route 
-                        path="/dashboard" 
-                        element={
-                          <V2ProtectedRoute>
-                            <CommunityProtectedRoute requiresCommunity={false} requiresPlatform={false} requiresLegalAcceptance={false}>
-                              <DashboardV2 />
-                            </CommunityProtectedRoute>
-                          </V2ProtectedRoute>
+                          <CommunityProtectedRoute 
+                            requiresCommunity={false}
+                            requiresPlatform={false}
+                            requiresLegalAcceptance={false}
+                          >
+                            <DashboardV2 />
+                          </CommunityProtectedRoute>
                         } 
                       />
                       
-                      {/* ✅ AUTRES ROUTES - Déterminez lesquelles utilisent V1 ou V2 */}
-                      <Route 
-                        path="/invest" 
-                        element={
-                            <V2ProtectedRoute>
-                            <InvestPageV2 />
-                            </V2ProtectedRoute>
-                        } 
-                        />
-
-                      
-                      {/* ✅ ROUTE ADMIN CORRIGÉE */}
-                      {/*}
-                      <Route 
-                        path="/admin/*" 
-                        element={
-                      <V2ProtectedRoute>
-                      <AdminPage />
-                      </V2ProtectedRoute>
-                      } 
-                      />
-                      */}
-
-                      <Route path="/admin/*" element={
-  <V1ProtectedRoute>
-    <AdminPage />
-  </V1ProtectedRoute>
-} />
-                      
-                      {/* Routes neutres (pas d'investissement) */}
+                      <Route path="/invest" element={<InvestPageV2 />} />
                       <Route path="/roadmap" element={<RoadmapPage />} />
                       <Route path="/admin/*" element={<AdminPage />} />
                       <Route path="/nft-collection" element={<NFTMarketplace />} />
                       <Route path="/nft-cards" element={<NFTCards1 />} />
                       <Route path="/nft-page" element={<NFTPage />} />
+                      <Route path="/history" element={<TransactionHistoryUsers />} />
                       <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
                       <Route path="/calculator-multi-critere" element={<InvestmentCalculatorMultiCritere />} />
                       <Route path="/strategy-management" element={<StrategyManagement />} />
                       <Route path="/compound-interest-Simulator" element={<CompoundInterestSimulator />} />
                       <Route path="/strategy-recommender" element={<StrategyRecommender />} />
-                      
-                      {/* ✅ HISTORIQUE - Pourrait nécessiter les deux contexts */}
-                      <Route 
-                        path="/history" 
-                        element={
-                          <V2ProtectedRoute>
-                            <TransactionHistoryUsers />
-                          </V2ProtectedRoute>
-                        } 
-                      />
-
-                      <Route 
-                        path="/historyV2" 
-                        element={
-                          <V2ProtectedRoute>
-                            <TransactionHistoryUsersV2 />
-                          </V2ProtectedRoute>
-                        } 
-                      />
+                      {/* Routes de la communauté */}
                       
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                   </Box>
                   
-                  <Box w="100%" mt="auto">
+                  {/* Footer responsive */}
+                  <Box
+                    w="100%"
+                    mt="auto"
+                  >
                     <Footer />
                   </Box>
                 </Box>
@@ -379,7 +488,9 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Gestion d'erreurs (inchangée)
+// ========================================
+// 🔧 GESTION D'ERREURS (INCHANGÉE)
+// ========================================
 const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
@@ -388,9 +499,9 @@ const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       if (event.error?.message?.includes('MetaMask')) {
         console.error('💼 Erreur liée à MetaMask détectée');
       } else if (event.error?.message?.includes('Provider')) {
-        console.error('🔌 Erreur de Provider - Version V1 ou V2?');
+        console.error('🔌 Erreur de Provider - Vérifiez l\'ordre des providers dans App.tsx');
       } else if (event.error?.message?.includes('useInvestment')) {
-        console.error('💰 Erreur InvestmentContext - Vérifiez la version (V1/V2)');
+        console.error('💰 Erreur InvestmentContext - Assurez-vous que InvestmentProvider est présent');
       }
     };
 
@@ -411,22 +522,57 @@ const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return <>{children}</>;
 };
 
-// ✅ COMPOSANT RACINE - SANS PROVIDER GLOBAL D'INVESTISSEMENT
+// ========================================
+// 🚀 COMPOSANT RACINE AVEC CSS GLOBAL
+// ========================================
 const App: React.FC = () => {
   useEffect(() => {
-    console.log('🚀 CryptoVault Application démarrée avec support DUAL V1+V2');
-    console.log('📊 Dashboard V1: /dashboardV1 (ancien système)');
-    console.log('📊 Dashboard V2: /dashboardV2 (nouveau système)');
+    console.log('🚀 CryptoVault Application démarrée');
     console.log('📱 Mode responsive activé');
+    console.log('🆕 Nouvelles routes communauté disponibles');
     
+    // 🎯 INJECTION CSS GLOBAL POUR MOBILE
     const globalStyles = document.createElement('style');
     globalStyles.innerHTML = `
-      * { box-sizing: border-box !important; }
-      html, body, #root { width: 100% !important; max-width: 100vw !important; margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }
-      input, select, textarea { font-size: 16px !important; }
-      * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-      .chakra-container { max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
-      @media (max-width: 767px) { .chakra-container { width: 100% !important; margin: 0 !important; } }
+      /* Reset global */
+      * {
+        box-sizing: border-box !important;
+      }
+      
+      /* HTML et body */
+      html, body, #root {
+        width: 100% !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden !important;
+      }
+      
+      /* Évite le zoom sur iOS */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+      
+      /* Améliore les performances sur mobile */
+      * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Fix pour les containers Chakra UI */
+      .chakra-container {
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      
+      /* Responsive breakpoints custom */
+      @media (max-width: 767px) {
+        .chakra-container {
+          width: 100% !important;
+          margin: 0 !important;
+        }
+      }
     `;
     document.head.appendChild(globalStyles);
     
@@ -440,6 +586,7 @@ const App: React.FC = () => {
 
     document.title = 'CryptocaVault - Plateforme de récompense sécurisée';
     
+    // Cleanup
     return () => {
       document.head.removeChild(globalStyles);
     };
@@ -451,8 +598,9 @@ const App: React.FC = () => {
         <ThemeProvider>
           <AuthProvider>
             <WalletProvider>
-              {/* ✅ PAS DE PROVIDER GLOBAL - CHAQUE ROUTE A SON PROVIDER */}
-              <AppContent />
+              <InvestmentProvider>
+                <AppContent />
+              </InvestmentProvider>
             </WalletProvider>
           </AuthProvider>
         </ThemeProvider>

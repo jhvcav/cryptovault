@@ -267,18 +267,31 @@ const isOnBSC = useMemo(() => {
                     : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                 }`}
               >
-                Déposer des fonds
+                Dépôt de fond
               </Link>
+
               <Link 
-                to="/dashboard" 
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === '/dashboard' 
+                to="/dashboardV1" 
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  pathname === '/dashboardV1' 
                     ? 'bg-slate-900 text-white' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white transition-colors'
                 }`}
               >
-                Tableau de Bord
+                Dashboard V1
               </Link>
+
+              <Link 
+                to="/dashboardV2" 
+                className={`px-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  pathname === '/dashboardV2' 
+                    ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/25' 
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25'
+                }`}
+              >
+                Dashboard V2
+              </Link>
+              
               
               {/* Menu Admin - Visible seulement pour l'owner */}
               {isOwner && (
@@ -314,11 +327,6 @@ const isOnBSC = useMemo(() => {
       <span className="text-slate-300 text-sm">
         Bonjour, {user?.firstName}
       </span>
-      {isOwner && (
-        <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
-          👑 OWNER
-        </span>
-      )}
     </div>
     <button
       onClick={handleLogout}
@@ -659,19 +667,19 @@ const isOnBSC = useMemo(() => {
                 
                 <Link 
                   to="/invest" 
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
-                    pathname === '/invest' 
-                      ? 'bg-slate-900 text-white border-l-4 border-blue-500' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                  pathname === '/invest' 
+                    ? 'bg-slate-900 text-white' 
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span className="text-xl">💰</span>
-                  <span>Déposer des fonds</span>
+                  <span>Dépôt de fond</span>
                 </Link>
                 
                 <Link 
-                  to="/dashboard" 
+                  to="/dashboardV1" 
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
                     pathname === '/dashboard' 
                       ? 'bg-slate-900 text-white border-l-4 border-blue-500' 
@@ -681,6 +689,19 @@ const isOnBSC = useMemo(() => {
                 >
                   <span className="text-xl">📊</span>
                   <span>Tableau de Bord</span>
+                </Link>
+
+                <Link 
+                  to="/dashboardV2" 
+                  className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 transform hover:scale-105 flex items-center ${
+                    pathname === '/dashboardV2' 
+                      ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/25' 
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="text-xl mr-3">📊</span>
+                  <span>Tableau de Bord V2</span>
                 </Link>
                 
                 <Link 
@@ -711,9 +732,6 @@ const isOnBSC = useMemo(() => {
                       <span className="text-xl">👑</span>
                       <span>Administration</span>
                     </div>
-                    <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
-                      OWNER
-                    </span>
                   </Link>
                 )}
               </div>

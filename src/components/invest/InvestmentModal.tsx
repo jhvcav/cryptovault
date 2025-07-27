@@ -159,7 +159,7 @@ export const InvestmentModal: React.FC<InvestmentModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Faire un dépôt dans {plan.name}</ModalHeader>
+        <ModalHeader>Faire un dépôt dans {plan.name} V2</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch" pb={4}>
