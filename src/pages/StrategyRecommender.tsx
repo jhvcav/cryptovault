@@ -27,7 +27,7 @@ const NFT_CONFIG = {
     price: 120,
     multiplier: 1.2,
     plans: [
-      { id: 'starter', name: 'Starter', apr: 12, duration: 30 }
+      { id: 'starter', name: 'Starter', apr: 18, duration: 30 }
     ]
   },
   silver: {
@@ -36,8 +36,8 @@ const NFT_CONFIG = {
     price: 250,
     multiplier: 1.5,
     plans: [
-      { id: 'starter', name: 'Starter', apr: 12, duration: 30 },
-      { id: 'standard', name: 'Standard', apr: 15, duration: 90 }
+      { id: 'starter', name: 'Starter', apr: 18, duration: 30 },
+      { id: 'standard', name: 'Standard', apr: 30, duration: 90 }
     ]
   },
   gold: {
@@ -46,9 +46,9 @@ const NFT_CONFIG = {
     price: 500,
     multiplier: 2.0,
     plans: [
-      { id: 'starter', name: 'Starter', apr: 12, duration: 30 },
-      { id: 'standard', name: 'Standard', apr: 15, duration: 90 },
-      { id: 'premium', name: 'Premium', apr: 20, duration: 180 }
+      { id: 'starter', name: 'Starter', apr: 18, duration: 30 },
+      { id: 'standard', name: 'Standard', apr: 30, duration: 90 },
+      { id: 'premium', name: 'Premium', apr: 50, duration: 180 }
     ]
   },
   privilege: {
@@ -57,10 +57,10 @@ const NFT_CONFIG = {
     price: 1000,
     multiplier: 2.5,
     plans: [
-      { id: 'starter', name: 'Starter', apr: 12, duration: 30 },
-      { id: 'standard', name: 'Standard', apr: 15, duration: 90 },
-      { id: 'premium', name: 'Premium', apr: 20, duration: 180 },
-      { id: 'enterprise', name: 'Enterprise', apr: 25, duration: 360 }
+      { id: 'starter', name: 'Starter', apr: 18, duration: 30 },
+      { id: 'standard', name: 'Standard', apr: 30, duration: 90 },
+      { id: 'premium', name: 'Premium', apr: 50, duration: 180 },
+      { id: 'enterprise', name: 'Enterprise', apr: 75, duration: 360 }
     ]
   }
 };
