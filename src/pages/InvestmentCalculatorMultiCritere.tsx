@@ -290,6 +290,6 @@ const InvestmentCalculatorMultiCritere = () => {
       </div>
     </div>
   );
-};
+}
 
 export default InvestmentCalculatorMultiCritere;
