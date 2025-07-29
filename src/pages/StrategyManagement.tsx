@@ -14,7 +14,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { ethers } from 'ethers';
-import { useStrategies } from '../hooks/useStrategies';
+import { useStrategiesV2 } from '../hooks/useStrategiesV2';
 import { useContractsV2 } from '../hooks/useContractsV2';
 
 // Adresses des wallets
@@ -53,7 +53,7 @@ const StrategyManagement = () => {
     transferFeesToOwner,
     transferDepositFeesToReserve,
     transferDepositFeesToOwner
-  } = useStrategies();
+  } = useStrategiesV2();
 
   // Hook pour obtenir les contrats
   const { provider, signer, stakingContract } = useContractsV2();

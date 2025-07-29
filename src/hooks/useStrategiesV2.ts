@@ -33,7 +33,7 @@ export interface StakingBalances {
   [key: string]: number;
 }
 
-export const useStrategies = () => {
+export const useStrategiesV2 = () => {
   const { provider, signer, stakingContract } = useContractsV2();
   
   const [stakingBalances, setStakingBalances] = useState<StakingBalances>({ USDC: 0, USDT: 0 });
@@ -338,4 +338,4 @@ export const useStrategies = () => {
   };
 };
 
-export default useStrategies;
+export default useStrategiesV2;
