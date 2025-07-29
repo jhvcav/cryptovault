@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { CONTRACTS } from '../config/contractsV2';
+import { CONTRACTSV2 } from '../config/contractsV2';
 
 // Nous supprimons la déclaration qui était ici car elle est maintenant dans ethereum.d.ts
 
@@ -39,8 +39,8 @@ export const useContractsV2 = () => {
       setAccount(address);
       
       const contractV2 = new ethers.Contract(
-        CONTRACTS.STAKING.address,
-        CONTRACTS.STAKING.abi,
+        CONTRACTSV2.STAKING.address,
+        CONTRACTSV2.STAKING.abi,
         web3Signer
       );
       setStakingContract(contractV2);
@@ -90,8 +90,8 @@ export const useContractsV2 = () => {
             setAccount(accounts[0]);
             
             const contractV2 = new ethers.Contract(
-              CONTRACTS.STAKING.address,
-              CONTRACTS.STAKING.abi,
+              CONTRACTSV2.STAKING.address,
+              CONTRACTSV2.STAKING.abi,
               newSigner
             );
             setStakingContract(contractV2);
