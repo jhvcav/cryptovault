@@ -98,7 +98,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/calculator-multi-critere" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
+                <Link to="/calculator-nftmultiplan-simulator" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">
                   Calculateur des plans décompenses
                 </Link>
               </li>

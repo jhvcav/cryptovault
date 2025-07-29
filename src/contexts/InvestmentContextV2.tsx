@@ -158,8 +158,8 @@ useEffect(() => {
       const MAX_PLANS = 10;     // Limiter à 10 plans maximum
       
       // Valeurs par défaut en cas de valeurs trop petites
-      const defaultAprValues = [12, 18, 24, 30]; // 12% pour Starter, 18% pour Standard, etc.
-      const defaultDurationValues = [30, 60, 90, 180]; // 30 jours pour Starter, 60 jours pour Standard, etc.
+      const defaultAprValues = [15, 20, 25, 30]; // 15% pour Starter, 20% pour Standard, etc.
+      const defaultDurationValues = [30, 90, 180, 360]; // 30 jours pour Starter, 90 jours pour Standard, etc.
       
       while (planId < MAX_PLANS) {
         try {

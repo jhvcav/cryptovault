@@ -35,7 +35,7 @@ import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
 import PolitiqueEtConfidentialitePage from './pages/PolitiqueEtConfidentialitePage';
 import DivulgationDesRisquesPage from './pages/DivulgationDesRisquesPage';
 import StrategyManagement from './pages/StrategyManagement';
-import InvestmentCalculatorMultiCritere from './pages/InvestmentCalculatorMultiCritere';
+import NFTMultiPlanSimulator from './pages/NFTMultiPlanSimulator';
 import CompoundInterestSimulator from './pages/CompoundingInterestSimulator';
 import StrategyRecommender from './pages/StrategyRecommender';
 
@@ -338,7 +338,7 @@ const AppContent: React.FC = () => {
                       <Route path="/nft-cards" element={<NFTCards1 />} />
                       <Route path="/nft-page" element={<NFTPage />} />
                       <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
-                      <Route path="/calculator-multi-critere" element={<InvestmentCalculatorMultiCritere />} />
+                      <Route path="/calculator-nftmultiplan-simulator" element={<NFTMultiPlanSimulator />} />
                       <Route path="/strategy-management" element={<StrategyManagement />} />
                       <Route path="/compound-interest-Simulator" element={<CompoundInterestSimulator />} />
                       <Route path="/strategy-recommender" element={<StrategyRecommender />} />
