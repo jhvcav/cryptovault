@@ -431,7 +431,7 @@ const DashboardV2 = () => {
                     to="/nft-collection"
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-2 px-6 rounded-lg font-medium transition-all duration-200 inline-block"
                   >
-                    Commencer à otenir des récompenses
+                    Commencer à obtenir des récompenses
                   </Link>
                 </div>
               ) : (
