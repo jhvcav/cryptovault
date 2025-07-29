@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useStrategies } from '../hooks/useStrategies';
-import { useContracts } from '../hooks/useContracts';
+import { useContractsV2 } from '../hooks/useContractsV2';
 
 // Adresses des wallets
 const ADDRESSES = {
@@ -56,7 +56,7 @@ const StrategyManagement = () => {
   } = useStrategies();
 
   // Hook pour obtenir les contrats
-  const { provider, signer, stakingContract } = useContracts();
+  const { provider, signer, stakingContract } = useContractsV2();
 
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatus | null>(null);
