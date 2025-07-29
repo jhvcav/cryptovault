@@ -14,14 +14,14 @@ import {
   DollarSign
 } from 'lucide-react';
 import { ethers } from 'ethers';
-import { useStrategies } from '../hooks/useStrategies';
-import { useContracts } from '../hooks/useContracts';
+import { useStrategiesV2 } from '../hooks/useStrategiesV2';
+import { useContractsV2 } from '../hooks/useContractsV2';
 
 // Adresses des wallets
 const ADDRESSES = {
   USDC_TOKEN: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
   USDT_TOKEN: "0x55d398326f99059fF775485246999027B3197955",
-  STAKING_CONTRACT: "0x719fd9F511DDc561D03801161742D84ECb9445e9", // Contrat de staking
+  STAKING_CONTRACT: "0xcF76Fb0D057228BC84772cA654E17ab580725388", // Contrat de staking
   MANAGEMENT_FEE_WALLET: "0x7558cBa3b60F11FBbEcc9CcAB508afA65d88B3d2", // Wallet de gestion des frais
   RESERVE_WALLET: "0x3837944Bb983886ED6e8d26b5e5F54a27A2BF214", // Fond de Réserve
   OWNER_WALLET: "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF", // Owner Wallet
@@ -53,10 +53,10 @@ const StrategyManagement = () => {
     transferFeesToOwner,
     transferDepositFeesToReserve,
     transferDepositFeesToOwner
-  } = useStrategies();
+  } = useStrategiesV2();
 
   // Hook pour obtenir les contrats
-  const { provider, signer, stakingContract } = useContracts();
+  const { provider, signer, stakingContract } = useContractsV2();
 
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatus | null>(null);
