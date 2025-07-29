@@ -23,7 +23,7 @@ import DashboardV2 from './pages/DashboardV2'; // ← Utilise V2
 import InvestPageV2 from './pages/InvestPageV2';
 import RoadmapPage from './pages/RoadmapPage';
 import AdminPage from './pages/AdminPage';
-import NFTMarketplace from './pages/NFTMarketplace';
+import NFTMarketplace1 from './pages/NFTMarketplace1';
 import LoadingSpinner from './components/LoadingSpinner';
 import TransactionHistoryUsers from './pages/TransactionHistoryUsers';
 import TransactionHistoryUsersV2 from './pages/TransactionHistoryUsersV2';
@@ -334,7 +334,7 @@ const AppContent: React.FC = () => {
                       {/* Routes neutres (pas d'investissement) */}
                       <Route path="/roadmap" element={<RoadmapPage />} />
                       <Route path="/admin/*" element={<AdminPage />} />
-                      <Route path="/nft-collection" element={<NFTMarketplace />} />
+                      <Route path="/nft-collection" element={<NFTMarketplace1 />} />
                       <Route path="/nft-cards" element={<NFTCards1 />} />
                       <Route path="/nft-page" element={<NFTPage />} />
                       <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
