@@ -41,14 +41,14 @@ const NFTCards: React.FC = () => {
       "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/bronze_nft.png",
       "attributes": [
         { "trait_type": "Nom Artistique", "value": "Vaelith de Sève" },
-        { "trait_type": "Tier Technique", "value": "Bronze" },
+        { "trait_type": "Type de NFT", "value": "Bronze" },
         { "trait_type": "Élément", "value": "Sève" },
-        { "trait_type": "Multiplier", "value": "1.2x" },
-        { "trait_type": "Bonus", "value": "20%" },
-        { "trait_type": "Access Plans", "value": "Starter" },
-        { "trait_type": "Rarity", "value": "Typique" },
-        { "trait_type": "Price", "value": "120 USDC" },
-        { "trait_type": "Supply", "value": "1000" },
+        { "trait_type": "Multiplicateur", "value": "1.2x" },
+        { "trait_type": "Bonus du NFT", "value": "20%" },
+        { "trait_type": "Accès aux Plans", "value": "Starter" },
+        { "trait_type": "Rareté", "value": "Typique" },
+        { "trait_type": "Prix", "value": "120 USDC" },
+        { "trait_type": "Qté dispo", "value": "1000" },
         { "trait_type": "Pouvoir", "value": "Essence Primitive" }
       ],
       "background_color": "8B4513"
@@ -59,14 +59,14 @@ const NFTCards: React.FC = () => {
       "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/silver_nft.png",
       "attributes": [
         { "trait_type": "Nom Artistique", "value": "Sylwen des Brumes" },
-        { "trait_type": "Tier Technique", "value": "Silver" },
+        { "trait_type": "Type de NFT", "value": "Silver" },
         { "trait_type": "Élément", "value": "Brumes" },
-        { "trait_type": "Multiplier", "value": "1.5x" },
+        { "trait_type": "Multiplicateur", "value": "1.5x" },
         { "trait_type": "Bonus", "value": "50%" },
-        { "trait_type": "Access Plans", "value": "Starter + Standard" },
-        { "trait_type": "Rarity", "value": "Atypique" },
-        { "trait_type": "Price", "value": "250 USDC" },
-        { "trait_type": "Supply", "value": "500" },
+        { "trait_type": "Accès aux Plans", "value": "Starter + Standard" },
+        { "trait_type": "Rareté", "value": "Atypique" },
+        { "trait_type": "Prix", "value": "250 USDC" },
+        { "trait_type": "Qté dispo", "value": "500" },
         { "trait_type": "Pouvoir", "value": "Voile Éthéré" }
       ],
       "background_color": "C0C0C0"
@@ -77,14 +77,14 @@ const NFTCards: React.FC = () => {
       "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/gold_nft.png",
       "attributes": [
         { "trait_type": "Nom Artistique", "value": "Nymeriel de Lune" },
-        { "trait_type": "Tier Technique", "value": "Gold" },
+        { "trait_type": "Typte de NFT", "value": "Gold" },
         { "trait_type": "Élément", "value": "Lune" },
-        { "trait_type": "Multiplier", "value": "2.0x" },
+        { "trait_type": "Multiplicateur", "value": "2.0x" },
         { "trait_type": "Bonus", "value": "100%" },
-        { "trait_type": "Access Plans", "value": "Starter + Standard + Premium" },
-        { "trait_type": "Rarity", "value": "Rare" },
-        { "trait_type": "Price", "value": "500 USDC" },
-        { "trait_type": "Supply", "value": "200" },
+        { "trait_type": "Accès aux Plans", "value": "Starter + Standard + Premium" },
+        { "trait_type": "Rareté", "value": "Rare" },
+        { "trait_type": "Prix", "value": "500 USDC" },
+        { "trait_type": "Qté dispo", "value": "200" },
         { "trait_type": "Pouvoir", "value": "Cycle Céleste" }
       ],
       "background_color": "FFD700"
@@ -95,14 +95,14 @@ const NFTCards: React.FC = () => {
       "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/privilege_nft.png",
       "attributes": [
         { "trait_type": "Nom Artistique", "value": "Faeloria la Radieuse" },
-        { "trait_type": "Tier Technique", "value": "Privilege" },
+        { "trait_type": "Type de NFT", "value": "Privilege" },
         { "trait_type": "Élément", "value": "Radiance" },
-        { "trait_type": "Multiplier", "value": "2.5x" },
+        { "trait_type": "Multiplicateur", "value": "2.5x" },
         { "trait_type": "Bonus", "value": "150%" },
-        { "trait_type": "Access Plans", "value": "All Plans" },
-        { "trait_type": "Rarity", "value": "Epique" },
-        { "trait_type": "Price", "value": "1000 USDC" },
-        { "trait_type": "Supply", "value": "50" },
+        { "trait_type": "Accès aux Plans", "value": "All Plans" },
+        { "trait_type": "Rareté", "value": "Epique" },
+        { "trait_type": "Prix", "value": "1000 USDC" },
+        { "trait_type": "Qté dispo", "value": "50" },
         { "trait_type": "Pouvoir", "value": "Transcendance Divine" }
       ],
       "background_color": "8A2BE2"
@@ -113,14 +113,14 @@ const NFTCards: React.FC = () => {
       "image": "https://olive-quick-dolphin-266.mypinata.cloud/ipfs/bafybeigxbp6vequoldugofjjnt6x6kitzpluef6iv5l2gxl5mtbm3y7yca/images/fidelity_nft.png",
       "attributes": [
         { "trait_type": "Nom Artistique", "value": "Lúmëran de l'Alliance" },
-        { "trait_type": "Tier Technique", "value": "Fidelity" },
+        { "trait_type": "Type de NFT", "value": "Fidelity" },
         { "trait_type": "Élément", "value": "Alliance" },
-        { "trait_type": "Multiplier", "value": "1.2x" },
+        { "trait_type": "Multiplicateur", "value": "1.2x" },
         { "trait_type": "Bonus", "value": "20%" },
-        { "trait_type": "Access Plans", "value": "Starter" },
-        { "trait_type": "Rarity", "value": "Légendaire" },
-        { "trait_type": "Price", "value": "FREE" },
-        { "trait_type": "Supply", "value": "50" },
+        { "trait_type": "Accès aux Plans", "value": "Starter" },
+        { "trait_type": "Rareté", "value": "Légendaire" },
+        { "trait_type": "Prix", "value": "FREE" },
+        { "trait_type": "Qté dispo", "value": "50" },
         { "trait_type": "Type", "value": "Fidelity Reward" },
         { "trait_type": "Pouvoir", "value": "Serment Éternel" },
         { "trait_type": "Origine", "value": "Don de Fidélité" }
@@ -313,14 +313,14 @@ const NFTCards: React.FC = () => {
               {metadata?.attributes?.find(attr => attr.trait_type === 'Nom Artistique')?.value || metadata?.name || nft.name}
             </h2>
             <div className="text-gray-300 text-lg font-medium">
-              {metadata?.attributes?.find(attr => attr.trait_type === 'Tier Technique')?.value || nft.level}
+              {metadata?.attributes?.find(attr => attr.trait_type === 'Type de NFT')?.value || nft.level}
             </div>
           </div>
           
           {metadata?.attributes && (
             <div className="mb-4">
               <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-black py-2 px-6 rounded-full text-lg font-bold inline-block shadow-lg">
-                {metadata.attributes.find(attr => attr.trait_type === 'Price')?.value || 'Prix non défini'}
+                {metadata.attributes.find(attr => attr.trait_type === 'Prix')?.value || 'Prix non défini'}
               </div>
             </div>
           )}
@@ -433,7 +433,7 @@ const NFTCards: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
               <div className="bg-white/5 rounded-lg p-4">
                 <h4 className="font-bold text-blue-400 mb-2">🥉 Niveau Entrée</h4>
-                <p className="text-sm">Bronze (120 USDC) et Fidelity (GRATUIT) pour débuter</p>
+                <p className="text-sm">Bronze (120 USDC) et Fidélité (GRATUIT pour les fidèles) pour débuter</p>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <h4 className="font-bold text-purple-400 mb-2">🥈 Niveau Intermédiaire</h4>
@@ -441,7 +441,7 @@ const NFTCards: React.FC = () => {
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <h4 className="font-bold text-yellow-400 mb-2">🥇 Niveau Premium</h4>
-                <p className="text-sm">Gold (500 USDC) et Privilege (1000 USDC) pour l'élite</p>
+                <p className="text-sm">Gold (500 USDC) et Privilège (1000 USDC) pour l'élite</p>
               </div>
             </div>
             <p className="mt-6 text-center italic">

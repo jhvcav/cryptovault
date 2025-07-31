@@ -742,7 +742,15 @@ const copyToClipboard = async (address) => {
           onClick={() => navigate('/strategy-management')}
           size={{ base: "sm", md: "md" }}
         >
-          Gestion des Stratégies
+          Gestion des StratégiesV1
+        </Button>
+        <Button
+          leftIcon={<Icon as={Settings} />}
+          colorScheme="orange"
+          onClick={() => navigate('/strategy-managementV2')}
+          size={{ base: "sm", md: "md" }}
+        >
+          Gestion des StratégiesV2
         </Button>
       </Flex>
     </Flex>

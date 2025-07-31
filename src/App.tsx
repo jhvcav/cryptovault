@@ -35,6 +35,7 @@ import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
 import PolitiqueEtConfidentialitePage from './pages/PolitiqueEtConfidentialitePage';
 import DivulgationDesRisquesPage from './pages/DivulgationDesRisquesPage';
 import StrategyManagement from './pages/StrategyManagement';
+import StrategyManagementV2 from './pages/StrategyManagementV2';
 import NFTMultiPlanSimulator from './pages/NFTMultiPlanSimulator';
 import CompoundInterestSimulator from './pages/CompoundingInterestSimulator';
 import StrategyRecommender from './pages/StrategyRecommender';
@@ -340,6 +341,7 @@ const AppContent: React.FC = () => {
                       <Route path="/yield-calculator" element={<YieldCalculatorPage />} />
                       <Route path="/calculator-nftmultiplan-simulator" element={<NFTMultiPlanSimulator />} />
                       <Route path="/strategy-management" element={<StrategyManagement />} />
+                      <Route path="/strategy-managementV2" element={<StrategyManagementV2 />} />
                       <Route path="/compound-interest-Simulator" element={<CompoundInterestSimulator />} />
                       <Route path="/strategy-recommender" element={<StrategyRecommender />} />
                       

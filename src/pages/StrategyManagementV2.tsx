@@ -320,7 +320,7 @@ const handleStrategyFeesToOwner = async () => {
       <div className="max-w-7xl mx-auto">
         {/* En-tête et bouton de rafraîchissement */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Gestion des Stratégies</h1>
+          <h1 className="text-2xl font-bold text-orange-500">Gestion des StratégiesV2</h1>
           <button
             onClick={handleRefresh}
             className="flex items-center bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-lg transition-colors"

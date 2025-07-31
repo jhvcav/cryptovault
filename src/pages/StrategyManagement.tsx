@@ -21,7 +21,7 @@ import { useContracts } from '../hooks/useContracts';
 const ADDRESSES = {
   USDC_TOKEN: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
   USDT_TOKEN: "0x55d398326f99059fF775485246999027B3197955",
-  STAKING_CONTRACT: "0x719fd9F511DDc561D03801161742D84ECb9445e9", // Contrat de staking
+  STAKING_CONTRACT: "0x719fd9F511DDc561D03801161742D84ECb9445e9", // Contrat de staking V1
   MANAGEMENT_FEE_WALLET: "0x7558cBa3b60F11FBbEcc9CcAB508afA65d88B3d2", // Wallet de gestion des frais
   RESERVE_WALLET: "0x3837944Bb983886ED6e8d26b5e5F54a27A2BF214", // Fond de Réserve
   OWNER_WALLET: "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF", // Owner Wallet
@@ -320,7 +320,7 @@ const handleStrategyFeesToOwner = async () => {
       <div className="max-w-7xl mx-auto">
         {/* En-tête et bouton de rafraîchissement */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Gestion des Stratégies</h1>
+          <h1 className="text-2xl font-bold text-white">Gestion des StratégiesV1</h1>
           <button
             onClick={handleRefresh}
             className="flex items-center bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-lg transition-colors"
