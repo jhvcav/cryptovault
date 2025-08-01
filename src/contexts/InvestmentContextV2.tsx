@@ -195,6 +195,8 @@ useEffect(() => {
             nullPlansCount = 0;
             
             // Vérifier les valeurs formatées
+            //const aprFormatted = Number(ethers.formatUnits(contractPlan.apr, 16));
+            //const durationDays = Math.floor(Number(contractPlan.duration) / 86400);
             const aprFormatted = Number(contractPlan.apr) / 100; // Convertir directement 1000 -> 10.00%
             const durationDays = Number(contractPlan.duration); // Utiliser la valeur directement comme jours 
             
@@ -317,154 +319,64 @@ useEffect(() => {
   // Charger les investissements
   useEffect(() => {
     const loadInvestments = async () => {
-      if (!stakingContract || !address) return;
+    if (!stakingContract || !address) return;
 
-      try {
-        const contractStakes: ContractStake[] = await stakingContract.getUserStakes(address);
+    try {
+      const contractStakes: ContractStake[] = await stakingContract.getUserStakes(address);
+      
+      console.log("🔍 Stakes récupérés du contrat:", contractStakes.length);
+      
+      // Convertir TOUS les stakes avec leur index original
+      const allInvestments: InvestmentV2[] = contractStakes.map((stake, originalIndex) => {
+        const startTime = Number(stake.startTime) * 1000;
+        const endTime = Number(stake.endTime) * 1000;
+        const amount = Number(ethers.formatUnits(stake.amount, 18));
         
-        console.log("🔍 Stakes récupérés du contrat:", contractStakes.length);
+        // Calcul du rendement quotidien basé sur le plan
+        const plan = plans.find(p => p.id === Number(stake.planId));
+        const dailyReturn = plan 
+          ? (amount *(plan.apr / 100)) / 365
+          : 0;
         
-        // Convertir TOUS les stakes avec leur index original et calculer les vraies récompenses quotidiennes
-        const allInvestments: InvestmentV2[] = [];
+        console.log(`📋 Stake ${originalIndex}:`, {
+          amount: amount,
+          planId: Number(stake.planId),
+          active: stake.active,
+          startDate: new Date(startTime).toLocaleString(),
+          endDate: new Date(endTime).toLocaleString()
+        });
         
-        for (let originalIndex = 0; originalIndex < contractStakes.length; originalIndex++) {
-          const stake = contractStakes[originalIndex];
-          const startTime = Number(stake.startTime) * 1000;
-          const endTime = Number(stake.endTime) * 1000;
-          const amount = Number(ethers.formatUnits(stake.amount, 18));
-          
-          // ✅ RÉCUPÉRATION du multiplicateur NFT depuis getUserStakes
-          console.log(`🔍 Stake ${originalIndex} - nftMultiplierAtStake brut:`, stake.nftMultiplierAtStake);
-          
-          // Convertir la valeur en nombre et vérifier
-          let nftMultiplierRaw = 10000; // Par défaut 1.0x
-          
-          try {
-            if (stake.nftMultiplierAtStake) {
-              if (typeof stake.nftMultiplierAtStake === 'bigint') {
-                nftMultiplierRaw = Number(stake.nftMultiplierAtStake);
-              } else {
-                nftMultiplierRaw = Number(stake.nftMultiplierAtStake);
-              }
-              
-              // ✅ VALIDATION - S'assurer que la valeur est raisonnable
-              if (nftMultiplierRaw < 10000 || nftMultiplierRaw > 100000) {
-                console.warn(`⚠️ Multiplicateur NFT hors limites: ${nftMultiplierRaw}, utilisation de 25000 (2.5x)`);
-                nftMultiplierRaw = 25000; // 2.5x comme dans vos tests
-              }
-            } else {
-              // ✅ FALLBACK - Utiliser 2.5x basé sur vos données de test
-              console.log(`📋 Pas de multiplicateur NFT trouvé, utilisation de 25000 (2.5x) basé sur vos données`);
-              nftMultiplierRaw = 25000; // Basé sur vos logs précédents
-            }
-          } catch (error) {
-            console.error(`❌ Erreur conversion multiplicateur:`, error);
-            nftMultiplierRaw = 25000; // Fallback vers vos données de test
-          }
-          
-          const multiplierFactor = nftMultiplierRaw / 10000;
-          
-          console.log(`🔍 Multiplicateur NFT final pour Stake ${originalIndex}:`, {
-            nftMultiplierRaw: nftMultiplierRaw,
-            multiplierFactor: multiplierFactor + 'x'
-          });
-          
-          // ✅ FORCER le calcul avec les vraies données du smart contract
-          let dailyReturn = 0;
-          const plan = plans.find(p => p.id === Number(stake.planId));
-          
-          console.log(`🔍 Traitement du Stake ${originalIndex}...`);
-          
-          try {
-            // ✅ SOLUTION - Calculer les récompenses quotidiennes théoriques (indépendantes des retraits)
-            console.log(`📞 Calcul des récompenses quotidiennes théoriques pour Stake ${originalIndex}`);
-            
-            // Trouver le plan correspondant
-            const plan = plans.find(p => p.id === Number(stake.planId));
-            if (!plan) {
-              console.warn(`Plan non trouvé pour stake ${originalIndex}`);
-              return;
-            }
-
-            // ✅ CALCUL THÉORIQUE - Basé sur le montant et l'APR (avec multiplicateur NFT du contrat)
-            const aprPercent = plan.apr; // APR en pourcentage
-            const baseDailyReturn = (amount * (aprPercent / 100)) / 365;
-            
-            // ✅ UTILISER le multiplicateur calculé ci-dessus
-            dailyReturn = baseDailyReturn * multiplierFactor;
-            
-            console.log(`📊 Calcul théorique des récompenses quotidiennes pour Stake ${originalIndex}:`, {
-              amount: amount,
-              aprPercent: aprPercent + '%',
-              baseDailyReturn: baseDailyReturn.toFixed(8),
-              nftMultiplierFactor: multiplierFactor + 'x',
-              dailyReturnFinal: dailyReturn.toFixed(8)
-            });
-            
-            // ✅ VÉRIFICATION - Obtenir aussi les récompenses actuelles pour comparaison
-            try {
-              const currentRewards = await calculateReturns(originalIndex);
-              console.log(`💰 Récompenses actuelles pour vérification: ${currentRewards.toFixed(8)} USDC`);
-            } catch (rewardsError) {
-              console.warn(`Erreur calculateReturns: ${rewardsError.message}`);
-            }
-            
-          } catch (contractError) {
-            console.error(`❌ Erreur calcul théorique pour stake ${originalIndex}:`, contractError);
-            
-            // Fallback - calcul théorique de base (SANS bonus NFT pour l'instant)
-            if (plan && amount > 0) {
-              const aprPercent = plan.apr;
-              dailyReturn = (amount * (aprPercent / 100)) / 365;
-              console.log(`🔄 Fallback calcul théorique:`, {
-                amount,
-                apr: aprPercent + '%',
-                dailyReturn: dailyReturn.toFixed(8)
-              });
-            }
-          }
-          
-          console.log(`📋 Stake ${originalIndex} FINAL:`, {
-            amount: amount,
-            planId: Number(stake.planId),
-            active: stake.active,
-            dailyReturn: dailyReturn.toFixed(8) + ' USDC/jour'
-          });
-          
-          allInvestments.push({
-            id: originalIndex.toString(),
-            planId: Number(stake.planId),
-            amount: amount,
-            startDate: new Date(startTime),
-            endDate: new Date(endTime),
-            lastRewardTime: new Date(Number(stake.lastRewardTime) * 1000),
-            token: TOKEN_SYMBOLS[stake.token] || stake.token,
-            active: stake.active,
-            dailyReturn: dailyReturn // ✅ Vraies récompenses quotidiennes avec bonus NFT
-          });
-        }
-        
-        // Filtrer pour ne garder QUE les stakes actifs pour l'affichage
-        const activeInvestments = allInvestments.filter(investment => investment.active);
-        
-        console.log("🎯 RÉSULTAT FINAL - Stakes actifs avec vraies récompenses quotidiennes:", activeInvestments.map(inv => ({
-          id: inv.id,
-          amount: inv.amount,
-          dailyReturn: inv.dailyReturn.toFixed(8) + ' USDC/jour',
-          active: inv.active
-        })));
-        
-        setActiveInvestments(activeInvestments);
-      } catch (error) {
-        console.error('Erreur lors du chargement des récompenses:', error);
-      }
-    };
-
-    // S'assurer que les plans sont chargés avant de charger les investissements
-    if (plans.length > 0) {
-      loadInvestments();
+        return {
+          id: originalIndex.toString(), // ← INDEX ORIGINAL = ID
+          planId: Number(stake.planId),
+          amount: amount,
+          baseamount: amount, // Ajout de baseamount pour le calcul des rendements
+          startDate: new Date(startTime),
+          endDate: new Date(endTime),
+          lastRewardTime: new Date(Number(stake.lastRewardTime) * 1000),
+          token: TOKEN_SYMBOLS[stake.token] || stake.token,
+          active: stake.active,
+          dailyReturn: dailyReturn
+        };
+      });
+      
+      // Filtrer pour ne garder QUE les stakes actifs pour l'affichage
+      const activeInvestments = allInvestments.filter(investment => investment.active);
+      
+      console.log("✅ Stakes actifs à afficher:", activeInvestments.map(inv => ({
+        id: inv.id,
+        amount: inv.amount,
+        active: inv.active
+      })));
+      
+      setActiveInvestments(activeInvestments);
+    } catch (error) {
+      console.error('Erreur lors du chargement des récompenses:', error);
     }
-  }, [stakingContract, address, plans]);
+  };
+
+  loadInvestments();
+}, [stakingContract, address, plans]);
 
 // La fonction calculateReturns reste la même
 const calculateReturns = async (stakeId: number): Promise<number> => {
