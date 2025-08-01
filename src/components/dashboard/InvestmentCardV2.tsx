@@ -105,10 +105,6 @@ const InvestmentCard = ({
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V2</h3>
         </div>
-        {/* En-tête */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V2</h3>
-        </div>
         
         {/* Montant investi */}
         <div className="mb-4">

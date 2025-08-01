@@ -311,7 +311,7 @@ const DashboardV2 = () => {
         </div>
 
         <button
-          onClick={() => navigate('/history')}
+          onClick={() => navigate('/historyV2')}
           className="flex items-center px-5 py-2 bg-transparent border-2 border-white-500 text-white-500 hover:bg-purple-600 hover:text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 mb-4"
           title="Accéder à l'historique des transactions"
         >
@@ -340,7 +340,7 @@ const DashboardV2 = () => {
             change={{ value: '15.3%', positive: true }}
           />
           <StatsCard 
-            title={`Récompenses Totaux${hasNFT && multiplier > 1 ? ' (avec bonus NFT)' : ''}`}
+            title={`Récompenses Totaux${hasNFT && multiplier > 1 ? ' (+Bonus)' : ''}`}
             value={`${totalReturnsValue.toFixed(2)} USDT/USDC`}
             icon={<ArrowUpRight size={22} />}
             change={{ value: '8.2%', positive: true }}
@@ -442,9 +442,9 @@ const DashboardV2 = () => {
               <h2 className="text-xl font-semibold text-white mb-6">
                 Résumé des Récompenses
                 {hasNFT && multiplier > 1 && (
-                  <span className="ml-2 text-green-400 text-sm">
-                    (avec bonus NFT +{((multiplier - 1) * 100).toFixed(0)}%)
-                  </span>
+                  <p className="text-green-400 text-sm mb-4">
+                  (avec bonus NFT +{((multiplier - 1) * 100).toFixed(0)}%)
+                  </p>
                 )}
               </h2>
               
@@ -467,7 +467,7 @@ const DashboardV2 = () => {
                     <span className="text-slate-400">
                       Récompenses Actuels
                       {hasNFT && multiplier > 1 && (
-                        <span className="text-green-400 ml-1">(avec NFT)</span>
+                        <p className="text-green-400 ml-1">(avec NFT)</p>
                       )}
                     </span>
                     <span className="text-white">{totalReturnsValue.toFixed(4)} USDT/USDC</span>
@@ -488,10 +488,10 @@ const DashboardV2 = () => {
                     <span className="text-slate-400">
                       Récompenses Quotidiennes
                       {hasNFT && multiplier > 1 && (
-                        <span className="text-green-400 ml-1">(avec NFT)</span>
+                        <p className="text-green-400 ml-1">(avec NFT)</p>
                       )}
                     </span>
-                    <span className="text-white">{totalDailyReturns.toFixed(4)} USDT/USDC/jour</span>
+                    <span className="text-white">{totalDailyReturns.toFixed(4)} USDT/USDC</span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
@@ -561,7 +561,7 @@ const DashboardV2 = () => {
                         </div>
                         <div className="flex justify-between text-xs mt-1 text-slate-500">
                           <span>{item.investment.amount.toFixed(2)} USDC</span>
-                          <span>{item.investment.dailyReturn.toFixed(4)} USDC/jour</span>
+                          <span>{item.investment.dailyReturn.toFixed(4)} USDC</span>
                         </div>
                       </div>
                     );
