@@ -28,7 +28,7 @@ const InvestmentCard = ({
   const hasNFTBonus = nftMultiplier > 1;
   const bonusPercentage = hasNFTBonus ? ((nftMultiplier - 1) * 100) : 0;
   const effectiveAPR = plan.apr * nftMultiplier;
-  const dailyReturnWithBonus = investment.dailyReturn * nftMultiplier;
+  const dailyReturnWithBonus = investment.dailyReturn;
 
   // Formater les dates
   const formatDate = (date: Date) => {
@@ -81,19 +81,6 @@ const InvestmentCard = ({
         : 'border-2 border-t-slate-600 border-l-slate-600 border-r-slate-900 border-b-slate-900'
     }`}>
       <div className="p-5">
-        {/* ✅ MODIFIÉ - Encadré rectangulaire (suppression de rounded-full) */}
-        <div className={`px-3 py-1 text-xs font-semibold text-white mb-3 text-center ${
-          hasNFTBonus ? 'bg-green-600' : 'bg-blue-600'
-        }`}>
-          {/* ✅ MODIFIÉ - Afficher l'APR avec bonus NFT */}
-          Autour de {effectiveAPR.toFixed(1)}% Récompenses
-          {hasNFTBonus && (
-            <div className="text-xs opacity-80 mt-1">
-              (Base: {plan.apr}% +{bonusPercentage.toFixed(0)}%)
-            </div>
-          )}
-        </div>
-
         {/* ✅ AJOUTÉ - Badge bonus NFT */}
         {hasNFTBonus && (
           <div className="bg-green-600 text-white px-3 py-1 text-xs font-semibold text-center mb-3 rounded">
@@ -102,11 +89,20 @@ const InvestmentCard = ({
         )}
 
         {/* En-tête */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V2</h3>
-        </div>
-        {/* En-tête */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
+          {/* Badge en haut sur toute la largeur */}
+          <div className={`w-full rounded-lg px-3 py-1 text-xs font-semibold text-white text-center mb-3 ${
+            hasNFTBonus ? 'bg-gray-600' : 'bg-blue-600'
+          }`}>
+            Récompense approximative de {effectiveAPR.toFixed(1)}%
+        {hasNFTBonus && (
+          <span className="opacity-80 ml-2 border-l border-white/30 pl-2">
+            +{bonusPercentage.toFixed(0)}% NFT
+          </span>
+        )}
+          </div>
+  
+          {/* Titre en dessous */}
           <h3 className="text-lg font-semibold text-purple-600">Plan {plan.name} V2</h3>
         </div>
         
@@ -173,12 +169,17 @@ const InvestmentCard = ({
             <div className="text-sm text-slate-400 flex items-center">
               <DollarSign size={14} className="mr-1" />
               <span>Récompenses Quotidiens</span>
-              
             </div>
             <div className="text-white">
-              {/* ✅ MODIFIÉ - Utiliser directement les données du smart contract */}
-              {investment.dailyReturn.toFixed(4)} {investment.token}
-              
+              {/* ✅ MODIFIÉ - Afficher les récompenses quotidiennes avec bonus */}
+              {dailyReturnWithBonus.toFixed(4)} {investment.token}
+              {/*}
+              {hasNFTBonus && (
+                <div className="text-xs text-green-400">
+                  Base: {investment.dailyReturn.toFixed(4)}
+                </div>
+              )}
+                */}
             </div>
           </div>
         </div>
@@ -200,8 +201,8 @@ const InvestmentCard = ({
             {isWithdrawing
               ? 'Traitement en cours...'
               : canWithdraw
-                ? `Récolter les récompenses (${calculatedReturns.toFixed(2)} ${investment.token})${hasNFTBonus ? ' 🎁' : ''}`
-                : `Récolte des récompenses (> 0.4 ${investment.token})`
+                ? `Récolter récompenses (${calculatedReturns.toFixed(2)} ${investment.token})${hasNFTBonus ? ' 🎁' : ''}`
+                : `Récolte récompenses (> 0.4 ${investment.token})`
             }
           </button>
           
@@ -220,7 +221,7 @@ const InvestmentCard = ({
             >
               {isWithdrawingCapital
                 ? 'Traitement en cours...'
-                : `Retirer le dépôt (${investment.amount.toFixed(2)} ${investment.token})`
+                : `Retirer votre dépôt (${investment.amount.toFixed(2)} ${investment.token})`
               }
             </button>
           ) : (
