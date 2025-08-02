@@ -1,10 +1,10 @@
-// scripts/verify-deploymentNFT.js
+// scripts/verify-deploymentNFTV3.js
 const { ethers } = require("hardhat");
 const fs = require('fs');
 const path = require('path');
 
 async function main() {
-  console.log("🔍 Vérification du déploiement CryptoVault NFT...\n");
+  console.log("🔍 Vérification du déploiement CryptocaVault NFTV3...\n");
 
   // Lecture des informations de déploiement
   const network = await ethers.provider.getNetwork();
@@ -24,8 +24,8 @@ async function main() {
   console.log("   - Déployé le:", deploymentInfo.timestamp);
 
   // Se connecter au contrat déployé
-  const CryptoVaultNFT = await ethers.getContractFactory("CryptoVaultNFT");
-  const contract = CryptoVaultNFT.attach(contractAddress);
+  const CryptocaVaultNFTV3 = await ethers.getContractFactory("CryptocaVaultNFTV3");
+  const contract = CryptocaVaultNFTV3.attach(contractAddress);
 
   console.log("\n🧪 Tests de fonctionnalité...");
 

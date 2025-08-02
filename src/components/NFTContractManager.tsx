@@ -459,8 +459,8 @@ const NFTContractManager: React.FC = () => {
               </Heading>
               <HStack spacing={4}>
                 <Text color="gray.600" fontSize="sm">
-                  Contrat : 0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72
-                  <Link href="https://bscscan.com/address/0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72" isExternal ml={2}>
+                  Contrat : 0x4B834aa2C64c7030d7F2920E760469354f72686C
+                  <Link href="https://bscscan.com/address/0x4B834aa2C64c7030d7F2920E760469354f72686C" isExternal ml={2}>
                     <ExternalLinkIcon />
                   </Link>
                 </Text>

@@ -379,7 +379,7 @@ const AdminPage: React.FC = () => {
                 <Text fontSize={{ base: "xs", md: "sm" }}>• Contrat NFT :</Text>
                 <Text
                   as="a"
-                  href="https://bscscan.com/address/0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72"
+                  href="https://bscscan.com/address/0x4B834aa2C64c7030d7F2920E760469354f72686C"
                   target="_blank"
                   rel="noopener noreferrer"
                   color="orange.300"
@@ -398,7 +398,7 @@ const AdminPage: React.FC = () => {
                   fontWeight="medium"
                   wordBreak="break-all"
                 >
-                  0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72 🔗
+                  0x4B834aa2C64c7030d7F2920E760469354f72686C 🔗
                 </Text>
               </HStack>
             </VStack>

@@ -712,10 +712,10 @@
         "Pausable"
       ]
     },
-    "/workspaces/cryptovault/contracts/CryptoVaultStakingV3.sol": {
-      "lastModificationDate": 1753558816216,
-      "contentHash": "763e314599b5c03d83920fc12befcc74",
-      "sourceName": "contracts/CryptoVaultStakingV3.sol",
+    "/workspaces/cryptovault/contracts/CryptocaVaultNFTV3.sol": {
+      "lastModificationDate": 1754122931924,
+      "contentHash": "825c61b052c565efe14dd765ebef271b",
+      "sourceName": "contracts/CryptocaVaultNFTV3.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
@@ -741,17 +741,18 @@
         }
       },
       "imports": [
-        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
-        "@openzeppelin/contracts/security/Pausable.sol",
+        "@openzeppelin/contracts/token/ERC721/ERC721.sol",
+        "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
         "@openzeppelin/contracts/access/Ownable.sol",
-        "@openzeppelin/contracts/security/ReentrancyGuard.sol"
+        "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/utils/Strings.sol"
       ],
       "versionPragmas": [
         "^0.8.19"
       ],
       "artifacts": [
-        "CryptoVaultStakingV3",
-        "ICryptocaVaultNFT"
+        "CryptocaVaultNFTV3"
       ]
     }
   }

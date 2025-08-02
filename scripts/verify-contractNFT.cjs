@@ -6,9 +6,9 @@ const { execSync } = require('child_process');
 require('dotenv').config();
 
 // Configuration
-const CONTRACT_ADDRESS = '0xd21ccd416C263b91F00313743eE8770C4565979C';
+const CONTRACT_ADDRESS = '0x4B834aa2C64c7030d7F2920E760469354f72686C';
 const ORIGINAL_NFT_CONTRACT = '0x3b9E6cad77E65e153321C91Ac5225a4C564b3aE4';
-const NAME = 'CryptoVault Access NFT';
+const NAME = 'CryptocaVault Access NFT';
 const SYMBOL = 'CVNFT';
 const NETWORK = 'bsc';
 

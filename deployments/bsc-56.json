@@ -1,12 +1,12 @@
 {
   "network": "bsc",
   "chainId": "56",
-  "contractAddress": "0xFC7206e81211F52Fc6Cdb20ac9D4deDC5fb40b72",
+  "contractAddress": "0x4B834aa2C64c7030d7F2920E760469354f72686C",
   "deployerAddress": "0x1FF70C1DFc33F5DDdD1AD2b525a07b172182d8eF",
   "treasuryWallet": "0xe0B7BCb42aeBB5Be565cc81518a48D780f3c001c",
   "usdcToken": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-  "deploymentHash": "0x7d79770b048086e6ab5d35446fd738448039f75efebf21c0e2e5067ced945818",
-  "timestamp": "2025-06-26T04:06:15.049Z",
-  "gasUsed": "5947065",
-  "gasCost": "0.0005947065"
+  "deploymentHash": "0x2220820ed6aa48ce282fce22c2faec52932a7ef623d8ab42d0a3efc609417259",
+  "timestamp": "2025-08-02T08:45:14.203Z",
+  "gasUsed": "5935957",
+  "gasCost": "0.0005935957"
 }
